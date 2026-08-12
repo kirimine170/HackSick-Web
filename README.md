@@ -98,9 +98,17 @@ src/
 
 Event，Project，Work，Creator，Activityは `src/content/` 配下のMarkdownとして管理します．Schemaは `src/content.config.ts` にあり，`npm run check` と `npm run build` の両方で検証されます．
 
-外部URLは，繰り返し使うものを `src/data/site.ts` に集約してください．Event固有のconnpass URLやWork固有の販売URLは，各ContentのFrontmatterに記載します．
+外部URLと正式な問い合わせ先は，繰り返し使うものを `src/data/site.ts` に集約してください．Event固有のconnpass URLやWork固有の販売URLは，各ContentのFrontmatterに記載します．
 
 実績，固有名詞，日程，会場，Creator Profileは，確認できた情報だけをProductionへ掲載してください．UI確認用Dummy Dataを公開しないでください．
+
+## Definition of Done
+
+- `npm run check`，`npm run build`，`npm run check:links` が成功している．
+- 生成された全ページを監査し，ユーザー向け本文に `TODO`，`TBA`，`Dummy`，`Placeholder`，内部確認待ち，運営確認待ち等の開発・確認用文言が残っていない．
+- 未確定情報を掲載する場合は，会場：調整中，詳細は後日公開，Coming soon等，利用者向けの自然な表現にする．
+- Emailは正式な問い合わせ・協業・取材・協賛，DiscordはCommunity参加，connpassはEvent情報・参加登録，XはSNS・告知として，サイト全体で役割を統一する．
+- ContactとFooterから正式な問い合わせ導線へ到達できる．
 
 ## Content Schema
 

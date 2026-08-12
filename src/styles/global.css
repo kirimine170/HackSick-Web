@@ -2594,6 +2594,13 @@ a {
   grid-template-columns: 1fr auto;
   padding: 1.5rem 0;
   border-bottom: 1px solid var(--ink);
+  transition: color 220ms ease, background 220ms ease, padding 220ms ease;
+}
+
+.contact-routes a:hover {
+  padding-inline: 1.25rem;
+  color: var(--white);
+  background: var(--ink);
 }
 
 .contact-routes span {
@@ -2609,14 +2616,47 @@ a {
   margin-top: 2rem;
   font-size: clamp(1.8rem, 3.5vw, 3.6rem);
   letter-spacing: -0.055em;
+  line-height: 1.05;
+}
+
+.contact-routes small {
+  grid-column: 1;
+  margin-top: 0.7rem;
+  color: var(--muted);
+  font-size: 0.7rem;
+}
+
+.contact-routes a:hover span,
+.contact-routes a:hover small {
+  color: rgba(255, 255, 255, 0.72);
 }
 
 .contact-routes i {
   grid-column: 2;
-  grid-row: 1 / 3;
+  grid-row: 1 / 4;
   align-self: center;
   font-size: 2rem;
   font-style: normal;
+}
+
+.contact-routes .contact-route-email {
+  padding: clamp(1.6rem, 3vw, 2.7rem);
+  color: var(--white);
+  background: var(--ink);
+}
+
+.contact-routes .contact-route-email:hover {
+  background: var(--pink);
+}
+
+.contact-route-email strong {
+  overflow-wrap: anywhere;
+  font-size: clamp(1rem, 2.5vw, 2.7rem);
+}
+
+.contact-route-email span,
+.contact-route-email small {
+  color: rgba(255, 255, 255, 0.72);
 }
 
 .contact-note {

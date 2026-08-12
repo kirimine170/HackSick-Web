@@ -62,14 +62,14 @@ const exploreLinks = [
       <p class="home-status-heading"><span>LIVE</span><strong>WHAT'S HAPPENING</strong></p>
       <a class="home-status-item" href={activeProject ? `/projects/${activeProject.id}/` : "/projects/"}>
         <span>ONGOING PROJECT</span>
-        <strong>{activeProject?.data.title ?? "PROJECT / TBA"}</strong>
-        <small>{activeProject ? "進行中の企画を見る．" : "次の企画を準備中です．"}</small>
+        <strong>{activeProject?.data.title ?? "PROJECTS"}</strong>
+        <small>{activeProject ? "進行中の企画を見る．" : "企画の現在地を見る．"}</small>
         <i aria-hidden="true">→</i>
       </a>
       <a class="home-status-item" href={upcomingEvent ? `/events/${upcomingEvent.id}/` : "/events/"}>
         <span>NEXT EVENT</span>
-        <strong>{upcomingEvent?.data.title ?? "TO BE ANNOUNCED"}</strong>
-        <small>{upcomingEvent ? formatDateTime(upcomingEvent.data.startDate) : "次回開催を準備中です．"}</small>
+        <strong>{upcomingEvent?.data.title ?? "EVENT UPDATES"}</strong>
+        <small>{upcomingEvent ? formatDateTime(upcomingEvent.data.startDate) : "次の開催情報を見る．"}</small>
         <i aria-hidden="true">→</i>
       </a>
     </div>

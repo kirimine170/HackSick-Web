@@ -1,6 +1,6 @@
 ---
 name: 霧峰 雫
-profile: HackSickの運営として活動しています．詳細プロフィールは，本人確認後に更新予定です．
+profile: HackSick代表．コミュニティ運営とHackSick LTの企画・開催を行っています．
 fields: []
 tags: []
 works: []
@@ -18,4 +18,4 @@ x: https://x.com/kirimine170
 featured: true
 ---
 
-掲載内容は，確認済みの公開情報だけで構成しています．プロフィールの追加情報は，本人確認後に更新します．
+HackSickの立ち上げと運営を担い，分野を越えて知識や問いを共有できる場づくりに取り組んでいます．

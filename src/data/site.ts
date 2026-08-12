@@ -26,6 +26,13 @@ export const links = {
   discordGuide: "https://note.com/hacksick/n/nfe71d58d2512",
 } as const;
 
+const contactEmail = "shizuku.kirimine@hacksick.com";
+
+export const contact = {
+  email: contactEmail,
+  emailHref: `mailto:${contactEmail}`,
+} as const;
+
 export const organization = {
   name: "HackSick",
   representative: "霧峰 雫",

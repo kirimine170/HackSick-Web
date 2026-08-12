@@ -16,7 +16,7 @@ const finished = events.filter((event) => event.data.status === "finished");
   <PageHero index="05" eyebrow="EVENTS" title="次に，どこで参加できるか．" lead="LTだけでなく，Meetup，Hackathon，Workshop，Exhibitionなど，これから参加できる機会を掲載します．" />
   <section class="listing-section section-shell">
     <SectionHeading eyebrow="UPCOMING" title="これからのEvent．" />
-    {upcoming.length > 0 ? <div class="card-grid">{upcoming.map((event) => <EventCard event={event} />)}</div> : <EmptyState label="NEXT EVENT / TBA" title="次回Eventは準備中です．" description="募集開始後，このページとconnpassでお知らせします．" href={links.connpass} linkLabel="connpassを確認する" external />}
+    {upcoming.length > 0 ? <div class="card-grid">{upcoming.map((event) => <EventCard event={event} />)}</div> : <EmptyState label="EVENT UPDATES" title="最新の開催情報は，このページでお知らせします．" description="募集開始後，connpassから参加登録できます．" href={links.connpass} linkLabel="connpassを見る" external />}
   </section>
   <section class="listing-section section-shell">
     <SectionHeading eyebrow="ARCHIVE" title="終了したEvent．" description="Event終了後もDetail URLを残し，活動の関係を辿れるようにします．" />

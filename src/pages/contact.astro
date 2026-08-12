@@ -1,20 +1,36 @@
 ---
 import PageHero from "../components/PageHero.astro";
-import { links } from "../data/site";
+import { contact, links } from "../data/site";
 import BaseLayout from "../layouts/BaseLayout.astro";
 ---
 
 <BaseLayout title="Contact｜HackSick" description="HackSickとの共同企画，制作，研究，取材，支援・協賛に関するお問い合わせ窓口です．">
-  <PageHero index="08" eyebrow="CONTACT" title="一緒に，何をつくりますか．" lead="共同企画，制作，研究，展示，取材，支援・協賛など，HackSickとの協働についてご相談ください．" />
-  <section class="contact-page section-shell" id="collaborate">
+  <PageHero index="08" eyebrow="CONTACT" title="一緒に，世界をつくりませんか？" lead="共同企画，制作，研究，取材，協賛．まだ名前のないアイデアも，HackSickと一緒に形にしていきましょう．" />
+  <section class="contact-page section-shell" id="contact">
     <div>
       <p class="eyebrow"><span>01</span>CONTACT ROUTES</p>
-      <h2>公開されている窓口から，<br />ご連絡ください．</h2>
+      <h2>そのアイデアを，<br />聞かせてください．</h2>
     </div>
     <div class="contact-routes">
-      <a href={links.x} target="_blank" rel="noreferrer"><span>GENERAL / COLLABORATE</span><strong>HackSick on X</strong><i aria-hidden="true">↗</i></a>
-      <a href={links.connpass} target="_blank" rel="noreferrer"><span>EVENT</span><strong>connpass</strong><i aria-hidden="true">↗</i></a>
+      <a class="contact-route-email" href={contact.emailHref}>
+        <span>PRIMARY CONTACT / EMAIL</span>
+        <strong>{contact.email}</strong>
+        <small>一般のお問い合わせ／共同企画／制作／研究／取材／協賛／連携</small>
+        <i aria-hidden="true">→</i>
+      </a>
+      <a href={links.x} target="_blank" rel="noreferrer">
+        <span>SNS / ANNOUNCEMENTS</span>
+        <strong>HackSick on X</strong>
+        <small>最新情報・活動のお知らせ・SNSでの交流</small>
+        <i aria-hidden="true">↗</i>
+      </a>
+      <a href={links.connpass} target="_blank" rel="noreferrer">
+        <span>EVENT INFORMATION / REGISTRATION</span>
+        <strong>connpass</strong>
+        <small>イベント情報・参加登録</small>
+        <i aria-hidden="true">↗</i>
+      </a>
     </div>
-    <p class="contact-note">個人情報を含む連絡先は，確認できた公式窓口だけを掲載しています．メールアドレス等の追加窓口は，運営確認後に更新します．</p>
+    <p class="contact-note">共同企画，制作，研究，取材，協賛などのご相談は，メールでお待ちしています．</p>
   </section>
 </BaseLayout>
