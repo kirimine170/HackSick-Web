@@ -1,0 +1,46 @@
+---
+const activities = [
+  {
+    number: "01",
+    title: "TALK",
+    jp: "技術を語る",
+    body: "好きな技術，最近の悩み，独自の研究．完成度を問わず，自分の言葉で共有できます．",
+  },
+  {
+    number: "02",
+    title: "SHOW",
+    jp: "つくったものを見せる",
+    body: "アプリ，ハードウェア，試作機，スライド．動いても，まだ動かなくても，次の一歩を一緒に考えます．",
+  },
+  {
+    number: "03",
+    title: "CONNECT",
+    jp: "孤独を分かち合う",
+    body: "技術と向き合う孤独を，分野の違う仲間と分かち合う．LT後の交流も大切な活動です．",
+  },
+] as const;
+---
+
+<section class="activities section-shell" id="activities" aria-labelledby="activities-title">
+  <div class="section-label">
+    <p><span>04</span> ACTIVITIES</p>
+    <p>話す．見せる．つながる．</p>
+  </div>
+  <div class="activities-heading">
+    <h2 id="activities-title">未完成だからこそ，<br />話せることがある．</h2>
+    <p>月1回，最終土曜日を目安にLT会を開催しています．現地でもオンラインでも参加できます．</p>
+  </div>
+  <ol class="activity-list">
+    {activities.map((activity) => (
+      <li>
+        <p class="activity-number">{activity.number}</p>
+        <div>
+          <h3>{activity.title}</h3>
+          <p class="activity-jp">{activity.jp}</p>
+        </div>
+        <p class="activity-body">{activity.body}</p>
+        <span class="activity-arrow" aria-hidden="true">↘</span>
+      </li>
+    ))}
+  </ol>
+</section>

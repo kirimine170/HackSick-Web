@@ -1,0 +1,38 @@
+---
+import { links, navigation } from "../data/site";
+---
+
+<header class="site-header">
+  <a class="brand" href="/" aria-label="HackSick トップページ">
+    <img
+      src="/images/hacksick-wordmark.webp"
+      alt="HackSick"
+      width="1250"
+      height="328"
+    />
+  </a>
+
+  <nav class="desktop-nav" aria-label="メインナビゲーション">
+    <ul>
+      {navigation.map((item) => <li><a href={item.href}>{item.label}</a></li>)}
+    </ul>
+  </nav>
+
+  <a class="header-cta" href={links.connpass} target="_blank" rel="noreferrer">
+    Join event
+    <span aria-hidden="true">↗</span>
+  </a>
+
+  <details class="mobile-nav">
+    <summary>
+      <span>Menu</span>
+      <span class="menu-icon" aria-hidden="true"></span>
+    </summary>
+    <nav aria-label="モバイルナビゲーション">
+      <ul>
+        {navigation.map((item) => <li><a href={item.href}>{item.label}</a></li>)}
+        <li><a href={links.connpass} target="_blank" rel="noreferrer">Join event ↗</a></li>
+      </ul>
+    </nav>
+  </details>
+</header>

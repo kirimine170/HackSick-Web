@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://hacksick.com/sitemap-index.xml
