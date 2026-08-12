@@ -4,6 +4,7 @@ description: AI・LLM，機械学習，歩容認証などをテーマに，研�
 startDate: 2026-07-25T18:00:00+09:00
 endDate: 2026-07-25T19:00:00+09:00
 location: 秋葉原No21／オンライン
+format: hybrid
 status: finished
 tags: [Technology, AI, Research, Software]
 project: hacksick-lt

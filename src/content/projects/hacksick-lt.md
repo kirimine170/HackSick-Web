@@ -2,10 +2,11 @@
 title: HackSick LT
 description: 完成した成果だけでなく，制作途中のアイデアや答えのない問いも持ち寄る，HackSickの継続的なLTプロジェクト．
 status: ongoing
-startDate: 2026-02-28
+startDate: 2026-01-31
 tags: [Technology, Engineering, Research, Culture]
 featured: true
 events:
+  - hacksick-lt-01
   - hacksick-lt-02
   - hacksick-lt-03
   - hacksick-lt-04

@@ -107,14 +107,14 @@ Event，Project，Work，Creator，Activityは `src/content/` 配下のMarkdown�
 - `npm run check`，`npm run build`，`npm run check:links` が成功している．
 - 生成された全ページを監査し，ユーザー向け本文に `TODO`，`TBA`，`Dummy`，`Placeholder`，内部確認待ち，運営確認待ち等の開発・確認用文言が残っていない．
 - 未確定情報を掲載する場合は，会場：調整中，詳細は後日公開，Coming soon等，利用者向けの自然な表現にする．
-- Emailは正式な問い合わせ・協業・取材・協賛，DiscordはCommunity参加，connpassはEvent情報・参加登録，XはSNS・告知として，サイト全体で役割を統一する．
+- Emailは正式な問い合わせ・協業・取材・協賛，noteはCommunityの紹介，connpassはEvent情報・参加登録，XはSNS・告知として，サイト全体で役割を統一する．Discordの直接参加導線は公開しない．
 - ContactとFooterから正式な問い合わせ導線へ到達できる．
 
 ## Content Schema
 
 ### Event
 
-主なField：`title`，`description`，`startDate`，`endDate`，`location`，`status`，`tags`，`project`，`registrationUrl`，`organizers`，`partners`，`sponsors`，`thumbnail`，`featured`．
+主なField：`title`，`description`，`startDate`，`endDate`，`location`，`format`（`online`／`offline`／`hybrid`），`status`，`tags`，`project`，`registrationUrl`，`organizers`，`partners`，`sponsors`，`thumbnail`，`featured`．
 
 `status` は `upcoming`，`ongoing`，`finished` のいずれかです．終了後もMarkdownとDetail URLを残します．
 

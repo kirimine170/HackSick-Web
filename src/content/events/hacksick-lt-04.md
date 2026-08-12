@@ -4,6 +4,7 @@ description: 「私と技術」をテーマに，参加者それぞれの関心�
 startDate: 2026-04-25T18:00:00+09:00
 endDate: 2026-04-25T19:00:00+09:00
 location: 秋葉原UDX 4F スタイルルームA／オンライン
+format: hybrid
 status: finished
 tags: [Technology, Culture]
 project: hacksick-lt

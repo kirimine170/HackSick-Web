@@ -4,6 +4,7 @@ description: 分野を問わず，好きな技術や制作・研究の途中経�
 startDate: 2026-02-28T18:00:00+09:00
 endDate: 2026-02-28T19:00:00+09:00
 location: ロボスタディオン／オンライン
+format: hybrid
 status: finished
 tags: [Technology, Software, Hardware, Security]
 project: hacksick-lt

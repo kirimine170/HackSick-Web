@@ -2,10 +2,12 @@
 import { getCollection } from "astro:content";
 import PageHero from "../components/PageHero.astro";
 import TagList from "../components/TagList.astro";
-import { formatDate } from "../data/site";
+import { eventFormatLabels, formatDate } from "../data/site";
 import BaseLayout from "../layouts/BaseLayout.astro";
 
-const activities = (await getCollection("activities")).sort((a, b) => b.data.date.getTime() - a.data.date.getTime());
+const [activityEntries, events] = await Promise.all([getCollection("activities"), getCollection("events")]);
+const activities = activityEntries.sort((a, b) => b.data.date.getTime() - a.data.date.getTime());
+const eventsById = new Map(events.map((event) => [event.id, event]));
 const years = [...new Set(activities.map((activity) => activity.data.date.getFullYear()))];
 ---
 
@@ -16,18 +18,27 @@ const years = [...new Set(activities.map((activity) => activity.data.date.getFul
       <div class="archive-year">
         <p class="archive-year-number">{year}</p>
         <ol>
-          {activities.filter((activity) => activity.data.date.getFullYear() === year).map((activity) => (
-            <li>
-              <time datetime={activity.data.date.toISOString()}>{formatDate(activity.data.date)}</time>
-              <div>
-                <p>{activity.data.type}</p>
-                <h2>{activity.data.event ? <a href={`/events/${activity.data.event}/`}>{activity.data.title}</a> : activity.data.title}</h2>
-                <p>{activity.data.description}</p>
-                <TagList tags={activity.data.tags} />
-              </div>
-              {activity.data.externalUrl && <a class="archive-external" href={activity.data.externalUrl} target="_blank" rel="noreferrer" aria-label={`${activity.data.title}の外部ページ`}>↗</a>}
-            </li>
-          ))}
+          {activities.filter((activity) => activity.data.date.getFullYear() === year).map((activity) => {
+            const event = activity.data.event ? eventsById.get(activity.data.event) : undefined;
+            return (
+              <li>
+                <time datetime={activity.data.date.toISOString()}>{formatDate(activity.data.date)}</time>
+                <div>
+                  <p>{activity.data.type}</p>
+                  <h2>{activity.data.event ? <a href={`/events/${activity.data.event}/`}>{activity.data.title}</a> : activity.data.title}</h2>
+                  <p>{activity.data.description}</p>
+                  {event && (
+                    <dl class="archive-event-meta">
+                      <div><dt>FORMAT</dt><dd>{eventFormatLabels[event.data.format]}</dd></div>
+                      {event.data.sponsors.length > 0 && <div><dt>SPONSORS</dt><dd>{event.data.sponsors.join("，")}</dd></div>}
+                    </dl>
+                  )}
+                  <TagList tags={activity.data.tags} />
+                </div>
+                {activity.data.externalUrl && <a class="archive-external" href={activity.data.externalUrl} target="_blank" rel="noreferrer" aria-label={`${activity.data.title}の外部ページ`}>↗</a>}
+              </li>
+            );
+          })}
         </ol>
       </div>
     ))}

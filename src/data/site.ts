@@ -23,7 +23,6 @@ export const links = {
   noteAbout: "https://note.com/hacksick/n/nfe71d58d2512",
   x: "https://x.com/HackSick_8949",
   github: "https://github.com/kirimine170/HackSick-Web",
-  discordGuide: "https://note.com/hacksick/n/nfe71d58d2512",
 } as const;
 
 const contactEmail = "shizuku.kirimine@hacksick.com";
@@ -66,6 +65,12 @@ export const statusLabels = {
   planned: "Planned",
   completed: "Completed",
   paused: "Paused",
+} as const;
+
+export const eventFormatLabels = {
+  online: "オンライン開催",
+  offline: "オフライン開催",
+  hybrid: "ハイブリッド開催",
 } as const;
 
 export const formatDate = (date: Date) =>

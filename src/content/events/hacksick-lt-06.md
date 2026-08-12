@@ -4,6 +4,7 @@ description: 3Dプリントやマイコン開発の失敗談を含め，試行�
 startDate: 2026-06-27T18:00:00+09:00
 endDate: 2026-06-27T19:00:00+09:00
 location: ロボスタディオン／オンライン
+format: hybrid
 status: finished
 tags: [Technology, Engineering, Hardware]
 project: hacksick-lt

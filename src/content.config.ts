@@ -15,6 +15,7 @@ const events = defineCollection({
     startDate: z.coerce.date(),
     endDate: z.coerce.date(),
     location: z.string(),
+    format: z.enum(["online", "offline", "hybrid"]),
     status: z.enum(["upcoming", "ongoing", "finished"]),
     tags: z.array(z.string()).default([]),
     project: z.string().optional(),

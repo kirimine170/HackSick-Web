@@ -3,7 +3,7 @@ import { getCollection, render, type CollectionEntry } from "astro:content";
 import ProjectCard from "../../components/ProjectCard.astro";
 import SectionHeading from "../../components/SectionHeading.astro";
 import TagList from "../../components/TagList.astro";
-import { formatDateTime, statusLabels } from "../../data/site";
+import { eventFormatLabels, formatDateTime, statusLabels } from "../../data/site";
 import BaseLayout from "../../layouts/BaseLayout.astro";
 
 export async function getStaticPaths() {
@@ -29,13 +29,16 @@ const project = event.data.project ? (await getCollection("projects")).find((ite
       <dl class="detail-meta">
         <div><dt>Date</dt><dd><time datetime={event.data.startDate.toISOString()}>{formatDateTime(event.data.startDate)}</time></dd></div>
         <div><dt>End</dt><dd><time datetime={event.data.endDate.toISOString()}>{formatDateTime(event.data.endDate)}</time></dd></div>
+        <div><dt>Format</dt><dd>{eventFormatLabels[event.data.format]}</dd></div>
         <div><dt>Location</dt><dd>{event.data.location}</dd></div>
         <div><dt>Status</dt><dd>{statusLabels[event.data.status]}</dd></div>
       </dl>
     </header>
     <div class="detail-body section-shell prose"><Content /></div>
     {event.data.organizers.length > 0 && <section class="plain-related section-shell"><p>ORGANIZERS</p><p>{event.data.organizers.join("，")}</p></section>}
-    {event.data.registrationUrl && <div class="detail-actions section-shell"><a class="button button-dark" href={event.data.registrationUrl} target="_blank" rel="noreferrer">connpassで詳細を見る <span aria-hidden="true">↗</span></a>{event.data.externalLinks.map((link) => <a class="button" href={link.url} target="_blank" rel="noreferrer">{link.label} <span aria-hidden="true">↗</span></a>)}</div>}
+    {event.data.partners.length > 0 && <section class="plain-related section-shell"><p>PARTNERS</p><p>{event.data.partners.join("，")}</p></section>}
+    {event.data.sponsors.length > 0 && <section class="plain-related section-shell"><p>SPONSORS</p><p>{event.data.sponsors.join("，")}</p></section>}
+    {(event.data.registrationUrl || event.data.externalLinks.length > 0) && <div class="detail-actions section-shell">{event.data.registrationUrl && <a class="button button-dark" href={event.data.registrationUrl} target="_blank" rel="noreferrer">connpassで詳細を見る <span aria-hidden="true">↗</span></a>}{event.data.externalLinks.map((link) => <a class="button" href={link.url} target="_blank" rel="noreferrer">{link.label} <span aria-hidden="true">↗</span></a>)}</div>}
     {project && <section class="related-section section-shell"><SectionHeading eyebrow="RELATED PROJECT" title="このEventを束ねるProject．" /><div class="card-grid"><ProjectCard project={project} /></div></section>}
   </article>
 </BaseLayout>

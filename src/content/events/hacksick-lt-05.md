@@ -4,6 +4,7 @@ description: 電子工作を中心に，量産，USB，制作の実例と失敗�
 startDate: 2026-05-30T18:00:00+09:00
 endDate: 2026-05-30T19:00:00+09:00
 location: ロボスタディオン／オンライン
+format: hybrid
 status: finished
 tags: [Technology, Engineering, Hardware]
 project: hacksick-lt

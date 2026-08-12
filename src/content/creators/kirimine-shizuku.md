@@ -6,6 +6,7 @@ tags: []
 works: []
 projects: [hacksick-lt]
 events:
+  - hacksick-lt-01
   - hacksick-lt-02
   - hacksick-lt-03
   - hacksick-lt-04
