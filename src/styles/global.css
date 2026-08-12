@@ -468,13 +468,20 @@ a {
   background: var(--ink);
 }
 
-.ticker > div {
+.ticker-track {
   display: flex;
+  width: max-content;
+  animation: ticker 25s linear infinite;
+}
+
+.ticker-group {
+  display: flex;
+  flex: none;
   gap: 2.2rem;
   align-items: center;
-  width: max-content;
-  padding: 0.65rem 0;
-  animation: ticker 25s linear infinite;
+  justify-content: space-around;
+  min-width: 100vw;
+  padding: 0.65rem 1.1rem;
 }
 
 .ticker span {
@@ -1697,6 +1704,7 @@ a {
   letter-spacing: -0.07em;
   line-height: 0.94;
   text-wrap: balance;
+  word-break: auto-phrase;
 }
 
 .section-heading > div > p {
@@ -1743,10 +1751,28 @@ a {
   letter-spacing: -0.085em;
   line-height: 0.88;
   text-wrap: balance;
+  word-break: normal;
+  word-break: auto-phrase;
+  line-break: strict;
 }
 
 .page-hero h1 {
-  text-wrap: initial;
+  max-width: 100%;
+  font-size: clamp(3.4rem, 6.5vw, 7.5rem);
+  word-break: normal;
+}
+
+.page-hero h1.page-title-medium {
+  font-size: clamp(3.2rem, 5.5vw, 6.5rem);
+}
+
+.page-hero h1.page-title-long {
+  font-size: clamp(2.8rem, 4.3vw, 5.5rem);
+}
+
+.page-hero h1 span {
+  display: block;
+  white-space: nowrap;
 }
 
 .page-hero-grid > p {
@@ -1901,6 +1927,8 @@ a {
   font-size: clamp(2rem, 4vw, 4.2rem);
   letter-spacing: -0.065em;
   line-height: 0.98;
+  text-wrap: balance;
+  word-break: auto-phrase;
 }
 
 .card-description,
@@ -2313,7 +2341,7 @@ a {
   list-style: none;
 }
 
-.archive-year li {
+.archive-year ol > li {
   display: grid;
   grid-template-columns: 8rem 1fr 2rem;
   gap: 2rem;
@@ -2321,8 +2349,8 @@ a {
   border-bottom: 1px solid var(--ink);
 }
 
-.archive-year time,
-.archive-year li > div > p:first-child {
+.archive-year ol > li > time,
+.archive-year ol > li > div > p:first-child {
   margin: 0;
   color: var(--muted);
   font-size: 0.58rem;
@@ -2336,6 +2364,8 @@ a {
   font-size: clamp(1.7rem, 3.3vw, 3.5rem);
   letter-spacing: -0.055em;
   line-height: 1;
+  text-wrap: balance;
+  word-break: keep-all;
 }
 
 .archive-year h2 + p {
@@ -2713,7 +2743,19 @@ a {
   .page-hero h1,
   .detail-hero h1,
   .creator-detail-hero h1 {
-    font-size: clamp(3.3rem, 16vw, 5.4rem);
+    font-size: clamp(2.9rem, 13vw, 5rem);
+  }
+
+  .page-hero h1 {
+    font-size: clamp(2.4rem, 11vw, 4.25rem);
+  }
+
+  .page-hero h1.page-title-medium {
+    font-size: clamp(2.2rem, 9.5vw, 3.8rem);
+  }
+
+  .page-hero h1.page-title-long {
+    font-size: clamp(1.6rem, 7.8vw, 3rem);
   }
 
   .section-heading {
@@ -2803,16 +2845,16 @@ a {
     gap: 0.6rem;
   }
 
-  .archive-year li {
+  .archive-year ol > li {
     grid-template-columns: 1fr 2rem;
     gap: 1rem;
   }
 
-  .archive-year li > time {
+  .archive-year ol > li > time {
     grid-column: 1;
   }
 
-  .archive-year li > div {
+  .archive-year ol > li > div {
     grid-column: 1;
   }
 

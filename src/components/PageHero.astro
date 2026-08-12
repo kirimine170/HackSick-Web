@@ -8,14 +8,21 @@ interface Props {
 
 const { index, eyebrow, title, lead } = Astro.props;
 const commaIndex = title.indexOf("，");
-const titleStart = commaIndex >= 0 ? title.slice(0, commaIndex + 1) : title;
-const titleEnd = commaIndex >= 0 ? title.slice(commaIndex + 1) : "";
+const titleLines = commaIndex >= 0
+  ? [title.slice(0, commaIndex + 1), title.slice(commaIndex + 1)]
+  : [title];
+const longestLine = Math.max(...titleLines.map((line) => Array.from(line).length));
+const titleLengthClass = longestLine >= 11
+  ? "page-title-long"
+  : longestLine >= 9
+    ? "page-title-medium"
+    : undefined;
 ---
 
 <section class="page-hero section-shell">
   <p class="eyebrow"><span>{index}</span>{eyebrow}</p>
   <div class="page-hero-grid">
-    <h1>{titleStart}{titleEnd && <><br />{titleEnd}</>}</h1>
+    <h1 class={titleLengthClass}>{titleLines.map((line) => <span>{line}</span>)}</h1>
     <p>{lead}</p>
   </div>
   <div class="page-hero-signal" aria-hidden="true"><span></span><span></span><span></span></div>
