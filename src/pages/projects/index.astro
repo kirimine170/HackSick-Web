@@ -9,7 +9,7 @@ const projects = (await getCollection("projects")).sort((a, b) => Number(b.data.
 ---
 
 <BaseLayout title="Projects｜HackSick" description="複数のEvent，Work，Creator，Activityを束ねるHackSickの継続的なProjectを紹介します．">
-  <PageHero index="03" eyebrow="PROJECTS" title="何を，仕掛けているか．" lead="単発のEventではなく，複数の活動や成果を束ね，継続して育てる企画です．" />
+  <PageHero index="03" eyebrow="PROJECTS" title="HackSickの取り組み" lead="単発のEventではなく，複数の活動や成果を束ね，継続して育てる企画です．" />
   <section class="listing-section section-shell">
     {projects.length > 0 ? <div class="card-grid card-grid-projects">{projects.map((project) => <ProjectCard project={project} />)}</div> : <EmptyState label="NO PROJECTS" title="公開中のProjectはありません．" description="次のProjectも，ここから始まります．" />}
   </section>

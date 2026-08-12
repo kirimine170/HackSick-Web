@@ -9,7 +9,7 @@ const works = (await getCollection("works")).sort((a, b) => (b.data.releaseDate?
 ---
 
 <BaseLayout title="Works｜HackSick" description="HackSickやHackSickに関係する人が生み出した本，Software，Hardware，研究，作品を紹介します．">
-  <PageHero index="04" eyebrow="WORKS" title="何を，生み出したか．" lead="技術成果と芸術作品を分けず，すべてを「つくったもの」として記録します．" />
+  <PageHero index="04" eyebrow="WORKS" title="HackSickから生まれたもの" lead="技術成果と芸術作品を分けず，すべてを「つくったもの」として記録します．" />
   <section class="listing-section section-shell">
     {works.length > 0 ? <div class="card-grid card-grid-works">{works.map((work) => <WorkCard work={work} />)}</div> : <EmptyState label="NO WORKS" title="公開中のWorkはありません．" description="これから生まれるWorkを，ここに重ねていきます．" />}
   </section>

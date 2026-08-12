@@ -12,7 +12,7 @@ const years = [...new Set(activities.map((activity) => activity.data.date.getFul
 ---
 
 <BaseLayout title="Activities｜HackSick" description="HackSickがこれまで行ってきた活動を，年ごとの時系列で紹介します．">
-  <PageHero index="02" eyebrow="ACTIVITIES" title="これまで，何をしてきたか．" lead="LT，Meetup，Workshop，Exhibitionなど，HackSickの活動実績を時系列で残すArchiveです．" />
+  <PageHero index="02" eyebrow="ACTIVITIES" title="What we did." lead="LT，Meetup，Workshop，Exhibitionなど，HackSickの活動実績を時系列で残すArchiveです．" />
   <section class="archive-page section-shell">
     {years.map((year) => (
       <div class="archive-year">
