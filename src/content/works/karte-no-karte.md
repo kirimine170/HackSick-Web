@@ -6,11 +6,12 @@ tags: [Software, AI, Literature, Design]
 firstPresentedAt: 技術書典20
 thumbnail: /images/works/karte-no-karte.png
 images: [/images/works/karte-no-karte.png]
-creators: []
+creators: [kirimine-shizuku]
 projects: []
 events: []
 credits: [HackSick]
 purchaseUrl: https://techbookfest.org/product/nB0N1ZhYaPgLZ3VQhZCfEX?productVariantID=pp1Tah4YB1fv5b96A2RBdP
+purchaseLabel: 技術書典で見る
 featured: true
 ---
 

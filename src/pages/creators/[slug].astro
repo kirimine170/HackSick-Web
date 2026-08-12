@@ -5,6 +5,7 @@ import ProjectCard from "../../components/ProjectCard.astro";
 import SectionHeading from "../../components/SectionHeading.astro";
 import TagList from "../../components/TagList.astro";
 import WorkCard from "../../components/WorkCard.astro";
+import { formatDate } from "../../data/site";
 import BaseLayout from "../../layouts/BaseLayout.astro";
 
 export async function getStaticPaths() {
@@ -19,6 +20,14 @@ const [allProjects, allWorks, allEvents] = await Promise.all([getCollection("pro
 const projects = allProjects.filter((project) => creator.data.projects.includes(project.id));
 const works = allWorks.filter((work) => creator.data.works.includes(work.id));
 const events = allEvents.filter((event) => creator.data.events.includes(event.id)).sort((a, b) => b.data.startDate.getTime() - a.data.startDate.getTime());
+const achievements = creator.data.achievements.map((achievement) => {
+  const work = achievement.work ? allWorks.find((item) => item.id === achievement.work) : undefined;
+  return {
+    ...achievement,
+    href: work ? `/works/${work.id}/` : achievement.url,
+    external: !work && Boolean(achievement.url),
+  };
+});
 const socialLinks = [creator.data.website && { label: "Website", url: creator.data.website }, creator.data.portfolioUrl && { label: "Portfolio", url: creator.data.portfolioUrl }, creator.data.github && { label: "GitHub", url: creator.data.github }, creator.data.x && { label: "X", url: creator.data.x }, creator.data.instagram && { label: "Instagram", url: creator.data.instagram }, ...creator.data.otherLinks].filter(Boolean) as { label: string; url: string }[];
 ---
 
@@ -35,6 +44,31 @@ const socialLinks = [creator.data.website && { label: "Website", url: creator.da
     </header>
     <div class="detail-body section-shell prose"><Content /></div>
     {socialLinks.length > 0 && <nav class="social-links section-shell" aria-label="Creatorの外部リンク">{socialLinks.map((link) => <a href={link.url} target="_blank" rel="noreferrer">{link.label} ↗</a>)}</nav>}
+    {achievements.length > 0 && (
+      <section class="achievement-section section-shell">
+        <SectionHeading eyebrow="ACHIEVEMENTS" title="実績" />
+        <ol class="achievement-list">
+          {achievements.map((achievement) => (
+            <li>
+              <p class="achievement-meta">
+                <span>{achievement.type}</span>
+                {achievement.date && <time datetime={achievement.date.toISOString()}>{formatDate(achievement.date)}</time>}
+              </p>
+              <div class="achievement-content">
+                <h3>
+                  {achievement.href
+                    ? <a href={achievement.href} target={achievement.external ? "_blank" : undefined} rel={achievement.external ? "noreferrer" : undefined}>{achievement.title}</a>
+                    : achievement.title}
+                </h3>
+                {achievement.description && <p>{achievement.description}</p>}
+                {achievement.organization && <p class="achievement-organization">BY {achievement.organization}</p>}
+              </div>
+              {achievement.href && <span class="achievement-arrow" aria-hidden="true">{achievement.external ? "↗" : "↘"}</span>}
+            </li>
+          ))}
+        </ol>
+      </section>
+    )}
     {projects.length > 0 && <section class="related-section section-shell"><SectionHeading eyebrow="PROJECTS" title="関わっているProject．" /><div class="card-grid">{projects.map((project) => <ProjectCard project={project} />)}</div></section>}
     {works.length > 0 && <section class="related-section section-shell"><SectionHeading eyebrow="WORKS" title="つくったもの．" /><div class="card-grid card-grid-works">{works.map((work) => <WorkCard work={work} />)}</div></section>}
     {events.length > 0 && <section class="related-section section-shell"><SectionHeading eyebrow="EVENTS" title="関わったEvent．" /><div class="card-grid">{events.map((event) => <EventCard event={event} compact />)}</div></section>}

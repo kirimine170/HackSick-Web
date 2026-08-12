@@ -20,13 +20,15 @@ const [allProjects, allEvents, allCreators] = await Promise.all([getCollection("
 const projects = allProjects.filter((project) => work.data.projects.includes(project.id));
 const events = allEvents.filter((event) => work.data.events.includes(event.id));
 const creators = allCreators.filter((creator) => work.data.creators.includes(creator.id));
+const thumbnailWidth = work.data.thumbnailWidth ?? 227;
+const thumbnailHeight = work.data.thumbnailHeight ?? 320;
 ---
 
-<BaseLayout title={`${work.data.title}｜Works｜HackSick`} description={work.data.description} image={work.data.thumbnail} imageWidth={227} imageHeight={320} imageAlt={`${work.data.title}の表紙`}>
+<BaseLayout title={`${work.data.title}｜Works｜HackSick`} description={work.data.description} image={work.data.thumbnail} imageWidth={thumbnailWidth} imageHeight={thumbnailHeight} imageAlt={`${work.data.title}の表紙`}>
   <article class="detail-page work-detail">
     <header class="detail-hero section-shell work-detail-hero">
       <div class="work-detail-cover">
-        {work.data.thumbnail && <img src={work.data.thumbnail} alt={`${work.data.title}の表紙`} width="227" height="320" />}
+        {work.data.thumbnail && <img src={work.data.thumbnail} alt={`${work.data.title}の表紙`} width={thumbnailWidth} height={thumbnailHeight} />}
       </div>
       <div class="work-detail-title">
         <p class="eyebrow"><span>WORK</span>{work.data.type}</p>
@@ -42,7 +44,7 @@ const creators = allCreators.filter((creator) => work.data.creators.includes(cre
       </dl>
     </header>
     <div class="detail-body section-shell prose"><Content /></div>
-    {work.data.purchaseUrl && <div class="detail-actions section-shell"><a class="button button-dark" href={work.data.purchaseUrl} target="_blank" rel="noreferrer">技術書典で見る <span aria-hidden="true">↗</span></a></div>}
+    {work.data.purchaseUrl && <div class="detail-actions section-shell"><a class="button button-dark" href={work.data.purchaseUrl} target="_blank" rel="noreferrer">{work.data.purchaseLabel ?? "販売ページを見る"} <span aria-hidden="true">↗</span></a></div>}
     {projects.length > 0 && <section class="related-section section-shell"><SectionHeading eyebrow="RELATED PROJECTS" title="関連するProject．" /><div class="card-grid">{projects.map((project) => <ProjectCard project={project} />)}</div></section>}
     {events.length > 0 && <section class="related-section section-shell"><SectionHeading eyebrow="RELATED EVENTS" title="関連するEvent．" /><div class="card-grid">{events.map((event) => <EventCard event={event} />)}</div></section>}
     {creators.length > 0 && <section class="related-section section-shell"><SectionHeading eyebrow="RELATED CREATORS" title="関連するCreator．" /><div class="card-grid">{creators.map((creator) => <CreatorCard creator={creator} />)}</div></section>}

@@ -26,6 +26,12 @@ const {
 
 const canonical = new URL(Astro.url.pathname, Astro.site);
 const imageUrl = new URL(image, Astro.site);
+const imageExtension = image.split("?")[0]?.split(".").pop()?.toLowerCase();
+const imageType = imageExtension === "jpg" || imageExtension === "jpeg"
+  ? "image/jpeg"
+  : imageExtension === "webp"
+    ? "image/webp"
+    : "image/png";
 ---
 
 <!doctype html>
@@ -48,7 +54,7 @@ const imageUrl = new URL(image, Astro.site);
     <meta property="og:description" content={description} />
     <meta property="og:url" content={canonical} />
     <meta property="og:image" content={imageUrl} />
-    <meta property="og:image:type" content="image/png" />
+    <meta property="og:image:type" content={imageType} />
     <meta property="og:image:width" content={String(imageWidth)} />
     <meta property="og:image:height" content={String(imageHeight)} />
     <meta property="og:image:alt" content={imageAlt} />

@@ -2617,6 +2617,70 @@ a {
   background: var(--pink);
 }
 
+.achievement-section {
+  padding-top: clamp(5rem, 9vw, 9rem);
+}
+
+.achievement-list {
+  margin: clamp(3rem, 6vw, 6rem) 0 0;
+  padding: 0;
+  border-top: 1px solid var(--ink);
+  list-style: none;
+}
+
+.achievement-list li {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(9rem, 0.24fr) minmax(0, 0.76fr) 2rem;
+  gap: clamp(1.5rem, 4vw, 4rem);
+  padding: clamp(2rem, 4vw, 4rem) 0;
+  border-bottom: 1px solid var(--ink);
+}
+
+.achievement-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.58rem;
+  font-weight: 750;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.achievement-meta span {
+  color: var(--pink);
+}
+
+.achievement-content h3 {
+  margin: 0;
+  font-size: clamp(1.8rem, 3.5vw, 3.8rem);
+  letter-spacing: -0.055em;
+  line-height: 1;
+  text-wrap: balance;
+  word-break: auto-phrase;
+}
+
+.achievement-content > p:not(.achievement-organization) {
+  max-width: 42rem;
+  margin: 1.2rem 0 0;
+  font-size: 0.82rem;
+}
+
+.achievement-organization {
+  margin: 1.4rem 0 0;
+  color: var(--muted);
+  font-size: 0.58rem;
+  font-weight: 750;
+  letter-spacing: 0.12em;
+}
+
+.achievement-arrow {
+  align-self: center;
+  font-size: 1.6rem;
+}
+
 .join-page {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -2951,6 +3015,25 @@ a {
 
   .social-links {
     flex-direction: column;
+  }
+
+  .achievement-list li {
+    grid-template-columns: 1fr 2rem;
+    gap: 1.25rem;
+  }
+
+  .achievement-meta,
+  .achievement-content {
+    grid-column: 1;
+  }
+
+  .achievement-meta {
+    flex-direction: row;
+  }
+
+  .achievement-arrow {
+    grid-column: 2;
+    grid-row: 1 / 3;
   }
 
   .join-page {

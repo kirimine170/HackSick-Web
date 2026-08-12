@@ -7,6 +7,16 @@ const linkSchema = z.object({
   url: z.url(),
 });
 
+const achievementSchema = z.object({
+  title: z.string(),
+  type: z.string(),
+  description: z.string().optional(),
+  date: z.coerce.date().optional(),
+  work: z.string().optional(),
+  url: z.url().optional(),
+  organization: z.string().optional(),
+});
+
 const events = defineCollection({
   loader: glob({ pattern: "**/*.{md,mdx}", base: "./src/content/events" }),
   schema: z.object({
@@ -58,6 +68,8 @@ const works = defineCollection({
     releaseDate: z.coerce.date().optional(),
     firstPresentedAt: z.string().optional(),
     thumbnail: z.string().optional(),
+    thumbnailWidth: z.number().int().positive().optional(),
+    thumbnailHeight: z.number().int().positive().optional(),
     images: z.array(z.string()).default([]),
     creators: z.array(z.string()).default([]),
     projects: z.array(z.string()).default([]),
@@ -65,6 +77,7 @@ const works = defineCollection({
     credits: z.array(z.string()).default([]),
     externalLinks: z.array(linkSchema).default([]),
     purchaseUrl: z.url().optional(),
+    purchaseLabel: z.string().optional(),
     featured: z.boolean().default(false),
   }),
 });
@@ -80,7 +93,7 @@ const creators = defineCollection({
     works: z.array(z.string()).default([]),
     projects: z.array(z.string()).default([]),
     events: z.array(z.string()).default([]),
-    achievements: z.array(z.string()).default([]),
+    achievements: z.array(achievementSchema).default([]),
     portfolioUrl: z.url().optional(),
     website: z.url().optional(),
     github: z.url().optional(),
