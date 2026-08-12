@@ -7,7 +7,7 @@ interface Props {
 }
 
 const { index, eyebrow, title, lead } = Astro.props;
-const commaIndex = title.indexOf("，");
+const commaIndex = title.indexOf("、");
 const titleLines = commaIndex >= 0
   ? [title.slice(0, commaIndex + 1), title.slice(commaIndex + 1)]
   : [title];

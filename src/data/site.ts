@@ -1,8 +1,8 @@
 export const site = {
   name: "HackSick",
-  title: "HackSick｜創りたいを，造りたい．",
+  title: "HackSick｜創りたいを、造りたい。",
   description:
-    "異なる分野の人が集まり，知識や問いを共有し，プロジェクトや作品を生み出していくための場所です．",
+    "異なる分野の人が集まり、知識や問いを共有し、プロジェクトや作品を生み出していくための場所です。",
   url: "https://hacksick.com",
   locale: "ja_JP",
 } as const;

@@ -27,7 +27,7 @@ const { event, compact = false } = Astro.props;
     {!compact && <p class="card-description">{event.data.description}</p>}
   </div>
   <TagList tags={event.data.tags} />
-  {event.data.sponsors.length > 0 && <p class="card-sponsors">SPONSORED BY {event.data.sponsors.join("，")}</p>}
+  {event.data.sponsors.length > 0 && <p class="card-sponsors">SPONSORED BY {event.data.sponsors.join("、")}</p>}
   <p class="card-location">{event.data.location}</p>
   <span class="card-arrow" aria-hidden="true">↘</span>
 </article>

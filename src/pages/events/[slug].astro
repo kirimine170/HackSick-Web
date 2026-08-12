@@ -35,10 +35,10 @@ const project = event.data.project ? (await getCollection("projects")).find((ite
       </dl>
     </header>
     <div class="detail-body section-shell prose"><Content /></div>
-    {event.data.organizers.length > 0 && <section class="plain-related section-shell"><p>ORGANIZERS</p><p>{event.data.organizers.join("，")}</p></section>}
-    {event.data.partners.length > 0 && <section class="plain-related section-shell"><p>PARTNERS</p><p>{event.data.partners.join("，")}</p></section>}
-    {event.data.sponsors.length > 0 && <section class="plain-related section-shell"><p>SPONSORS</p><p>{event.data.sponsors.join("，")}</p></section>}
+    {event.data.organizers.length > 0 && <section class="plain-related section-shell"><p>ORGANIZERS</p><p>{event.data.organizers.join("、")}</p></section>}
+    {event.data.partners.length > 0 && <section class="plain-related section-shell"><p>PARTNERS</p><p>{event.data.partners.join("、")}</p></section>}
+    {event.data.sponsors.length > 0 && <section class="plain-related section-shell"><p>SPONSORS</p><p>{event.data.sponsors.join("、")}</p></section>}
     {(event.data.registrationUrl || event.data.externalLinks.length > 0) && <div class="detail-actions section-shell">{event.data.registrationUrl && <a class="button button-dark" href={event.data.registrationUrl} target="_blank" rel="noreferrer">connpassで詳細を見る <span aria-hidden="true">↗</span></a>}{event.data.externalLinks.map((link) => <a class="button" href={link.url} target="_blank" rel="noreferrer">{link.label} <span aria-hidden="true">↗</span></a>)}</div>}
-    {project && <section class="related-section section-shell"><SectionHeading eyebrow="RELATED PROJECT" title="このEventを束ねるProject．" /><div class="card-grid"><ProjectCard project={project} /></div></section>}
+    {project && <section class="related-section section-shell"><SectionHeading eyebrow="RELATED PROJECT" title="このEventを束ねるProject。" /><div class="card-grid"><ProjectCard project={project} /></div></section>}
   </article>
 </BaseLayout>

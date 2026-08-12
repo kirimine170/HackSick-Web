@@ -23,31 +23,31 @@ const exploreLinks = [
   {
     label: "ACTIVITIES",
     title: "活動記録",
-    description: "これまでの動きを，時系列で読む．",
+    description: "これまでの動きを、時系列で読む。",
     href: "/activities/",
   },
   {
     label: "PROJECTS",
     title: "企画",
-    description: "継続する企画の全体像を見る．",
+    description: "継続する企画の全体像を見る。",
     href: "/projects/",
   },
   {
     label: "WORKS",
     title: "制作物",
-    description: "公開した本や作品を見る．",
+    description: "公開した本や作品を見る。",
     href: "/works/",
   },
   {
     label: "EVENTS",
     title: "イベント",
-    description: "開催情報と過去回を確認する．",
+    description: "開催情報と過去回を確認する。",
     href: "/events/",
   },
   {
     label: "CREATORS",
     title: "つくる人",
-    description: "HackSickに関わるCreatorを知る．",
+    description: "HackSickに関わるCreatorを知る。",
     href: "/creators/",
   },
 ] as const;
@@ -63,13 +63,13 @@ const exploreLinks = [
       <a class="home-status-item" href={activeProject ? `/projects/${activeProject.id}/` : "/projects/"}>
         <span>ONGOING PROJECT</span>
         <strong>{activeProject?.data.title ?? "PROJECTS"}</strong>
-        <small>{activeProject ? "進行中の企画を見る．" : "企画の現在地を見る．"}</small>
+        <small>{activeProject ? "進行中の企画を見る。" : "企画の現在地を見る。"}</small>
         <i aria-hidden="true">→</i>
       </a>
       <a class="home-status-item" href={upcomingEvent ? `/events/${upcomingEvent.id}/` : "/events/"}>
         <span>NEXT EVENT</span>
         <strong>{upcomingEvent?.data.title ?? "EVENT UPDATES"}</strong>
-        <small>{upcomingEvent ? formatDateTime(upcomingEvent.data.startDate) : "次の開催情報を見る．"}</small>
+        <small>{upcomingEvent ? formatDateTime(upcomingEvent.data.startDate) : "次の開催情報を見る。"}</small>
         <i aria-hidden="true">→</i>
       </a>
     </div>
@@ -80,11 +80,11 @@ const exploreLinks = [
   <section class="home-explore section-shell" aria-labelledby="explore-title">
     <div class="section-label">
       <p><span>04</span> EXPLORE</p>
-      <p>詳しくは，各ページへ．</p>
+      <p>詳しくは、各ページへ。</p>
     </div>
     <div class="explore-intro">
       <h2 id="explore-title">HackSickの足跡</h2>
-      <p>企画，作品，イベント，つくる人．知りたい入口から，HackSickの活動を辿れます．</p>
+      <p>企画、作品、イベント、つくる人。知りたい入口から、HackSickの活動を辿れます。</p>
     </div>
     <nav class="explore-links" aria-label="活動ページ">
       {exploreLinks.map((item, index) => (
