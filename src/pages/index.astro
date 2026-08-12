@@ -1,102 +1,101 @@
 ---
 import { getCollection } from "astro:content";
 import About from "../components/About.astro";
-import Activities from "../components/Activities.astro";
-import EmptyState from "../components/EmptyState.astro";
-import EventCard from "../components/EventCard.astro";
 import Hero from "../components/Hero.astro";
 import Join from "../components/Join.astro";
 import Philosophy from "../components/Philosophy.astro";
-import ProjectCard from "../components/ProjectCard.astro";
-import SectionHeading from "../components/SectionHeading.astro";
-import WorkCard from "../components/WorkCard.astro";
-import { links } from "../data/site";
+import { formatDateTime } from "../data/site";
 import BaseLayout from "../layouts/BaseLayout.astro";
 
-const [events, projects, works, activities] = await Promise.all([
+const [events, projects] = await Promise.all([
   getCollection("events"),
   getCollection("projects"),
-  getCollection("works"),
-  getCollection("activities"),
 ]);
 
-const upcomingEvents = events
+const activeProject = projects
+  .filter((project) => project.data.status === "ongoing")
+  .sort((a, b) => (b.data.startDate?.getTime() ?? 0) - (a.data.startDate?.getTime() ?? 0))[0];
+const upcomingEvent = events
   .filter((event) => event.data.status === "upcoming" || event.data.status === "ongoing")
-  .sort((a, b) => a.data.startDate.getTime() - b.data.startDate.getTime());
-const activeProjects = projects.filter((project) => project.data.status === "ongoing");
-const featuredProjects = projects.filter((project) => project.data.featured);
-const featuredWorks = works.filter((work) => work.data.featured);
-const recentActivities = activities.sort((a, b) => b.data.date.getTime() - a.data.date.getTime());
+  .sort((a, b) => a.data.startDate.getTime() - b.data.startDate.getTime())[0];
+
+const exploreLinks = [
+  {
+    label: "ACTIVITIES",
+    title: "活動記録",
+    description: "これまでの動きを，時系列で読む．",
+    href: "/activities/",
+  },
+  {
+    label: "PROJECTS",
+    title: "企画",
+    description: "継続する企画の全体像を見る．",
+    href: "/projects/",
+  },
+  {
+    label: "WORKS",
+    title: "制作物",
+    description: "公開した本や作品を見る．",
+    href: "/works/",
+  },
+  {
+    label: "EVENTS",
+    title: "イベント",
+    description: "開催情報と過去回を確認する．",
+    href: "/events/",
+  },
+  {
+    label: "CREATORS",
+    title: "つくる人",
+    description: "HackSickに関わるCreatorを知る．",
+    href: "/creators/",
+  },
+] as const;
 ---
 
 <BaseLayout>
   <Hero />
   <About />
 
-  <section class="now-section section-shell" aria-labelledby="now-title">
-    <SectionHeading
-      index="03"
-      eyebrow="NOW"
-      title="いま，動いていること．"
-      description="進行中のProjectと，参加できるEventを表示します．"
-    />
-    <div class="now-grid">
-      {activeProjects.map((project) => <ProjectCard project={project} />)}
-      {upcomingEvents.map((event) => <EventCard event={event} />)}
-      {activeProjects.length === 0 && upcomingEvents.length === 0 && (
-        <EmptyState label="NO ACTIVE CONTENT" title="次の活動を準備中です．" description="公開できる情報が決まり次第，ここに掲載します．" />
-      )}
+  <section class="home-status" aria-label="HackSickの現在の活動">
+    <div class="home-status-inner">
+      <p class="home-status-heading"><span>LIVE</span><strong>WHAT'S HAPPENING</strong></p>
+      <a class="home-status-item" href={activeProject ? `/projects/${activeProject.id}/` : "/projects/"}>
+        <span>ONGOING PROJECT</span>
+        <strong>{activeProject?.data.title ?? "PROJECT / TBA"}</strong>
+        <small>{activeProject ? "進行中の企画を見る．" : "次の企画を準備中です．"}</small>
+        <i aria-hidden="true">→</i>
+      </a>
+      <a class="home-status-item" href={upcomingEvent ? `/events/${upcomingEvent.id}/` : "/events/"}>
+        <span>NEXT EVENT</span>
+        <strong>{upcomingEvent?.data.title ?? "TO BE ANNOUNCED"}</strong>
+        <small>{upcomingEvent ? formatDateTime(upcomingEvent.data.startDate) : "次回開催を準備中です．"}</small>
+        <i aria-hidden="true">→</i>
+      </a>
     </div>
   </section>
 
   <Philosophy />
-  <Activities activities={recentActivities} />
 
-  <section class="feature-section section-shell" aria-labelledby="featured-projects-title">
-    <SectionHeading
-      index="06"
-      eyebrow="FEATURED PROJECTS"
-      title="何を，仕掛けているか．"
-      description="Event，Work，Creator，Activityを束ねる継続的な企画です．"
-    />
-    <div class="card-grid card-grid-projects">
-      {featuredProjects.map((project) => <ProjectCard project={project} />)}
+  <section class="home-explore section-shell" aria-labelledby="explore-title">
+    <div class="section-label">
+      <p><span>04</span> EXPLORE</p>
+      <p>詳しくは，各ページへ．</p>
     </div>
-    <a class="section-more" href="/projects/">すべてのProject <span aria-hidden="true">→</span></a>
-  </section>
-
-  <section class="feature-section feature-section-works section-shell" aria-labelledby="featured-works-title">
-    <SectionHeading
-      index="07"
-      eyebrow="FEATURED WORKS"
-      title="つくったものを，外へ．"
-      description="技術成果も芸術作品も，同じWorkとして記録します．"
-    />
-    <div class="card-grid card-grid-works">
-      {featuredWorks.map((work) => <WorkCard work={work} />)}
+    <div class="explore-intro">
+      <h2 id="explore-title">活動を，<br />辿る．</h2>
+      <p>企画，作品，イベント，つくる人．知りたい入口から，HackSickの活動を辿れます．</p>
     </div>
-    <a class="section-more" href="/works/">すべてのWork <span aria-hidden="true">→</span></a>
-  </section>
-
-  <section class="upcoming-section section-shell" aria-labelledby="upcoming-title">
-    <SectionHeading
-      index="08"
-      eyebrow="UPCOMING EVENTS"
-      title="次に，どこで会えるか．"
-      description="開催予定のEventだけを掲載します．"
-    />
-    {upcomingEvents.length > 0 ? (
-      <div class="card-grid">{upcomingEvents.map((event) => <EventCard event={event} />)}</div>
-    ) : (
-      <EmptyState
-        label="NEXT EVENT / TBA"
-        title="次回Eventは準備中です．"
-        description="募集開始後，Eventページとconnpassでお知らせします．"
-        href={links.connpass}
-        linkLabel="connpassを確認する"
-        external
-      />
-    )}
+    <nav class="explore-links" aria-label="活動ページ">
+      {exploreLinks.map((item, index) => (
+        <a class="explore-link" href={item.href}>
+          <span class="explore-number">{String(index + 1).padStart(2, "0")}</span>
+          <span class="explore-name"><strong>{item.label}</strong><small>{item.title}</small></span>
+          <span class="explore-description">{item.description}</span>
+          <i aria-hidden="true">↘</i>
+        </a>
+      ))}
+    </nav>
   </section>
 
   <Join />
