@@ -1,0 +1,29 @@
+---
+import type { CollectionEntry } from "astro:content";
+import { formatDateTime, statusLabels } from "../data/site";
+import TagList from "./TagList.astro";
+
+interface Props {
+  event: CollectionEntry<"events">;
+  compact?: boolean;
+}
+
+const { event, compact = false } = Astro.props;
+---
+
+<article class:list={["content-card", "event-card", { "card-compact": compact }]}>
+  <a class="card-hit" href={`/events/${event.id}/`} aria-label={`${event.data.title}の詳細`}></a>
+  <div class="card-meta">
+    <time datetime={event.data.startDate.toISOString()}>{formatDateTime(event.data.startDate)}</time>
+    <span class:list={["status", `status-${event.data.status}`]}>{statusLabels[event.data.status]}</span>
+  </div>
+  <div class="card-body">
+    <p class="card-kicker">EVENT / {event.id.toUpperCase()}</p>
+    <h3>{event.data.title}</h3>
+    {event.data.theme && <p class="card-theme">{event.data.theme}</p>}
+    {!compact && <p class="card-description">{event.data.description}</p>}
+  </div>
+  <TagList tags={event.data.tags} />
+  <p class="card-location">{event.data.location}</p>
+  <span class="card-arrow" aria-hidden="true">↘</span>
+</article>

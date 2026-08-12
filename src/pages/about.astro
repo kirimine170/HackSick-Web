@@ -1,0 +1,50 @@
+---
+import PageHero from "../components/PageHero.astro";
+import SectionHeading from "../components/SectionHeading.astro";
+import { organization } from "../data/site";
+import BaseLayout from "../layouts/BaseLayout.astro";
+---
+
+<BaseLayout title="About｜HackSick" description="HackSickがどのような場所で，何を大切にしているかを紹介します．">
+  <PageHero index="01" eyebrow="ABOUT" title="違いを持ち寄り，つくる．" lead="HackSickは，異なる分野の人が集まり，知識や問いを共有し，ProjectやWorkを生み出していくための場所です．" />
+
+  <section class="editorial-section section-shell">
+    <SectionHeading eyebrow="WHAT IS HACKSICK?" title="ひとつの分野に，閉じない．" />
+    <div class="editorial-copy editorial-copy-large">
+      <p>技術を起点にしながら，研究，芸術，写真，映像，音楽，文学，デザイン，ゲーム，文化へ．分野はページを分ける境界ではなく，それぞれの活動を説明するTagです．</p>
+      <p>完成した成果だけでなく，未完成のアイデアや，答えのない問いも歓迎します．話して終わるのではなく，実際につくり，外へ発表するところまでを支えます．</p>
+    </div>
+  </section>
+
+  <section class="principles-section">
+    <div class="section-shell">
+      <SectionHeading eyebrow="PHILOSOPHY" title="AGREE TO DISAGREE." dark />
+      <div class="statement-grid">
+        <article><span>01</span><h3>創りたいを，造りたい．</h3><p>思考や表現を，ProjectやWorkとして現実へ移します．</p></article>
+        <article><span>02</span><h3>異なる意見を歓迎する．</h3><p>勝ち負けより理解と尊重を優先し，違う前提を持ち寄ります．</p></article>
+        <article><span>03</span><h3>未完成を歓迎する．</h3><p>途中の試作，失敗，迷い，まだ名前のない問いも共有できます．</p></article>
+      </div>
+    </div>
+  </section>
+
+  <section class="editorial-section section-shell">
+    <SectionHeading eyebrow="CULTURE" title="境界より，関係をつくる．" />
+    <div class="culture-list">
+      <p><span>01</span>分野を越えて集まる</p>
+      <p><span>02</span>異なる視点を尊重する</p>
+      <p><span>03</span>技術・研究・創作を分断しない</p>
+      <p><span>04</span>実際につくる</p>
+      <p><span>05</span>つくる人を支援する</p>
+    </div>
+  </section>
+
+  <section class="organization-section section-shell">
+    <SectionHeading eyebrow="ORGANIZATION" title="必要な情報だけ，明確に．" />
+    <dl class="organization-list">
+      <div><dt>Organization Name</dt><dd>{organization.name}</dd></div>
+      <div><dt>Representative</dt><dd>{organization.representative}</dd></div>
+      <div><dt>Activity Area</dt><dd>{organization.area}</dd></div>
+      <div><dt>Contact</dt><dd><a href="/contact/">Contact page →</a></dd></div>
+    </dl>
+  </section>
+</BaseLayout>

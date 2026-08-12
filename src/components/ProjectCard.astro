@@ -1,0 +1,29 @@
+---
+import type { CollectionEntry } from "astro:content";
+import { statusLabels } from "../data/site";
+import TagList from "./TagList.astro";
+
+interface Props {
+  project: CollectionEntry<"projects">;
+}
+
+const { project } = Astro.props;
+---
+
+<article class="content-card project-card">
+  <a class="card-hit" href={`/projects/${project.id}/`} aria-label={`${project.data.title}の詳細`}></a>
+  <div class="card-meta">
+    <span>PROJECT</span>
+    <span class:list={["status", `status-${project.data.status}`]}>{statusLabels[project.data.status]}</span>
+  </div>
+  <div class="project-card-visual" aria-hidden="true">
+    <span>SHALL WE<br />JUST GO<br />INSANE?</span>
+  </div>
+  <div class="card-body">
+    <h3>{project.data.title}</h3>
+    <p class="card-description">{project.data.description}</p>
+  </div>
+  <TagList tags={project.data.tags} />
+  <p class="card-relation-count">{String(project.data.events.length).padStart(2, "0")} EVENTS</p>
+  <span class="card-arrow" aria-hidden="true">↘</span>
+</article>

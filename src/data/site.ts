@@ -1,31 +1,81 @@
 export const site = {
   name: "HackSick",
-  title: "HackSick｜分野横断的技術コミュニティ",
+  title: "HackSick｜創りたいを，造りたい．",
   description:
-    "技術を愛するすべての人へ．分野を越えて，創りたいものを語り，造り，分かち合う技術コミュニティです．",
+    "異なる分野の人が集まり，知識や問いを共有し，プロジェクトや作品を生み出していくための場所です．",
   url: "https://hacksick.com",
   locale: "ja_JP",
 } as const;
 
 export const navigation = [
-  { label: "About", href: "/#about" },
-  { label: "Philosophy", href: "/#philosophy" },
-  { label: "Activities", href: "/#activities" },
-  { label: "Latest", href: "/#latest" },
+  { label: "About", href: "/about/" },
+  { label: "Activities", href: "/activities/" },
+  { label: "Projects", href: "/projects/" },
+  { label: "Works", href: "/works/" },
+  { label: "Events", href: "/events/" },
+  { label: "Creators", href: "/creators/" },
+  { label: "Join", href: "/join/" },
 ] as const;
 
 export const links = {
   connpass: "https://hacksick.connpass.com/",
   note: "https://note.com/hacksick",
+  noteAbout: "https://note.com/hacksick/n/nfe71d58d2512",
   x: "https://x.com/HackSick_8949",
+  github: "https://github.com/kirimine170/HackSick-Web",
+  discordGuide: "https://note.com/hacksick/n/nfe71d58d2512",
 } as const;
 
-export const latestEvent = {
-  number: "07",
-  title: "第7回 HackSick LT会",
-  theme: "AI・LLM 〜人類の労働奪ってくれました…？〜",
-  date: "2026-07-25",
-  displayDate: "2026.07.25 SAT.",
-  venue: "秋葉原No21／オンライン",
-  url: "https://hacksick.connpass.com/event/400238/",
+export const organization = {
+  name: "HackSick",
+  representative: "霧峰 雫",
+  area: "東京都内／オンライン",
 } as const;
+
+export const tagLabels: Record<string, string> = {
+  Technology: "Technology",
+  Engineering: "Engineering",
+  Research: "Research",
+  AI: "AI",
+  Robotics: "Robotics",
+  Software: "Software",
+  Hardware: "Hardware",
+  Security: "Security",
+  Art: "Art",
+  Illustration: "Illustration",
+  Photography: "Photography",
+  Film: "Film",
+  Music: "Music",
+  Literature: "Literature",
+  Design: "Design",
+  Game: "Game",
+  Culture: "Culture",
+};
+
+export const statusLabels = {
+  upcoming: "Upcoming",
+  ongoing: "Ongoing",
+  finished: "Finished",
+  planned: "Planned",
+  completed: "Completed",
+  paused: "Paused",
+} as const;
+
+export const formatDate = (date: Date) =>
+  new Intl.DateTimeFormat("ja-JP", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    timeZone: "Asia/Tokyo",
+  }).format(date);
+
+export const formatDateTime = (date: Date) =>
+  new Intl.DateTimeFormat("ja-JP", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    weekday: "short",
+    hour: "2-digit",
+    minute: "2-digit",
+    timeZone: "Asia/Tokyo",
+  }).format(date);

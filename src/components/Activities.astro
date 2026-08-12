@@ -1,45 +1,37 @@
 ---
-const activities = [
-  {
-    number: "01",
-    title: "TALK",
-    jp: "技術を語る",
-    body: "好きな技術，最近の悩み，独自の研究．完成度を問わず，自分の言葉で共有できます．",
-  },
-  {
-    number: "02",
-    title: "SHOW",
-    jp: "つくったものを見せる",
-    body: "アプリ，ハードウェア，試作機，スライド．動いても，まだ動かなくても，次の一歩を一緒に考えます．",
-  },
-  {
-    number: "03",
-    title: "CONNECT",
-    jp: "孤独を分かち合う",
-    body: "技術と向き合う孤独を，分野の違う仲間と分かち合う．LT後の交流も大切な活動です．",
-  },
-] as const;
+import type { CollectionEntry } from "astro:content";
+import { formatDate } from "../data/site";
+import TagList from "./TagList.astro";
+
+interface Props {
+  activities: CollectionEntry<"activities">[];
+}
+
+const { activities } = Astro.props;
 ---
 
-<section class="activities section-shell" id="activities" aria-labelledby="activities-title">
+<section class="activities section-shell" aria-labelledby="activities-title">
   <div class="section-label">
-    <p><span>04</span> ACTIVITIES</p>
-    <p>話す．見せる．つながる．</p>
+    <p><span>05</span> ACTIVITIES</p>
+    <p>これまで何をしてきたか．</p>
   </div>
   <div class="activities-heading">
-    <h2 id="activities-title">未完成だからこそ，<br />話せることがある．</h2>
-    <p>月1回，最終土曜日を目安にLT会を開催しています．現地でもオンラインでも参加できます．</p>
+    <h2 id="activities-title">問いと制作の，<br />記録を残す．</h2>
+    <div>
+      <p>過去の活動を，Eventとは別の時系列Archiveとして蓄積しています．</p>
+      <a class="text-link" href="/activities/">活動Archiveへ <span aria-hidden="true">→</span></a>
+    </div>
   </div>
-  <ol class="activity-list">
-    {activities.map((activity) => (
+  <ol class="archive-preview">
+    {activities.slice(0, 4).map((activity) => (
       <li>
-        <p class="activity-number">{activity.number}</p>
+        <time datetime={activity.data.date.toISOString()}>{formatDate(activity.data.date)}</time>
         <div>
-          <h3>{activity.title}</h3>
-          <p class="activity-jp">{activity.jp}</p>
+          <p>{activity.data.type}</p>
+          <h3><a href={`/events/${activity.data.event}/`}>{activity.data.title}</a></h3>
         </div>
-        <p class="activity-body">{activity.body}</p>
-        <span class="activity-arrow" aria-hidden="true">↘</span>
+        <TagList tags={activity.data.tags.slice(0, 3)} />
+        <span aria-hidden="true">↘</span>
       </li>
     ))}
   </ol>

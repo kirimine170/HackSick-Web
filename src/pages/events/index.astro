@@ -1,0 +1,25 @@
+---
+import { getCollection } from "astro:content";
+import EmptyState from "../../components/EmptyState.astro";
+import EventCard from "../../components/EventCard.astro";
+import PageHero from "../../components/PageHero.astro";
+import SectionHeading from "../../components/SectionHeading.astro";
+import { links } from "../../data/site";
+import BaseLayout from "../../layouts/BaseLayout.astro";
+
+const events = (await getCollection("events")).sort((a, b) => b.data.startDate.getTime() - a.data.startDate.getTime());
+const upcoming = events.filter((event) => event.data.status === "upcoming" || event.data.status === "ongoing").sort((a, b) => a.data.startDate.getTime() - b.data.startDate.getTime());
+const finished = events.filter((event) => event.data.status === "finished");
+---
+
+<BaseLayout title="Events｜HackSick" description="今後どこでHackSickへ参加できるかと，終了したEventの記録を掲載します．">
+  <PageHero index="05" eyebrow="EVENTS" title="次に，どこで参加できるか．" lead="LTだけでなく，Meetup，Hackathon，Workshop，Exhibitionなど，これから参加できる機会を掲載します．" />
+  <section class="listing-section section-shell">
+    <SectionHeading eyebrow="UPCOMING" title="これからのEvent．" />
+    {upcoming.length > 0 ? <div class="card-grid">{upcoming.map((event) => <EventCard event={event} />)}</div> : <EmptyState label="NEXT EVENT / TBA" title="次回Eventは準備中です．" description="募集開始後，このページとconnpassでお知らせします．" href={links.connpass} linkLabel="connpassを確認する" external />}
+  </section>
+  <section class="listing-section section-shell">
+    <SectionHeading eyebrow="ARCHIVE" title="終了したEvent．" description="Event終了後もDetail URLを残し，活動の関係を辿れるようにします．" />
+    <div class="card-grid">{finished.map((event) => <EventCard event={event} compact />)}</div>
+  </section>
+</BaseLayout>

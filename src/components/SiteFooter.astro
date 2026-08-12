@@ -1,5 +1,5 @@
 ---
-import { links } from "../data/site";
+import { links, navigation } from "../data/site";
 ---
 
 <footer class="site-footer">
@@ -7,16 +7,22 @@ import { links } from "../data/site";
     <img src="/images/hacksick-icon.webp" alt="" width="1000" height="1000" loading="lazy" />
   </div>
   <div class="footer-main">
-    <p class="footer-kicker">CROSS-DISCIPLINARY<br />TECH COMMUNITY</p>
+    <p class="footer-kicker">CROSS-DISCIPLINARY<br />CREATIVE COMMUNITY</p>
     <p class="footer-title">創りたいを，<br />造りたい．</p>
   </div>
-  <div class="footer-links">
+  <nav class="footer-site-links" aria-label="フッターナビゲーション">
+    {navigation.map((item) => <a href={item.href}>{item.label}</a>)}
+    <a href="/contact/">Contact</a>
+  </nav>
+  <nav class="footer-links" aria-label="外部リンク">
     <a href={links.connpass} target="_blank" rel="noreferrer">connpass ↗</a>
-    <a href={links.note} target="_blank" rel="noreferrer">note ↗</a>
+    <a href={links.note} target="_blank" rel="noreferrer">NOTE ↗</a>
+    <a href={links.github} target="_blank" rel="noreferrer">GitHub ↗</a>
     <a href={links.x} target="_blank" rel="noreferrer">X ↗</a>
-  </div>
+    <a href="/contact/#collaborate">Support / Partners →</a>
+  </nav>
   <div class="footer-bottom">
     <p>© 2026 HackSick</p>
-    <p>Agree to disagree．</p>
+    <p>AGREE TO DISAGREE.</p>
   </div>
 </footer>

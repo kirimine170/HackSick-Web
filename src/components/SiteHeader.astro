@@ -1,5 +1,8 @@
 ---
 import { links, navigation } from "../data/site";
+
+const currentPath = Astro.url.pathname;
+const isCurrent = (href: string) => href === "/" ? currentPath === "/" : currentPath.startsWith(href);
 ---
 
 <header class="site-header">
@@ -14,13 +17,13 @@ import { links, navigation } from "../data/site";
 
   <nav class="desktop-nav" aria-label="メインナビゲーション">
     <ul>
-      {navigation.map((item) => <li><a href={item.href}>{item.label}</a></li>)}
+      {navigation.map((item) => <li><a href={item.href} aria-current={isCurrent(item.href) ? "page" : undefined}>{item.label}</a></li>)}
     </ul>
   </nav>
 
-  <a class="header-cta" href={links.connpass} target="_blank" rel="noreferrer">
-    Join event
-    <span aria-hidden="true">↗</span>
+  <a class="header-cta" href="/join/">
+    Join us
+    <span aria-hidden="true">→</span>
   </a>
 
   <details class="mobile-nav">
@@ -30,7 +33,7 @@ import { links, navigation } from "../data/site";
     </summary>
     <nav aria-label="モバイルナビゲーション">
       <ul>
-        {navigation.map((item) => <li><a href={item.href}>{item.label}</a></li>)}
+        {navigation.map((item) => <li><a href={item.href} aria-current={isCurrent(item.href) ? "page" : undefined}>{item.label}</a></li>)}
         <li><a href={links.connpass} target="_blank" rel="noreferrer">Join event ↗</a></li>
       </ul>
     </nav>

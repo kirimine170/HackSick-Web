@@ -1,0 +1,24 @@
+---
+import type { CollectionEntry } from "astro:content";
+import TagList from "./TagList.astro";
+
+interface Props {
+  creator: CollectionEntry<"creators">;
+}
+
+const { creator } = Astro.props;
+---
+
+<article class="content-card creator-card">
+  <a class="card-hit" href={`/creators/${creator.id}/`} aria-label={`${creator.data.name}の詳細`}></a>
+  <div class="creator-monogram" aria-hidden="true">
+    <img src="/images/hacksick-icon.webp" alt="" width="1000" height="1000" loading="lazy" />
+  </div>
+  <div class="creator-card-content">
+    <p class="card-kicker">CREATOR / OPERATOR</p>
+    <h3>{creator.data.name}</h3>
+    <p class="card-description">{creator.data.profile}</p>
+    <TagList tags={creator.data.fields} />
+  </div>
+  <span class="card-arrow" aria-hidden="true">↘</span>
+</article>

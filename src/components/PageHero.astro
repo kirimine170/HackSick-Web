@@ -1,0 +1,22 @@
+---
+interface Props {
+  index: string;
+  eyebrow: string;
+  title: string;
+  lead: string;
+}
+
+const { index, eyebrow, title, lead } = Astro.props;
+const commaIndex = title.indexOf("，");
+const titleStart = commaIndex >= 0 ? title.slice(0, commaIndex + 1) : title;
+const titleEnd = commaIndex >= 0 ? title.slice(commaIndex + 1) : "";
+---
+
+<section class="page-hero section-shell">
+  <p class="eyebrow"><span>{index}</span>{eyebrow}</p>
+  <div class="page-hero-grid">
+    <h1>{titleStart}{titleEnd && <><br />{titleEnd}</>}</h1>
+    <p>{lead}</p>
+  </div>
+  <div class="page-hero-signal" aria-hidden="true"><span></span><span></span><span></span></div>
+</section>

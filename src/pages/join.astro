@@ -1,0 +1,15 @@
+---
+import PageHero from "../components/PageHero.astro";
+import { links } from "../data/site";
+import BaseLayout from "../layouts/BaseLayout.astro";
+---
+
+<BaseLayout title="Join｜HackSick" description="Event参加，Community参加，Projectへの参加，共同企画など，HackSickへの関わり方を紹介します．">
+  <PageHero index="07" eyebrow="JOIN" title="関わり方は，ひとつじゃない．" lead="Eventに参加する，Communityで話す，Projectを一緒につくる，外部からCollaborateする．いまのあなたに合う入口を選べます．" />
+  <section class="join-page section-shell">
+    <article><p>01 / EVENT</p><h2>イベントへ参加する．</h2><p>開催予定のLT，Meetup，Workshopなどはconnpassで募集します．</p><a class="button button-dark" href={links.connpass} target="_blank" rel="noreferrer">connpass <span aria-hidden="true">↗</span></a></article>
+    <article><p>02 / COMMUNITY</p><h2>コミュニティへ参加する．</h2><p>Discordへの参加方法は，公式noteおよびEventページで案内しています．</p><a class="button" href={links.discordGuide} target="_blank" rel="noreferrer">参加方法を見る <span aria-hidden="true">↗</span></a></article>
+    <article><p>03 / CREATE</p><h2>Projectに参加する．</h2><p>公開中のProjectを確認し，参加方法が案内されている場合はその導線から連絡してください．</p><a class="button" href="/projects/">Projects <span aria-hidden="true">→</span></a></article>
+    <article id="collaborate"><p>04 / COLLABORATE</p><h2>一緒に企画する．</h2><p>企業，大学，団体，個人との企画，制作，研究，展示，支援についてはContactからご相談ください．</p><a class="button" href="/contact/">Contact <span aria-hidden="true">→</span></a></article>
+  </section>
+</BaseLayout>

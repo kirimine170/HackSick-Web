@@ -1,0 +1,17 @@
+---
+import { getCollection } from "astro:content";
+import CreatorCard from "../../components/CreatorCard.astro";
+import EmptyState from "../../components/EmptyState.astro";
+import PageHero from "../../components/PageHero.astro";
+import BaseLayout from "../../layouts/BaseLayout.astro";
+
+const creators = await getCollection("creators");
+---
+
+<BaseLayout title="Creators｜HackSick" description="HackSickが関わるEngineer，Researcher，Artist，WriterなどのCreatorを紹介します．">
+  <PageHero index="06" eyebrow="CREATORS" title="どんな人が，関わっているか．" lead="Creatorは芸術家だけを指しません．Engineer，Researcher，Developer，Artist，Writerなど，つくる人を紹介します．" />
+  <section class="listing-section section-shell">
+    {creators.length > 0 ? <div class="card-grid">{creators.map((creator) => <CreatorCard creator={creator} />)}</div> : <EmptyState label="NO CREATORS" title="公開中のCreatorはいません．" description="本人確認と承諾が完了した情報だけを掲載します．" />}
+    <p class="listing-note">CreatorはHackSick運営が選出し，本人の承諾を得たうえで掲載します．現在，掲載申請は受け付けていません．</p>
+  </section>
+</BaseLayout>

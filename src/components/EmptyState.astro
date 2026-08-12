@@ -1,0 +1,25 @@
+---
+interface Props {
+  label: string;
+  title: string;
+  description: string;
+  href?: string;
+  linkLabel?: string;
+  external?: boolean;
+}
+
+const { label, title, description, href, linkLabel, external = false } = Astro.props;
+---
+
+<div class="empty-state">
+  <p>{label}</p>
+  <div>
+    <h3>{title}</h3>
+    <p>{description}</p>
+  </div>
+  {href && linkLabel && (
+    <a class="text-link" href={href} target={external ? "_blank" : undefined} rel={external ? "noreferrer" : undefined}>
+      {linkLabel} <span aria-hidden="true">{external ? "↗" : "→"}</span>
+    </a>
+  )}
+</div>

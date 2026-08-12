@@ -8,6 +8,9 @@ interface Props {
   title?: string;
   description?: string;
   image?: string;
+  imageWidth?: number;
+  imageHeight?: number;
+  imageAlt?: string;
   noindex?: boolean;
 }
 
@@ -15,6 +18,9 @@ const {
   title = site.title,
   description = site.description,
   image = "/og.png",
+  imageWidth = 1732,
+  imageHeight = 908,
+  imageAlt = "HackSick｜創りたいを，造りたい．",
   noindex = false,
 } = Astro.props;
 
@@ -43,13 +49,20 @@ const imageUrl = new URL(image, Astro.site);
     <meta property="og:url" content={canonical} />
     <meta property="og:image" content={imageUrl} />
     <meta property="og:image:type" content="image/png" />
-    <meta property="og:image:width" content="1732" />
-    <meta property="og:image:height" content="908" />
-    <meta property="og:image:alt" content="HackSick｜創りたいを，造りたい．" />
+    <meta property="og:image:width" content={String(imageWidth)} />
+    <meta property="og:image:height" content={String(imageHeight)} />
+    <meta property="og:image:alt" content={imageAlt} />
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content={title} />
     <meta name="twitter:description" content={description} />
     <meta name="twitter:image" content={imageUrl} />
+    <script is:inline type="application/ld+json" set:html={JSON.stringify({
+      "@context": "https://schema.org",
+      "@type": "Organization",
+      name: site.name,
+      url: site.url,
+      logo: new URL("/favicon.png", Astro.site).href,
+    })}></script>
     <title>{title}</title>
   </head>
   <body>

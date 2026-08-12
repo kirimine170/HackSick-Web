@@ -1,0 +1,50 @@
+---
+import { getCollection, render, type CollectionEntry } from "astro:content";
+import CreatorCard from "../../components/CreatorCard.astro";
+import EventCard from "../../components/EventCard.astro";
+import ProjectCard from "../../components/ProjectCard.astro";
+import SectionHeading from "../../components/SectionHeading.astro";
+import TagList from "../../components/TagList.astro";
+import { formatDate } from "../../data/site";
+import BaseLayout from "../../layouts/BaseLayout.astro";
+
+export async function getStaticPaths() {
+  const works = await getCollection("works");
+  return works.map((work) => ({ params: { slug: work.id }, props: { work } }));
+}
+
+interface Props { work: CollectionEntry<"works"> }
+const { work } = Astro.props as Props;
+const { Content } = await render(work);
+const [allProjects, allEvents, allCreators] = await Promise.all([getCollection("projects"), getCollection("events"), getCollection("creators")]);
+const projects = allProjects.filter((project) => work.data.projects.includes(project.id));
+const events = allEvents.filter((event) => work.data.events.includes(event.id));
+const creators = allCreators.filter((creator) => work.data.creators.includes(creator.id));
+---
+
+<BaseLayout title={`${work.data.title}｜Works｜HackSick`} description={work.data.description} image={work.data.thumbnail} imageWidth={227} imageHeight={320} imageAlt={`${work.data.title}の表紙`}>
+  <article class="detail-page work-detail">
+    <header class="detail-hero section-shell work-detail-hero">
+      <div class="work-detail-cover">
+        {work.data.thumbnail && <img src={work.data.thumbnail} alt={`${work.data.title}の表紙`} width="227" height="320" />}
+      </div>
+      <div class="work-detail-title">
+        <p class="eyebrow"><span>WORK</span>{work.data.type}</p>
+        <h1>{work.data.title}</h1>
+        <p>{work.data.description}</p>
+        <TagList tags={work.data.tags} />
+      </div>
+      <dl class="detail-meta">
+        <div><dt>Type</dt><dd>{work.data.type}</dd></div>
+        {work.data.releaseDate && <div><dt>Released</dt><dd>{formatDate(work.data.releaseDate)}</dd></div>}
+        {work.data.firstPresentedAt && <div><dt>First Presented</dt><dd>{work.data.firstPresentedAt}</dd></div>}
+        {work.data.credits.length > 0 && <div><dt>Credit</dt><dd>{work.data.credits.join("，")}</dd></div>}
+      </dl>
+    </header>
+    <div class="detail-body section-shell prose"><Content /></div>
+    {work.data.purchaseUrl && <div class="detail-actions section-shell"><a class="button button-dark" href={work.data.purchaseUrl} target="_blank" rel="noreferrer">技術書典で見る <span aria-hidden="true">↗</span></a></div>}
+    {projects.length > 0 && <section class="related-section section-shell"><SectionHeading eyebrow="RELATED PROJECTS" title="関連するProject．" /><div class="card-grid">{projects.map((project) => <ProjectCard project={project} />)}</div></section>}
+    {events.length > 0 && <section class="related-section section-shell"><SectionHeading eyebrow="RELATED EVENTS" title="関連するEvent．" /><div class="card-grid">{events.map((event) => <EventCard event={event} />)}</div></section>}
+    {creators.length > 0 && <section class="related-section section-shell"><SectionHeading eyebrow="RELATED CREATORS" title="関連するCreator．" /><div class="card-grid">{creators.map((creator) => <CreatorCard creator={creator} />)}</div></section>}
+  </article>
+</BaseLayout>

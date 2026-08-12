@@ -1,7 +1,7 @@
 {
   "name": "HackSick",
   "short_name": "HackSick",
-  "description": "分野横断的技術コミュニティ HackSick",
+  "description": "異なる分野の人が集まり，知識や問いを共有し，プロジェクトや作品を生み出すHackSick公式サイト",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",

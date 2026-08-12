@@ -1,0 +1,29 @@
+---
+import type { CollectionEntry } from "astro:content";
+import TagList from "./TagList.astro";
+
+interface Props {
+  work: CollectionEntry<"works">;
+}
+
+const { work } = Astro.props;
+---
+
+<article class="content-card work-card">
+  <a class="card-hit" href={`/works/${work.id}/`} aria-label={`${work.data.title}の詳細`}></a>
+  <div class="work-card-image">
+    {work.data.thumbnail ? (
+      <img src={work.data.thumbnail} alt={`${work.data.title}の表紙`} width="227" height="320" loading="lazy" />
+    ) : (
+      <div class="image-placeholder" aria-hidden="true">WORK</div>
+    )}
+  </div>
+  <div class="work-card-content">
+    <div class="card-meta"><span>WORK</span><span>{work.data.type}</span></div>
+    <h3>{work.data.title}</h3>
+    <p class="card-description">{work.data.description}</p>
+    <TagList tags={work.data.tags} />
+    {work.data.firstPresentedAt && <p class="card-location">初出：{work.data.firstPresentedAt}</p>}
+  </div>
+  <span class="card-arrow" aria-hidden="true">↘</span>
+</article>

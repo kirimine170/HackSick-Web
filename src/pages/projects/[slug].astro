@@ -1,0 +1,44 @@
+---
+import { getCollection, render, type CollectionEntry } from "astro:content";
+import CreatorCard from "../../components/CreatorCard.astro";
+import EventCard from "../../components/EventCard.astro";
+import SectionHeading from "../../components/SectionHeading.astro";
+import TagList from "../../components/TagList.astro";
+import WorkCard from "../../components/WorkCard.astro";
+import { formatDate, statusLabels } from "../../data/site";
+import BaseLayout from "../../layouts/BaseLayout.astro";
+
+export async function getStaticPaths() {
+  const projects = await getCollection("projects");
+  return projects.map((project) => ({ params: { slug: project.id }, props: { project } }));
+}
+
+interface Props { project: CollectionEntry<"projects"> }
+const { project } = Astro.props as Props;
+const { Content } = await render(project);
+const [allEvents, allWorks, allCreators] = await Promise.all([getCollection("events"), getCollection("works"), getCollection("creators")]);
+const events = allEvents.filter((event) => project.data.events.includes(event.id)).sort((a, b) => b.data.startDate.getTime() - a.data.startDate.getTime());
+const works = allWorks.filter((work) => project.data.works.includes(work.id));
+const creators = allCreators.filter((creator) => project.data.creators.includes(creator.id));
+---
+
+<BaseLayout title={`${project.data.title}｜Projects｜HackSick`} description={project.data.description}>
+  <article class="detail-page">
+    <header class="detail-hero section-shell">
+      <p class="eyebrow"><span>PROJECT</span>{statusLabels[project.data.status]}</p>
+      <div class="detail-title-grid"><h1>{project.data.title}</h1><p>{project.data.description}</p></div>
+      <TagList tags={project.data.tags} />
+      <dl class="detail-meta">
+        <div><dt>Status</dt><dd>{statusLabels[project.data.status]}</dd></div>
+        {project.data.startDate && <div><dt>Started</dt><dd>{formatDate(project.data.startDate)}</dd></div>}
+        <div><dt>Events</dt><dd>{events.length}</dd></div>
+        <div><dt>Works</dt><dd>{works.length}</dd></div>
+      </dl>
+    </header>
+    <div class="detail-body section-shell prose"><Content /></div>
+    {events.length > 0 && <section class="related-section section-shell"><SectionHeading eyebrow="RELATED EVENTS" title="このProjectのEvent．" /><div class="card-grid">{events.map((event) => <EventCard event={event} compact />)}</div></section>}
+    {works.length > 0 && <section class="related-section section-shell"><SectionHeading eyebrow="RELATED WORKS" title="このProjectから生まれたもの．" /><div class="card-grid card-grid-works">{works.map((work) => <WorkCard work={work} />)}</div></section>}
+    {creators.length > 0 && <section class="related-section section-shell"><SectionHeading eyebrow="RELATED CREATORS" title="このProjectに関わる人．" /><div class="card-grid">{creators.map((creator) => <CreatorCard creator={creator} />)}</div></section>}
+    {project.data.externalLinks.length > 0 && <div class="detail-actions section-shell">{project.data.externalLinks.map((link) => <a class="button button-dark" href={link.url} target="_blank" rel="noreferrer">{link.label} <span aria-hidden="true">↗</span></a>)}</div>}
+  </article>
+</BaseLayout>

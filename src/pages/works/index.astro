@@ -1,0 +1,16 @@
+---
+import { getCollection } from "astro:content";
+import EmptyState from "../../components/EmptyState.astro";
+import PageHero from "../../components/PageHero.astro";
+import WorkCard from "../../components/WorkCard.astro";
+import BaseLayout from "../../layouts/BaseLayout.astro";
+
+const works = (await getCollection("works")).sort((a, b) => (b.data.releaseDate?.getTime() ?? 0) - (a.data.releaseDate?.getTime() ?? 0));
+---
+
+<BaseLayout title="Works｜HackSick" description="HackSickやHackSickに関係する人が生み出した本，Software，Hardware，研究，作品を紹介します．">
+  <PageHero index="04" eyebrow="WORKS" title="何を，生み出したか．" lead="技術成果と芸術作品を分けず，すべてを「つくったもの」として記録します．" />
+  <section class="listing-section section-shell">
+    {works.length > 0 ? <div class="card-grid card-grid-works">{works.map((work) => <WorkCard work={work} />)}</div> : <EmptyState label="NO WORKS" title="公開中のWorkはありません．" description="確認済みの成果物から順次掲載します．" />}
+  </section>
+</BaseLayout>

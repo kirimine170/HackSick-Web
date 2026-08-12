@@ -1,18 +1,103 @@
 ---
+import { getCollection } from "astro:content";
 import About from "../components/About.astro";
 import Activities from "../components/Activities.astro";
+import EmptyState from "../components/EmptyState.astro";
+import EventCard from "../components/EventCard.astro";
 import Hero from "../components/Hero.astro";
 import Join from "../components/Join.astro";
-import LatestEvent from "../components/LatestEvent.astro";
 import Philosophy from "../components/Philosophy.astro";
+import ProjectCard from "../components/ProjectCard.astro";
+import SectionHeading from "../components/SectionHeading.astro";
+import WorkCard from "../components/WorkCard.astro";
+import { links } from "../data/site";
 import BaseLayout from "../layouts/BaseLayout.astro";
+
+const [events, projects, works, activities] = await Promise.all([
+  getCollection("events"),
+  getCollection("projects"),
+  getCollection("works"),
+  getCollection("activities"),
+]);
+
+const upcomingEvents = events
+  .filter((event) => event.data.status === "upcoming" || event.data.status === "ongoing")
+  .sort((a, b) => a.data.startDate.getTime() - b.data.startDate.getTime());
+const activeProjects = projects.filter((project) => project.data.status === "ongoing");
+const featuredProjects = projects.filter((project) => project.data.featured);
+const featuredWorks = works.filter((work) => work.data.featured);
+const recentActivities = activities.sort((a, b) => b.data.date.getTime() - a.data.date.getTime());
 ---
 
 <BaseLayout>
   <Hero />
   <About />
+
+  <section class="now-section section-shell" aria-labelledby="now-title">
+    <SectionHeading
+      index="03"
+      eyebrow="NOW"
+      title="いま，動いていること．"
+      description="進行中のProjectと，参加できるEventを表示します．"
+    />
+    <div class="now-grid">
+      {activeProjects.map((project) => <ProjectCard project={project} />)}
+      {upcomingEvents.map((event) => <EventCard event={event} />)}
+      {activeProjects.length === 0 && upcomingEvents.length === 0 && (
+        <EmptyState label="NO ACTIVE CONTENT" title="次の活動を準備中です．" description="公開できる情報が決まり次第，ここに掲載します．" />
+      )}
+    </div>
+  </section>
+
   <Philosophy />
-  <Activities />
-  <LatestEvent />
+  <Activities activities={recentActivities} />
+
+  <section class="feature-section section-shell" aria-labelledby="featured-projects-title">
+    <SectionHeading
+      index="06"
+      eyebrow="FEATURED PROJECTS"
+      title="何を，仕掛けているか．"
+      description="Event，Work，Creator，Activityを束ねる継続的な企画です．"
+    />
+    <div class="card-grid card-grid-projects">
+      {featuredProjects.map((project) => <ProjectCard project={project} />)}
+    </div>
+    <a class="section-more" href="/projects/">すべてのProject <span aria-hidden="true">→</span></a>
+  </section>
+
+  <section class="feature-section feature-section-works section-shell" aria-labelledby="featured-works-title">
+    <SectionHeading
+      index="07"
+      eyebrow="FEATURED WORKS"
+      title="つくったものを，外へ．"
+      description="技術成果も芸術作品も，同じWorkとして記録します．"
+    />
+    <div class="card-grid card-grid-works">
+      {featuredWorks.map((work) => <WorkCard work={work} />)}
+    </div>
+    <a class="section-more" href="/works/">すべてのWork <span aria-hidden="true">→</span></a>
+  </section>
+
+  <section class="upcoming-section section-shell" aria-labelledby="upcoming-title">
+    <SectionHeading
+      index="08"
+      eyebrow="UPCOMING EVENTS"
+      title="次に，どこで会えるか．"
+      description="開催予定のEventだけを掲載します．"
+    />
+    {upcomingEvents.length > 0 ? (
+      <div class="card-grid">{upcomingEvents.map((event) => <EventCard event={event} />)}</div>
+    ) : (
+      <EmptyState
+        label="NEXT EVENT / TBA"
+        title="次回Eventは準備中です．"
+        description="募集開始後，Eventページとconnpassでお知らせします．"
+        href={links.connpass}
+        linkLabel="connpassを確認する"
+        external
+      />
+    )}
+  </section>
+
   <Join />
 </BaseLayout>
