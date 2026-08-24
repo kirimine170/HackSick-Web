@@ -4,7 +4,7 @@ profile: HackSick代表。コミュニティ運営とHackSick LTの企画・開�
 fields: []
 tags: []
 works: [hiroi-kikuri-statistics, karte-no-karte]
-projects: [hacksick-lt]
+projects: [hacksick-lt, hsap]
 events:
   - hacksick-lt-01
   - hacksick-lt-02

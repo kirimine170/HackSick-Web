@@ -15,7 +15,7 @@ const { creator } = Astro.props;
     <img src="/images/hacksick-icon.webp" alt="" width="1000" height="1000" loading="lazy" />
   </div>
   <div class="creator-card-content">
-    <p class="card-kicker">CREATOR / OPERATOR</p>
+    <p class="card-kicker">CREATOR</p>
     <h3>{creator.data.name}</h3>
     <p class="card-description">{creator.data.profile}</p>
     <TagList tags={creator.data.fields} />

@@ -14,7 +14,7 @@ events:
   - hacksick-lt-06
   - hacksick-lt-07
 works: []
-creators: [kirimine-shizuku]
+creators: [shizuku-kirimine]
 externalLinks:
   - label: connpass
     url: https://hacksick.connpass.com/

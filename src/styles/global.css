@@ -2870,6 +2870,20 @@ a {
     font-size: clamp(2.9rem, 13vw, 5rem);
   }
 
+  .creator-detail-hero {
+    grid-template-columns: 1fr;
+    gap: 2rem;
+  }
+
+  .creator-detail-hero h1 {
+    overflow-wrap: anywhere;
+  }
+
+  .creator-detail-mark {
+    width: min(100%, 22rem);
+    margin-inline: auto;
+  }
+
   .page-hero h1 {
     font-size: clamp(2.4rem, 11vw, 4.25rem);
   }
