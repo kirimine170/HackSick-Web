@@ -5,10 +5,10 @@ type: Doujinshi
 tags: [Research, Literature, Culture]
 releaseDate: 2026-08-15
 firstPresentedAt: コミックマーケット108
-thumbnail: /images/works/hiroi-kikuri-statistics.jpg
+thumbnail: /images/works/hiroi-kikuri-statistics.webp
 thumbnailWidth: 626
 thumbnailHeight: 900
-images: [/images/works/hiroi-kikuri-statistics.jpg]
+images: [/images/works/hiroi-kikuri-statistics.webp]
 creators: [shizuku-kirimine]
 projects: []
 events: []

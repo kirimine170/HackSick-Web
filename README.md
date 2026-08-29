@@ -104,7 +104,7 @@ Event，Project，Work，Creator，Activityは `src/content/` 配下のMarkdown�
 
 ## Definition of Done
 
-- `npm run check`，`npm run build`，`npm run check:links` が成功している．
+- `npm run check`，`npm run build`，`npm run check:images`，`npm run check:links` が成功している．
 - 生成された全ページを監査し，ユーザー向け本文に `TODO`，`TBA`，`Dummy`，`Placeholder`，内部確認待ち，運営確認待ち等の開発・確認用文言が残っていない．
 - 未確定情報を掲載する場合は，会場：調整中，詳細は後日公開，Coming soon等，利用者向けの自然な表現にする．
 - Emailは正式な問い合わせ・協業・取材・協賛，noteはCommunityの紹介，connpassはEvent情報・参加登録，XはSNS・告知として，サイト全体で役割を統一する．Discordの直接参加導線は公開しない．
@@ -159,7 +159,7 @@ ActivityはEvent Detailではなく，過去の実績を時系列で残すArchiv
 
 ## Adding a Work
 
-1．画像を `public/images/works/` へ追加する．
+1．元画像はDrive等の管理領域へ保管し，EXIF・GPSを除去したWebPまたはAVIFを `public/images/works/` へ追加する．faviconとOGP等，互換性を優先する画像はPNGを使用できる．
 2．`src/content/works/<slug>.md` を作成する．
 3．Typeと複数Tag，Credit，確認済みの外部URLを記載する．
 4．関連するProject，Event，Creatorのslugを相互に追加する．

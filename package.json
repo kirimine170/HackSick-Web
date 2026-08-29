@@ -8,6 +8,7 @@
     "build": "astro build",
     "preview": "astro preview",
     "check": "astro check",
+    "check:images": "node scripts/check-images.mjs",
     "check:links": "node scripts/check-links.mjs",
     "check:copy": "node scripts/check-production-copy.mjs"
   },

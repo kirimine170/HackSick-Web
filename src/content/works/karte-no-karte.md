@@ -4,8 +4,8 @@ description: 同人誌の執筆環境を一瞬で構築したいという発想�
 type: Technical Book
 tags: [Software, AI, Literature, Design]
 firstPresentedAt: 技術書典20
-thumbnail: /images/works/karte-no-karte.png
-images: [/images/works/karte-no-karte.png]
+thumbnail: /images/works/karte-no-karte.webp
+images: [/images/works/karte-no-karte.webp]
 creators: [shizuku-kirimine]
 projects: []
 events: []
