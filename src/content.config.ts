@@ -17,6 +17,14 @@ const achievementSchema = z.object({
   organization: z.string().optional(),
 });
 
+const galleryImageSchema = z.object({
+  src: z.string(),
+  alt: z.string(),
+  width: z.number().int().positive(),
+  height: z.number().int().positive(),
+  category: z.string(),
+});
+
 const events = defineCollection({
   loader: glob({ pattern: "**/*.{md,mdx}", base: "./src/content/events" }),
   schema: z.object({
@@ -94,6 +102,7 @@ const creators = defineCollection({
     projects: z.array(z.string()).default([]),
     events: z.array(z.string()).default([]),
     achievements: z.array(achievementSchema).default([]),
+    gallery: z.array(galleryImageSchema).default([]),
     portfolioUrl: z.url().optional(),
     website: z.url().optional(),
     github: z.url().optional(),

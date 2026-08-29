@@ -1,6 +1,7 @@
 ---
 import { getCollection, render, type CollectionEntry } from "astro:content";
 import EventCard from "../../components/EventCard.astro";
+import PhotoCarousel from "../../components/PhotoCarousel.astro";
 import ProjectCard from "../../components/ProjectCard.astro";
 import SectionHeading from "../../components/SectionHeading.astro";
 import TagList from "../../components/TagList.astro";
@@ -52,6 +53,7 @@ const structuredData = isHsapCreator ? {
       </div>
     </header>
     <div class="detail-body section-shell prose"><Content /></div>
+    {creator.data.gallery.length > 0 && <PhotoCarousel images={creator.data.gallery} creatorName={creator.data.name} />}
     {socialLinks.length > 0 && <nav class="social-links section-shell" aria-label="Creatorの外部リンク">{socialLinks.map((link) => <a href={link.url} target="_blank" rel="noreferrer">{link.label} ↗</a>)}</nav>}
     {achievements.length > 0 && (
       <section class="achievement-section section-shell">
