@@ -25,4 +25,4 @@ featured: true
 
 ## Contact
 
-HSAPでの制作や作品の取扱いに関する相談は，[HackSickのお問い合わせページ](/contact/)から受け付けています．
+HSAPでの制作や作品の取扱いに関する相談は，[hsap@hacksick.com](mailto:hsap@hacksick.com)へご連絡ください．

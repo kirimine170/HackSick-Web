@@ -84,4 +84,4 @@ HSAPはHackSickが運営します．権利とクレジットはプロジェク�
 
 ## Contact
 
-制作，作品の取扱い，展示・販売，取材に関する相談は，[HackSickのお問い合わせページ](/contact/)から受け付けています．
+制作，作品の取扱い，展示・販売，取材に関する相談は，[hsap@hacksick.com](mailto:hsap@hacksick.com)へご連絡ください．
