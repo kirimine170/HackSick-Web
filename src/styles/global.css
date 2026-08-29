@@ -2597,6 +2597,22 @@ a {
   align-items: center;
 }
 
+.creator-detail-hero > div > .creator-detail-tagline {
+  max-width: 42rem;
+  margin: clamp(1.5rem, 3vw, 2.5rem) 0 1rem;
+  font-size: clamp(1.3rem, 2.15vw, 2rem);
+  font-weight: 650;
+  letter-spacing: -0.02em;
+  line-height: 1.55;
+  text-wrap: balance;
+}
+
+.creator-detail-tagline + p {
+  max-width: 39rem;
+  color: var(--muted);
+  text-wrap: balance;
+}
+
 .creator-detail-mark {
   padding: clamp(2rem, 7vw, 7rem);
   background: radial-gradient(circle, rgba(211,20,126,0.22), rgba(85,170,163,0.11) 45%, transparent 70%);

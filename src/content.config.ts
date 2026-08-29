@@ -95,6 +95,7 @@ const creators = defineCollection({
   schema: z.object({
     name: z.string(),
     profile: z.string(),
+    tagline: z.string().optional(),
     profileImage: z.string().optional(),
     fields: z.array(z.string()).default([]),
     tags: z.array(z.string()).default([]),

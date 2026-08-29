@@ -48,6 +48,7 @@ const structuredData = isHsapCreator ? {
       <div>
         <p class="eyebrow"><span>CREATOR</span>PROFILE</p>
         <h1>{creator.data.name}</h1>
+        {creator.data.tagline && <p class="creator-detail-tagline">{creator.data.tagline}</p>}
         <p>{creator.data.profile}</p>
         <TagList tags={creator.data.fields} />
       </div>
