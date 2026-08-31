@@ -1,6 +1,7 @@
 ---
 import { getCollection, render, type CollectionEntry } from "astro:content";
 import EventCard from "../../components/EventCard.astro";
+import PhotoCarousel from "../../components/PhotoCarousel.astro";
 import ProjectCard from "../../components/ProjectCard.astro";
 import SectionHeading from "../../components/SectionHeading.astro";
 import TagList from "../../components/TagList.astro";
@@ -29,20 +30,31 @@ const achievements = creator.data.achievements.map((achievement) => {
   };
 });
 const socialLinks = [creator.data.website && { label: "Website", url: creator.data.website }, creator.data.portfolioUrl && { label: "Portfolio", url: creator.data.portfolioUrl }, creator.data.github && { label: "GitHub", url: creator.data.github }, creator.data.x && { label: "X", url: creator.data.x }, creator.data.instagram && { label: "Instagram", url: creator.data.instagram }, ...creator.data.otherLinks].filter(Boolean) as { label: string; url: string }[];
+const isHsapCreator = creator.id === "marmite-daikon-oroshi";
+const structuredData = isHsapCreator ? {
+  "@context": "https://schema.org",
+  "@type": "Person",
+  name: creator.data.name,
+  url: new URL(`/creators/${creator.id}/`, Astro.site).href,
+  description: creator.data.profile,
+  sameAs: socialLinks.map((link) => link.url),
+} : undefined;
 ---
 
-<BaseLayout title={`${creator.data.name}｜Creators｜HackSick`} description={creator.data.profile} image={creator.data.profileImage}>
+<BaseLayout title={isHsapCreator ? `${creator.data.name} | Creators | HackSick` : `${creator.data.name}｜Creators｜HackSick`} description={creator.data.profile} image={creator.data.profileImage} structuredData={structuredData}>
   <article class="detail-page creator-detail">
     <header class="detail-hero section-shell creator-detail-hero">
       <div class="creator-detail-mark" aria-hidden="true"><img src="/images/hacksick-icon.webp" alt="" width="1000" height="1000" /></div>
       <div>
         <p class="eyebrow"><span>CREATOR</span>PROFILE</p>
         <h1>{creator.data.name}</h1>
+        {creator.data.tagline && <p class="creator-detail-tagline">{creator.data.tagline}</p>}
         <p>{creator.data.profile}</p>
         <TagList tags={creator.data.fields} />
       </div>
     </header>
     <div class="detail-body section-shell prose"><Content /></div>
+    {creator.data.gallery.length > 0 && <PhotoCarousel images={creator.data.gallery} creatorName={creator.data.name} />}
     {socialLinks.length > 0 && <nav class="social-links section-shell" aria-label="Creatorの外部リンク">{socialLinks.map((link) => <a href={link.url} target="_blank" rel="noreferrer">{link.label} ↗</a>)}</nav>}
     {achievements.length > 0 && (
       <section class="achievement-section section-shell">

@@ -16,6 +16,7 @@ interface Props {
   imageHeight?: number;
   imageAlt?: string;
   noindex?: boolean;
+  structuredData?: Record<string, unknown>;
 }
 
 const {
@@ -26,6 +27,7 @@ const {
   imageHeight = 630,
   imageAlt = "HackSick公式サイト",
   noindex = false,
+  structuredData,
 } = Astro.props;
 
 const canonical = new URL(Astro.url.pathname, Astro.site);
@@ -73,6 +75,7 @@ const imageType = imageExtension === "jpg" || imageExtension === "jpeg"
       url: site.url,
       logo: new URL("/favicon.png", Astro.site).href,
     })}></script>
+    {structuredData && <script is:inline type="application/ld+json" set:html={JSON.stringify(structuredData)}></script>}
     <title>{title}</title>
   </head>
   <body>

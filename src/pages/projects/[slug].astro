@@ -20,9 +20,22 @@ const [allEvents, allWorks, allCreators] = await Promise.all([getCollection("eve
 const events = allEvents.filter((event) => project.data.events.includes(event.id)).sort((a, b) => b.data.startDate.getTime() - a.data.startDate.getTime());
 const works = allWorks.filter((work) => project.data.works.includes(work.id));
 const creators = allCreators.filter((creator) => project.data.creators.includes(creator.id));
+const isHsap = project.id === "hsap";
+const structuredData = isHsap ? {
+  "@context": "https://schema.org",
+  "@type": "Organization",
+  name: "HSAP（HackSick Artifacts Project）",
+  url: new URL(`/projects/${project.id}/`, Astro.site).href,
+  description: project.data.description,
+  parentOrganization: {
+    "@type": "Organization",
+    name: "HackSick",
+    url: new URL("/", Astro.site).href,
+  },
+} : undefined;
 ---
 
-<BaseLayout title={`${project.data.title}｜Projects｜HackSick`} description={project.data.description}>
+<BaseLayout title={isHsap ? "HSAP | Projects | HackSick" : `${project.data.title}｜Projects｜HackSick`} description={project.data.description} structuredData={structuredData}>
   <article class="detail-page">
     <header class="detail-hero section-shell">
       <p class="eyebrow"><span>PROJECT</span>{statusLabels[project.data.status]}</p>

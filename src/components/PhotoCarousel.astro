@@ -1,0 +1,147 @@
+---
+import SectionHeading from "./SectionHeading.astro";
+
+interface GalleryImage {
+  src: string;
+  alt: string;
+  width: number;
+  height: number;
+  category: string;
+}
+
+interface Props {
+  images: GalleryImage[];
+  creatorName: string;
+}
+
+const { images, creatorName } = Astro.props;
+const total = images.length;
+---
+
+<section class="creator-gallery section-shell" data-photo-carousel aria-roledescription="carousel" aria-label={`${creatorName}の作品写真`}>
+  <SectionHeading
+    eyebrow="SELECTED WORKS"
+    title="写真作品"
+    description="風景やプロダクトを対象に，光，質感，形を捉えた写真を紹介します．"
+  />
+
+  <div class="photo-carousel-frame">
+    <div class="photo-carousel-toolbar">
+      <p class="photo-carousel-credit">PHOTOGRAPHY / {creatorName}</p>
+      <p class="photo-carousel-status" data-carousel-status aria-live="polite">01 / {String(total).padStart(2, "0")}</p>
+      <div class="photo-carousel-controls">
+        <button type="button" data-carousel-previous aria-label="前の写真" disabled>←</button>
+        <button type="button" data-carousel-next aria-label="次の写真">→</button>
+      </div>
+    </div>
+
+    <div class="photo-carousel-viewport" data-carousel-viewport tabindex="0" aria-label="写真作品．左右の矢印キーでも移動できます">
+      <ol class="photo-carousel-track">
+        {images.map((image, index) => (
+          <li class="photo-carousel-slide" data-carousel-slide role="group" aria-roledescription="slide" aria-label={`${index + 1} / ${total}`}>
+            <figure>
+              <div class="photo-carousel-image">
+                <img
+                  src={image.src}
+                  alt={image.alt}
+                  width={image.width}
+                  height={image.height}
+                  loading="lazy"
+                  decoding="async"
+                />
+              </div>
+              <figcaption>
+                <span>{image.category}</span>
+                <span>PHOTO / {String(index + 1).padStart(2, "0")}</span>
+              </figcaption>
+            </figure>
+          </li>
+        ))}
+      </ol>
+    </div>
+
+    <ol class="photo-carousel-thumbnails" aria-label="写真を選択">
+      {images.map((image, index) => (
+        <li>
+          <button
+            type="button"
+            data-carousel-thumbnail
+            data-index={index}
+            aria-label={`${index + 1}枚目，${image.category}`}
+            aria-current={index === 0 ? "true" : "false"}
+          >
+            <img src={image.src} alt="" width={image.width} height={image.height} loading="lazy" decoding="async" />
+          </button>
+        </li>
+      ))}
+    </ol>
+  </div>
+</section>
+
+<script is:inline>
+  document.querySelectorAll("[data-photo-carousel]").forEach((carousel) => {
+    const viewport = carousel.querySelector("[data-carousel-viewport]");
+    const slides = Array.from(carousel.querySelectorAll("[data-carousel-slide]"));
+    const thumbnails = Array.from(carousel.querySelectorAll("[data-carousel-thumbnail]"));
+    const previous = carousel.querySelector("[data-carousel-previous]");
+    const next = carousel.querySelector("[data-carousel-next]");
+    const status = carousel.querySelector("[data-carousel-status]");
+    const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    let currentIndex = 0;
+    let scrollFrame;
+
+    if (!(viewport instanceof HTMLElement) || slides.length === 0) return;
+
+    const update = (index) => {
+      currentIndex = Math.max(0, Math.min(index, slides.length - 1));
+      if (previous instanceof HTMLButtonElement) previous.disabled = currentIndex === 0;
+      if (next instanceof HTMLButtonElement) next.disabled = currentIndex === slides.length - 1;
+      if (status) status.textContent = `${String(currentIndex + 1).padStart(2, "0")} / ${String(slides.length).padStart(2, "0")}`;
+      thumbnails.forEach((thumbnail, thumbnailIndex) => {
+        thumbnail.setAttribute("aria-current", thumbnailIndex === currentIndex ? "true" : "false");
+      });
+    };
+
+    const moveTo = (index) => {
+      const targetIndex = Math.max(0, Math.min(index, slides.length - 1));
+      const target = slides[targetIndex];
+      if (!(target instanceof HTMLElement)) return;
+      const isAdjacent = Math.abs(targetIndex - currentIndex) === 1;
+      viewport.scrollTo({ left: target.offsetLeft, behavior: prefersReducedMotion || !isAdjacent ? "auto" : "smooth" });
+      update(targetIndex);
+    };
+
+    previous?.addEventListener("click", () => moveTo(currentIndex - 1));
+    next?.addEventListener("click", () => moveTo(currentIndex + 1));
+
+    thumbnails.forEach((thumbnail) => {
+      thumbnail.addEventListener("click", () => moveTo(Number(thumbnail.getAttribute("data-index"))));
+    });
+
+    viewport.addEventListener("keydown", (event) => {
+      if (event.key === "ArrowLeft") {
+        event.preventDefault();
+        moveTo(currentIndex - 1);
+      } else if (event.key === "ArrowRight") {
+        event.preventDefault();
+        moveTo(currentIndex + 1);
+      } else if (event.key === "Home") {
+        event.preventDefault();
+        moveTo(0);
+      } else if (event.key === "End") {
+        event.preventDefault();
+        moveTo(slides.length - 1);
+      }
+    });
+
+    viewport.addEventListener("scroll", () => {
+      if (scrollFrame) cancelAnimationFrame(scrollFrame);
+      scrollFrame = requestAnimationFrame(() => {
+        const nextIndex = Math.round(viewport.scrollLeft / viewport.clientWidth);
+        update(nextIndex);
+      });
+    }, { passive: true });
+
+    update(0);
+  });
+</script>
