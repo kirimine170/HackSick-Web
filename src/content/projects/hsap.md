@@ -6,7 +6,7 @@ tags: [Art, Publishing, Photography, Creative Support, Research]
 featured: true
 events: []
 works: []
-creators: [marmite-daikon-oroshi, kirimine-shizuku]
+creators: [matsumi-koen, marmite-daikon-oroshi, kirimine-shizuku]
 externalLinks: []
 ---
 
@@ -46,11 +46,11 @@ HSAP（HackSick Artifacts Project）は，クリエイターが創作へ集中�
 
 ### 松見公園作品の流通支援
 
-松見公園の既存作品と在庫を整理し，適切な書店や販売場所へ展開する企画です．最初の候補として，東京・中野の自主制作出版物取扱店への委託相談を検討しています．現在は作品情報と販売条件を整理しています．
+[松見公園](/creators/matsumi-koen/)の既存作品と在庫を整理し，適切な書店や販売場所へ展開する企画です．最初の候補として，東京・中野の自主制作出版物取扱店への委託相談を検討しています．現在は作品情報と販売条件を整理しています．
 
 ### 共同写真制作
 
-[マーマイト大根おろし](/creators/marmite-daikon-oroshi/)が撮影を担当し，松見公園と[霧峰 雫](/creators/kirimine-shizuku/)が企画やディレクションへ参加する共同制作です．写真の選定，並び順，文章，媒体までを含め，一貫した主題を持つシリーズとして構成します．現在は試作を行い，公開範囲を確認しています．
+[マーマイト大根おろし](/creators/marmite-daikon-oroshi/)が撮影を担当し，[松見公園](/creators/matsumi-koen/)と[霧峰 雫](/creators/kirimine-shizuku/)が企画やディレクションへ参加する共同制作です．写真の選定，並び順，文章，媒体までを含め，一貫した主題を持つシリーズとして構成します．現在は試作を行い，公開範囲を確認しています．
 
 ### ロケーションフォト
 
