@@ -1,7 +1,9 @@
 ---
 import { getCollection } from "astro:content";
 const creators = await getCollection("creators");
-const live = import.meta.env.PUBLIC_CONTACT_MODE === "live";
+interface Props { testMode?: boolean }
+const { testMode = false } = Astro.props;
+const live = testMode || import.meta.env.PUBLIC_CONTACT_MODE === "live";
 const sitekey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY;
 ---
 <section class="section-shell inquiry-section" id="inquiry">
@@ -24,7 +26,7 @@ const sitekey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY;
       </fieldset>
     </form>
     <section id="inquiry-confirm" hidden tabindex="-1"><h3>ご相談内容をご確認ください．</h3><dl id="inquiry-summary"></dl>
-      {live && sitekey && <><script is:inline src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script><div class="cf-turnstile" data-sitekey={sitekey} data-action="contact"></div></>}
+      {live && sitekey && <><script is:inline src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit" async defer></script><div id="inquiry-verification" data-sitekey={sitekey}></div></>}
       <div class="form-actions"><button type="button" class="button" id="inquiry-back">入力に戻る</button><button type="button" class="button button-dark" id="inquiry-send">{live ? "この内容で送信する →" : "テストを完了する →"}</button></div>
     </section>
     <section id="inquiry-done" hidden tabindex="-1"><h3>{live ? "お問い合わせを受け付けました．" : "フォームの操作確認が完了しました．"}</h3><p>{live ? "ご入力のメールアドレスへ，HSAPよりご連絡します．" : "メールの送信や入力内容の保存は行っていません．実際のご相談はhsap@hacksick.comへご連絡ください．"}</p><a class="button" href="/creators/">クリエイターを見る →</a></section>
@@ -48,6 +50,23 @@ const sitekey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY;
   if ([...category.options].some(o => o.value === params.get("category"))) category.value = params.get("category")!;
   const labels: Record<string,string> = { creator:"クリエイター", category:"ご相談の種類", name:"お名前", organization:"会社・団体名", email:"メールアドレス", schedule:"希望時期", budget:"ご予算", message:"ご相談内容" };
   let payload: Record<string,string> = {};
+  type Turnstile = {
+    render: (container: HTMLElement, options: { sitekey: string; action: string }) => string;
+    reset: (id: string) => void;
+    remove: (id: string) => void;
+    getResponse: (id: string) => string;
+  };
+  const getTurnstile = () => (window as unknown as { turnstile?: Turnstile }).turnstile;
+  let widgetId: string | undefined;
+  let verificationTimer: ReturnType<typeof setTimeout> | undefined;
+  const renderVerification = () => {
+    if (confirm.hidden || !document.querySelector("#inquiry-verification")) return;
+    const api = getTurnstile();
+    const container = document.querySelector<HTMLElement>("#inquiry-verification")!;
+    if (!api) { verificationTimer = setTimeout(renderVerification, 200); return; }
+    if (widgetId === undefined) widgetId = api.render(container, { sitekey: container.dataset.sitekey!, action: "contact" });
+    else api.reset(widgetId);
+  };
   form.addEventListener("submit", event => {
     event.preventDefault();
     payload = Object.fromEntries(new FormData(form).entries()) as Record<string,string>;
@@ -60,16 +79,20 @@ const sitekey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY;
     }
     form.hidden = true; fields.disabled = true; confirm.hidden = false; error.hidden = true;
     step.textContent = "02 CONFIRM / 入力内容の確認"; confirm.focus();
+    renderVerification();
   });
   document.querySelector("#inquiry-back")!.addEventListener("click", () => {
     fields.disabled = false; form.hidden = false; confirm.hidden = true; error.hidden = true;
+    clearTimeout(verificationTimer);
+    if (widgetId !== undefined) { getTurnstile()?.remove(widgetId); widgetId = undefined; }
     step.textContent = "01 INPUT / ご相談内容の入力"; creator.focus();
   });
   send.addEventListener("click", async () => {
     send.disabled = true; error.hidden = true;
     try {
       if (document.querySelector<HTMLElement>("[data-live]")!.dataset.live === "true") {
-        payload.token = document.querySelector<HTMLInputElement>('[name="cf-turnstile-response"]')?.value ?? "";
+        payload.token = widgetId !== undefined ? getTurnstile()?.getResponse(widgetId) ?? "" : "";
+        if (!payload.token) throw new Error("送信前の確認が完了していません．認証欄の表示を確認し，少し待ってから再度お試しください．");
         const response = await fetch("/api/contact", { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(payload) });
         if (!response.ok) throw new Error("送信できませんでした．入力内容は保持されています．時間をおいて再度お試しいただくか，hsap@hacksick.comへご連絡ください．");
       }
@@ -77,8 +100,7 @@ const sitekey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY;
       form.reset(); payload = {}; summary.replaceChildren(); done.focus();
     } catch (e) {
       error.textContent = e instanceof Error ? e.message : "送信できませんでした．"; error.hidden = false;
-      const turnstile = (window as unknown as { turnstile?: { reset: () => void } }).turnstile;
-      turnstile?.reset();
+      if (widgetId !== undefined && payload.token) getTurnstile()?.reset(widgetId);
     } finally { send.disabled = false; }
   });
 </script>
