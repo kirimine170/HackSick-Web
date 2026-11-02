@@ -17,7 +17,7 @@ const related = [
 ---
 <BaseLayout title={`${news.data.title}｜News｜HackSick`} description={news.data.description}>
   <article class="detail-page">
-    <header class="detail-hero section-shell"><p class="eyebrow"><span>NEWS</span>{news.data.category}</p><time datetime={news.data.date.toISOString()}>{formatDate(news.data.date)}</time>{news.data.pressRelease && <p>PRESS RELEASE</p>}<h1>{news.data.title}</h1><p>{news.data.description}</p></header>
+    <header class="detail-hero section-shell"><p class="eyebrow"><span>NEWS</span>{news.data.category}</p><time datetime={news.data.date.toISOString()}>{formatDate(news.data.date)}</time>{news.data.pressRelease && <p>PRESS RELEASE</p>}<div class="news-headline"><h1>{news.data.titlePhrases.length > 0 ? news.data.titlePhrases.map(phrase => <span class="headline-phrase">{phrase}</span>) : news.data.title}</h1></div><p>{news.data.description}</p></header>
     <div class="detail-body section-shell prose"><Content /></div>
     <nav class="section-shell news-related" aria-label="関連ページ">{related.map(item => <a class="button" href={item.href}>{item.label} →</a>)}<a class="button" href="/news/">News一覧へ →</a></nav>
   </article>

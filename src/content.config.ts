@@ -134,6 +134,7 @@ const news = defineCollection({
   loader: glob({ pattern: "**/*.{md,mdx}", base: "./src/content/news" }),
   schema: z.object({
     title: z.string(),
+    titlePhrases: z.array(z.string()).default([]),
     description: z.string(),
     date: z.coerce.date(),
     category: z.enum(["RELEASE", "EVENT", "MEDIA", "INFORMATION"]),
