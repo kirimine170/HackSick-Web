@@ -17,7 +17,7 @@ for (const width of [320, 640]) {
   await sharp(coverPath).resize({ width }).webp({ quality: 82 }).toFile(path(`public/images/works/${slug}-${width}.webp`));
 }
 for (const width of [480, 800]) {
-  await sharp(path(`public/images/works/${slug}-display.webp`)).resize({ width }).webp({ quality: 78 }).toFile(path(`public/images/works/anokoto-display-${width}.webp`));
+  await sharp(path(`public/images/works/${slug}-display-closeup.webp`)).resize({ width }).webp({ quality: 78 }).toFile(path(`public/images/works/anokoto-display-closeup-${width}.webp`));
 }
 
 const embeddedCover = (await sharp(coverPath).resize({ height: 480 }).png().toBuffer()).toString("base64");
