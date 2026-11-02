@@ -31,7 +31,10 @@ const failures = [];
 
 for (const file of htmlFiles) {
   const html = readFileSync(file, "utf8");
-  const normalizedHtml = html.toLowerCase();
+  // Audit visible copy，not input placeholder attributes or CSS class names．
+  const normalizedHtml = html.replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, "")
+    .replace(/<style\b[^>]*>[\s\S]*?<\/style>/gi, "")
+    .replace(/<[^>]*>/g, " ").toLowerCase();
 
   for (const term of forbiddenTerms) {
     if (normalizedHtml.includes(term.toLowerCase())) {

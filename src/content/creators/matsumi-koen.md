@@ -25,4 +25,4 @@ featured: true
 
 ## Contact
 
-HSAPでの制作や作品の取扱いに関する相談は，[hsap@hacksick.com](mailto:hsap@hacksick.com)へご連絡ください．
+HSAPでの制作や作品の取扱いに関する相談は，[お問い合わせフォーム](/contact/?creator=matsumi-koen)へお寄せください．
