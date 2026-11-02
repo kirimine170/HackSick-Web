@@ -3,8 +3,12 @@ const json = (status, message) => Response.json({ message }, { status, headers: 
 export async function onRequestPost({ request, env }) {
   const url = new URL(request.url);
   if (request.headers.get("Origin") !== url.origin) return json(403, "Forbidden");
-  // Delivery is opt-in and requires all credentials．Preview never accepts real inquiries．
-  if (env.CONTACT_ENABLED !== "true" || !env.RESEND_API_KEY || !env.CONTACT_FROM || !env.TURNSTILE_SECRET_KEY) return json(503, "Contact delivery is unavailable");
+  // Report names only，never credential values，so configuration failures can be corrected．
+  const missing = [
+    ...(env.CONTACT_ENABLED !== "true" ? ["CONTACT_ENABLED=true"] : []),
+    ...["RESEND_API_KEY", "CONTACT_FROM", "TURNSTILE_SECRET_KEY"].filter(name => !env[name]),
+  ];
+  if (missing.length) return Response.json({ message: "Contact delivery is unavailable", missing }, { status: 503, headers: { "Cache-Control": "no-store" } });
   if (!request.headers.get("content-type")?.includes("application/json")) return json(415, "JSON required");
   if (Number(request.headers.get("content-length")) > 24000) return json(413, "Request too large");
   try {

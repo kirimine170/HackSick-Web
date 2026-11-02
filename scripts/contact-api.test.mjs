@@ -8,6 +8,13 @@ const valid = { creator:"marmite-daikon-oroshi", category:"photography", name:"ã
 const request = (data, headers = {}) => new Request(`${origin}/api/contact`, { method:"POST", headers:{ Origin:origin, "Content-Type":"application/json", ...headers }, body:JSON.stringify(data) });
 
 test("unconfigured delivery fails closed", async () => assert.equal((await onRequestPost({ request:request(valid), env:{} })).status,503));
+test("configuration diagnostics identify missing names without exposing secrets", async () => {
+  const result = await onRequestPost({request:request(valid),env:{...env,CONTACT_ENABLED:""}});
+  assert.equal(result.status,503);
+  const body = await result.json();
+  assert.deepEqual(body.missing,["CONTACT_ENABLED=true"]);
+  assert.ok(!JSON.stringify(body).includes(env.CONTACT_FROM));
+});
 test("cross-origin request is rejected", async () => assert.equal((await onRequestPost({ request:request(valid,{Origin:"https://example.com"}), env })).status,403));
 test("invalid and oversized input is rejected before contacting providers", async () => {
   for (const data of [null, {...valid,email:"x\n@example.com"}, {...valid,consent:""}, {...valid,website:"spam"}, {...valid,creator:"unknown"}, {...valid,message:"a".repeat(5001)}]) {
