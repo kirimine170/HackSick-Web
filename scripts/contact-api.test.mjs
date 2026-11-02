@@ -8,6 +8,15 @@ const valid = { creator:"marmite-daikon-oroshi", category:"photography", name:"ã
 const request = (data, headers = {}) => new Request(`${origin}/api/contact`, { method:"POST", headers:{ Origin:origin, "Content-Type":"application/json", ...headers }, body:JSON.stringify(data) });
 
 test("unconfigured delivery fails closed", async () => assert.equal((await onRequestPost({ request:request(valid), env:{} })).status,503));
+test("enable flag supports text and JSON booleans but rejects other truthy values", async () => {
+  for (const value of ["true",true]) {
+    // An empty payload stops at validation without contacting any external providerï¼Ž
+    assert.equal((await onRequestPost({request:request({}),env:{...env,CONTACT_ENABLED:value}})).status,400);
+  }
+  for (const value of [false,"false","",undefined,1,"1",{},"TRUE"]) {
+    assert.equal((await onRequestPost({request:request({}),env:{...env,CONTACT_ENABLED:value}})).status,503);
+  }
+});
 test("configuration diagnostics identify missing names without exposing secrets", async () => {
   const result = await onRequestPost({request:request(valid),env:{...env,CONTACT_ENABLED:""}});
   assert.equal(result.status,503);

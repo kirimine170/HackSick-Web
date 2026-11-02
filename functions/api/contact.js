@@ -5,7 +5,7 @@ export async function onRequestPost({ request, env }) {
   if (request.headers.get("Origin") !== url.origin) return json(403, "Forbidden");
   // Report names only，never credential values，so configuration failures can be corrected．
   const missing = [
-    ...(env.CONTACT_ENABLED !== "true" ? ["CONTACT_ENABLED=true"] : []),
+    ...(!["true", true].includes(env.CONTACT_ENABLED) ? ["CONTACT_ENABLED=true"] : []),
     ...["RESEND_API_KEY", "CONTACT_FROM", "TURNSTILE_SECRET_KEY"].filter(name => !env[name]),
   ];
   if (missing.length) return Response.json({ message: "Contact delivery is unavailable", missing }, { status: 503, headers: { "Cache-Control": "no-store" } });
