@@ -2,14 +2,13 @@
 import BaseLayout from "../layouts/BaseLayout.astro";
 import PageHero from "../components/PageHero.astro";
 ---
-<BaseLayout title="お問い合わせにおける個人情報の取扱い｜HackSick">
+<BaseLayout title="お問い合わせにおける個人情報の取扱い｜HackSick" description="HackSick／HSAPのお問い合わせフォームでお預かりする情報の利用目的と取扱いをご案内します．">
   <PageHero index="PRIVACY" eyebrow="CONTACT POLICY" title="お問い合わせにおける個人情報の取扱い" lead="仕事のご相談にあたり，お預かりする情報についてご案内します．" />
   <div class="section-shell prose detail-body">
-    <p class="preview-note">PREVIEW / 通常フォームは操作確認用で，入力内容を送信・保存しません．送信テスト専用ページでは，入力内容をHSAPへ実際にメール送信します．テスト用の情報のみ使用してください．一般向けの受付開始前に，本方針を確定します．</p>
-    <h2>取得する情報と利用目的</h2><p>HackSick／HSAPは，お名前，所属，メールアドレス，ご依頼の対象，ご相談内容，希望時期，予算を，お問い合わせへの回答，見積もり，制作の調整と連絡のために利用します．</p>
+    <h2>取得する情報と利用目的</h2><p>HackSick／HSAPは，お名前，所属，メールアドレス，ご依頼の対象，ご相談内容，希望時期，予算を，お問い合わせへの回答，見積もり，制作の調整と連絡のために利用します．所属，希望時期，予算の入力は任意です．</p>
     <h2>クリエイターとの共有</h2><p>対応に必要な範囲で，ご指定のクリエイターとご相談内容を共有します．ご指定がない場合は，候補となるクリエイターへの情報共有について，事前にご相談します．</p>
-    <h2>管理と削除</h2><p>対応に必要な担当者のみが情報へアクセスします．不要となった情報は，法令に基づく保存が必要な場合を除き，適切に削除します．開示，訂正，削除のご相談は，下記の窓口へご連絡ください．</p>
-    <h2>外部サービス</h2><p>送信テストでは，Cloudflareをサイト配信・不正送信対策に，Resendをメール送信に利用します．入力内容はHSAPの受信メールと，外部サービスの処理に伴う記録に含まれます．</p>
+    <h2>管理と削除</h2><p>送信内容はHSAPの窓口へメールで届き，対応に必要な担当者が取り扱います．お問い合わせへの対応と関連業務に必要な期間保管し，不要となった情報は，法令に基づく保存が必要な場合を除き，適切に削除します．開示，訂正，削除のご相談は，下記の窓口へご連絡ください．</p>
+    <h2>外部サービスの利用</h2><p>Cloudflareをサイト配信・不正送信対策に，Resendをメール送信に利用します．送信処理に必要な情報がこれらのサービスで処理され，メールや処理記録として保存される場合があります．</p><p>各サービスの取扱いについては，<a href="https://www.cloudflare.com/privacypolicy/" target="_blank" rel="noreferrer">Cloudflareのプライバシーポリシー</a>と，<a href="https://resend.com/legal/privacy-policy" target="_blank" rel="noreferrer">Resendのプライバシーポリシー</a>をご参照ください．</p>
     <h2>お問い合わせ窓口</h2><p>HackSick／HSAP：<a href="mailto:hsap@hacksick.com">hsap@hacksick.com</a></p>
   </div>
 </BaseLayout>

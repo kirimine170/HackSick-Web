@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { onRequestPost } from "../functions/api/contact.js";
 
-const origin = "https://preview.hacksick-web.pages.dev";
+const origin = "https://hacksick.com";
 const env = { CONTACT_ENABLED:"true", RESEND_API_KEY:"test", CONTACT_FROM:"Website <test@example.com>", TURNSTILE_SECRET_KEY:"test" };
 const valid = { creator:"marmite-daikon-oroshi", category:"photography", name:"テスト", email:"test@example.com", message:"製品写真の撮影について相談します．", consent:"on", token:"test-token" };
 const request = (data, headers = {}) => new Request(`${origin}/api/contact`, { method:"POST", headers:{ Origin:origin, "Content-Type":"application/json", ...headers }, body:JSON.stringify(data) });

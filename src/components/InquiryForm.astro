@@ -1,10 +1,8 @@
 ---
 import { getCollection } from "astro:content";
 const creators = await getCollection("creators");
-interface Props { testMode?: boolean }
-const { testMode = false } = Astro.props;
-const live = testMode || import.meta.env.PUBLIC_CONTACT_MODE === "live";
-const sitekey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY;
+const live = import.meta.env.PUBLIC_CONTACT_MODE?.trim() === "live";
+const sitekey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY?.trim();
 ---
 <section class="section-shell inquiry-section" id="inquiry">
   <div class="inquiry-intro"><p class="eyebrow"><span>01</span>WORK INQUIRY</p><h2>つくりたいことを，<br />聞かせてください．</h2><p>撮影，制作，作品の取扱い，取材などのご相談を承ります．内容に応じてクリエイターと連携し，HSAPよりご連絡します．</p><p>窓口：<a href="mailto:hsap@hacksick.com">hsap@hacksick.com</a></p><p class="preview-note" id="form-mode">{live ? "送信内容はHSAPの窓口へ届きます．" : "PREVIEW / 操作確認用フォームです．入力内容は送信・保存されません．実際のご相談はメールでお寄せください．"}</p></div>

@@ -30,7 +30,7 @@ export async function onRequestPost({ request, env }) {
     const limits = { name:100, organization:150, email:254, schedule:150, budget:150, message:5000, token:2048, website:200, creator:100, category:30, consent:10 };
     if (Object.entries(limits).some(([key, max]) => data[key] !== undefined && (typeof data[key] !== "string" || data[key].length > max))) return json(400, "Invalid fields");
     if (data.website || data.consent !== "on" || !data.name?.trim() || !data.message?.trim() || data.message.trim().length < 10 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email ?? "")) return json(400, "Invalid fields");
-    const creators = { "":"指定なし", "marmite-daikon-oroshi":"マーマイト大根おろし", "matsumi-koen":"松見公園", "shizuku-kirimine":"霧峰 雫" };
+    const creators = { "":"指定なし", "marmite-daikon-oroshi":"マーマイト大根おろし", "matsumi-koen":"松見公園", "kirimine-shizuku":"霧峰 雫" };
     const categories = { photography:"写真撮影", production:"制作・共同企画", distribution:"書籍・作品の取扱い", press:"取材・メディア掲載", other:"その他" };
     if (!Object.hasOwn(creators, data.creator) || !Object.hasOwn(categories, data.category) || !data.token) return json(400, "Invalid fields");
     const verified = await fetch("https://challenges.cloudflare.com/turnstile/v0/siteverify", {
