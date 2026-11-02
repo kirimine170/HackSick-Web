@@ -1,6 +1,6 @@
 ---
 name: 霧峰 雫
-profile: HackSick代表。コミュニティ運営とHackSick LTの企画・開催を行っています。
+profile: HackSick代表．コミュニティ運営とHackSick LTの企画・開催を行っています．
 fields: []
 tags: []
 works: [hiroi-kikuri-statistics, karte-no-karte]
@@ -13,6 +13,9 @@ events:
   - hacksick-lt-05
   - hacksick-lt-06
   - hacksick-lt-07
+  - hacksick-lt-08
+  - hacksick-lt-09
+  - hacksick-lt-10
 achievements:
   - title: Karteのカルテ〜同人誌を書くつもりがアプリが完成！？〜
     type: Publication

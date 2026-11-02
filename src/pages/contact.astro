@@ -3,19 +3,27 @@ import PageHero from "../components/PageHero.astro";
 import { contact, links } from "../data/site";
 import BaseLayout from "../layouts/BaseLayout.astro";
 import InquiryForm from "../components/InquiryForm.astro";
+import { inquiryRoutes } from "../data/inquiry.js";
 ---
 
 <BaseLayout title="Contact｜HackSick" description="HackSickとの共同企画、制作、研究、取材、支援・協賛に関するお問い合わせ窓口です。">
-  <PageHero index="08" eyebrow="CONTACT" title="一緒に、世界をつくりませんか？" lead="共同企画、制作、研究、取材、協賛。まだ名前のないアイデアも、HackSickと一緒に形にしていきましょう。" />
+  <PageHero index="08" eyebrow="CONTACT" title="ご相談に合わせた窓口へ．" lead="HackSick全体へのご相談と，クリエイターへの仕事依頼を，それぞれの担当窓口で受け付けています．" />
+  <section class="section-shell contact-choices" aria-labelledby="contact-choices-title">
+    <h2 id="contact-choices-title">どのようなご相談ですか？</h2>
+    <div class="organization-branches">
+      {Object.entries(inquiryRoutes).map(([id,route]) => <article class="organization-branch"><p class="eyebrow">{id === "organization" ? "HACKSICK" : "HSAP / CREATOR INQUIRY"}</p><h3>{route.label}</h3><p>{route.description}</p><p class="contact-address">{route.email}</p><a class="button button-dark" href={`/contact/?route=${id}#inquiry`}>この窓口へ相談する →</a><a class="contact-email-link" href={`mailto:${route.email}`}>メールで相談する ↗</a></article>)}
+    </div>
+    <p>HSAP（HackSick Artifacts Project）は，HackSickが運営する創作支援プロジェクトです．<a class="text-link" href="/about/#organization">活動と役割を見る →</a></p>
+  </section>
   <InquiryForm />
   <section class="contact-page section-shell" id="contact">
     <div>
-      <p class="eyebrow"><span>01</span>CONTACT ROUTES</p>
-      <h2>そのアイデアを、<br />聞かせてください。</h2>
+      <p class="eyebrow"><span>LINKS</span>OTHER CONTACT ROUTES</p>
+      <h2>参加登録と，<br />最新のお知らせ．</h2>
     </div>
     <div class="contact-routes">
       <a class="contact-route-email" href={contact.emailHref}>
-        <span>PRIMARY CONTACT / EMAIL</span>
+        <span>HACKSICK / EMAIL</span>
         <strong>{contact.email}</strong>
         <small>一般のお問い合わせ／共同企画／制作／研究／取材／協賛／連携</small>
         <i aria-hidden="true">→</i>
@@ -33,6 +41,6 @@ import InquiryForm from "../components/InquiryForm.astro";
         <i aria-hidden="true">↗</i>
       </a>
     </div>
-    <p class="contact-note">共同企画、制作、研究、取材、協賛などのご相談は、メールでお待ちしています。</p>
+    <p class="contact-note">参加登録は各イベントの申込先へ，ご相談は上の担当窓口へお寄せください．Xは活動の告知に利用しています．</p>
   </section>
 </BaseLayout>

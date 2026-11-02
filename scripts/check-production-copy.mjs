@@ -42,6 +42,9 @@ for (const file of htmlFiles) {
     }
   }
 
+  // Astro's generated redirect documents intentionally contain no site footer．
+  if (/<meta\b[^>]*http-equiv=["']refresh["']/i.test(html)) continue;
+
   if (!html.includes('href="/contact/">Contact</a>')) {
     failures.push(`${relative(root, file)}：FooterのContact導線がありません．`);
   }

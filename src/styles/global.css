@@ -3357,6 +3357,25 @@ a {
 }
 
 /* Official updates and creator inquiries */
+/* Relationships and consultation routes */
+.organization-map { padding-block: clamp(3rem,6vw,6rem); }
+.organization-map > h2 { max-width: 48rem; font-size: clamp(1.7rem,3.1vw,3rem); line-height: 1.5; }
+.organization-parent { background: var(--ink); color: var(--white); padding: clamp(1.5rem,3vw,3rem); max-width: 65rem; margin: 2rem auto 0; }
+.organization-parent > span { color: #ded3e6; font-size: .75rem; letter-spacing: .12em; }
+.organization-parent h3 { font-size: 2rem; margin: .5rem 0; }
+.organization-parent p { max-width: 55rem; }
+.organization-branches { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 1.5rem; margin-block: 1.5rem 2rem; }
+.organization-branch { min-width: 0; display: flex; flex-direction: column; align-items: start; padding: clamp(1.25rem,3vw,2.5rem); border: 1px solid var(--line); border-top: 3px solid var(--pink); background: var(--white); }
+.organization-branch h3 { font-size: clamp(1.4rem,2vw,2rem); line-height: 1.5; margin: .5rem 0; }
+.organization-fullname { color: var(--muted); font-size: .8rem; margin-top: 0; }
+.organization-branch .button { margin-top: auto; white-space: normal; }
+.organization-note { border-left: 3px solid var(--pink); padding-left: 1rem; }
+.organization-note a { display: inline-block; }
+.contact-choices { padding-block: 2rem; }
+.contact-choices .contact-address { overflow-wrap: anywhere; font-size: .85rem; font-weight: 600; }
+.contact-email-link { display: inline-block; margin-top: 1rem; text-decoration: underline; text-underline-offset: .25em; font-size: .85rem; }
+.related-section > .button { margin-top: 1.5rem; }
+@media(max-width:700px) { .organization-branches { grid-template-columns: 1fr; } }
 [hidden] { display: none !important; }
 .home-news, .news-section { padding-block: clamp(3rem, 7vw, 7rem); }
 .home-news h2, .inquiry-intro h2, .creator-request h2 { font-size: clamp(1.6rem, 3vw, 3rem); line-height: 1.4; }

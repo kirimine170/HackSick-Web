@@ -50,3 +50,26 @@ test("bad captcha host and provider failure never report acceptance", async t =>
   globalThis.fetch = async url => url.includes("siteverify") ? Response.json({success:true,hostname:new URL(origin).hostname,action:"contact"}) : Response.json({error:"failure"},{status:500});
   assert.equal((await onRequestPost({request:request(valid),env})).status,502);
 });
+
+test("organization inquiries are delivered only to the HackSick operations address", async t => {
+  const calls=[];
+  t.mock.method(globalThis,"fetch",async (url,options) => {
+    calls.push({url,options});
+    return Response.json(url.includes("siteverify") ? {success:true,hostname:new URL(origin).hostname,action:"contact"} : {id:"mock-id"});
+  });
+  const response = await onRequestPost({request:request({...valid,route:"organization",creator:"",category:"sponsorship",to:"attacker@example.com"}),env});
+  assert.equal(response.status,200);
+  const mail=JSON.parse(calls[1].options.body);
+  assert.deepEqual(mail.to,["shizuku.kirimine@hacksick.com"]);
+  assert.ok(mail.subject.startsWith("[HackSick]"));
+  assert.equal(mail.reply_to,valid.email);
+});
+
+test("route and category mismatches cannot cross delivery routes", async () => {
+  for(const data of [
+    {...valid,route:"unknown"},
+    {...valid,route:"organization",creator:"",category:"photography"},
+    {...valid,route:"creator",category:"sponsorship"},
+    {...valid,route:"organization",category:"research"},
+  ]) assert.equal((await onRequestPost({request:request(data),env})).status,400);
+});

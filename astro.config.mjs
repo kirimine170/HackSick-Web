@@ -5,5 +5,6 @@ export default defineConfig({
   site: "https://hacksick.com",
   output: "static",
   trailingSlash: "always",
+  redirects: { "/creators/shizuku-kirimine/": "/creators/kirimine-shizuku/" },
   integrations: [sitemap()],
 });

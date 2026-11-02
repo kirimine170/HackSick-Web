@@ -6,7 +6,7 @@ tags: [Art, Publishing, Photography, Creative Support, Research]
 featured: true
 events: []
 works: []
-creators: [matsumi-koen, marmite-daikon-oroshi, shizuku-kirimine]
+creators: [matsumi-koen, marmite-daikon-oroshi, kirimine-shizuku]
 externalLinks: []
 ---
 
@@ -14,7 +14,9 @@ externalLinks: []
 
 HSAP（HackSick Artifacts Project）は，クリエイターが創作へ集中できる環境をつくり，生まれた作品を出版，展示，販売，営業，PRへつなげるHackSickの創作支援プロジェクトです．
 
-作品をつくることだけでなく，企画設計，制作進行，会計，販売，権利管理，広報までを一つの活動として扱います．また，漫画，小説，イラスト，写真，映像など，異なる表現分野を組み合わせた共同制作にも取り組みます．2026年8月現在，パイロットプロジェクトの設計と準備を進めています．
+HackSick LTが知識やアイデアを持ち寄る交流の場であるのに対し，HSAPは創作物を形にして届けるための支援を担います．[HackSick全体の活動と役割](/about/#organization)もご覧ください．
+
+作品をつくることだけでなく，企画設計，制作進行，会計，販売，権利管理，広報までを一つの活動として扱います．また，漫画，小説，イラスト，写真，映像など，異なる表現分野を組み合わせた共同制作にも取り組みます．現在はパイロットプロジェクトの設計と準備を進めています．
 
 ## 目指すこと
 
@@ -50,7 +52,7 @@ HSAP（HackSick Artifacts Project）は，クリエイターが創作へ集中�
 
 ### 共同写真制作
 
-[マーマイト大根おろし](/creators/marmite-daikon-oroshi/)が撮影を担当し，[松見公園](/creators/matsumi-koen/)と[霧峰 雫](/creators/shizuku-kirimine/)が企画やディレクションへ参加する共同制作です．写真の選定，並び順，文章，媒体までを含め，一貫した主題を持つシリーズとして構成します．現在は試作を行い，公開範囲を確認しています．
+[マーマイト大根おろし](/creators/marmite-daikon-oroshi/)が撮影を担当し，[松見公園](/creators/matsumi-koen/)と[霧峰 雫](/creators/kirimine-shizuku/)が企画やディレクションへ参加する共同制作です．写真の選定，並び順，文章，媒体までを含め，一貫した主題を持つシリーズとして構成します．現在は試作を行い，公開範囲を確認しています．
 
 ### ロケーションフォト
 
@@ -84,4 +86,6 @@ HSAPはHackSickが運営します．権利とクレジットはプロジェク�
 
 ## Contact
 
-制作，作品の取扱い，展示・販売，取材に関する相談は，[hsap@hacksick.com](mailto:hsap@hacksick.com)へご連絡ください．
+クリエイターへの制作依頼，作品の取扱い，展示・販売に関する相談は，[HSAPの受付フォーム](/contact/?route=creator#inquiry)または[hsap@hacksick.com](mailto:hsap@hacksick.com)へご連絡ください．
+
+HackSick全体への共同企画，協賛，会場提供，研究連携，取材のご相談は，[HackSickの運営窓口](/contact/?route=organization#inquiry)で受け付けています．

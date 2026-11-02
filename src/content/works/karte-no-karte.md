@@ -6,7 +6,7 @@ tags: [Software, AI, Literature, Design]
 firstPresentedAt: 技術書典20
 thumbnail: /images/works/karte-no-karte.webp
 images: [/images/works/karte-no-karte.webp]
-creators: [shizuku-kirimine]
+creators: [kirimine-shizuku]
 projects: []
 events: []
 credits: [HackSick]

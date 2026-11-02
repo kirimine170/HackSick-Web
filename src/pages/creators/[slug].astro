@@ -53,11 +53,11 @@ const structuredData = isHsapCreator ? {
         {creator.data.tagline && <p class="creator-detail-tagline">{creator.data.tagline}</p>}
         <p>{creator.data.profile}</p>
         <TagList tags={creator.data.fields} />
-        <a class="button button-dark" href={`/contact/?creator=${creator.id}`}>お仕事のご相談 →</a>
+        <a class="button button-dark" href={isHsapCreator ? `/contact/?route=creator&creator=${creator.id}#inquiry` : "/contact/?route=organization#inquiry"}>{isHsapCreator ? "お仕事のご相談 →" : "共同企画・運営へのご相談 →"}</a>
       </div>
     </header>
     <div class="detail-body section-shell prose"><Content /></div>
-    <section class="section-shell creator-request"><p class="eyebrow"><span>WORK WITH</span>{creator.data.name}</p><h2>制作・お仕事のご相談</h2><p>ご依頼の内容やスケジュールなどを，フォームからお知らせください．HSAPが窓口となり，ご相談を承ります．</p><a class="button button-dark" href={`/contact/?creator=${creator.id}`}>{creator.data.name}への仕事を相談する →</a></section>
+    {isHsapCreator && <section class="section-shell creator-request"><p class="eyebrow"><span>WORK WITH</span>{creator.data.name}</p><h2>制作・お仕事のご相談</h2><p>ご依頼の内容やスケジュールなどを，フォームからお知らせください．HackSickの創作支援プロジェクトHSAPが，クリエイターと連携してご相談を承ります．</p><a class="button button-dark" href={`/contact/?route=creator&creator=${creator.id}#inquiry`}>{creator.data.name}への仕事を相談する →</a></section>}
     {creator.data.gallery.length > 0 && <PhotoCarousel images={creator.data.gallery} creatorName={creator.data.name} />}
     {news.length > 0 && <section class="section-shell news-section"><h2>関連するNews</h2><NewsList items={news} /></section>}
     {socialLinks.length > 0 && <nav class="social-links section-shell" aria-label="Creatorの外部リンク">{socialLinks.map((link) => <a href={link.url} target="_blank" rel="noreferrer">{link.label} ↗</a>)}</nav>}
@@ -88,6 +88,6 @@ const structuredData = isHsapCreator ? {
     )}
     {projects.length > 0 && <section class="related-section section-shell"><SectionHeading eyebrow="PROJECTS" title="関わっているProject。" /><div class="card-grid">{projects.map((project) => <ProjectCard project={project} />)}</div></section>}
     {works.length > 0 && <section class="related-section section-shell"><SectionHeading eyebrow="WORKS" title="つくったもの。" /><div class="card-grid card-grid-works">{works.map((work) => <WorkCard work={work} />)}</div></section>}
-    {events.length > 0 && <section class="related-section section-shell"><SectionHeading eyebrow="EVENTS" title="関わったEvent。" /><div class="card-grid">{events.map((event) => <EventCard event={event} compact />)}</div></section>}
+    {events.length > 0 && <section class="related-section section-shell"><SectionHeading eyebrow="EVENTS" title="直近に関わったEvent．" /><div class="card-grid">{events.slice(0,3).map((event) => <EventCard event={event} compact />)}</div>{events.length > 3 && <a class="button" href="/events/#archive">過去の開催記録を見る →</a>}</section>}
   </article>
 </BaseLayout>

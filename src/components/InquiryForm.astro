@@ -1,22 +1,24 @@
 ---
 import { getCollection } from "astro:content";
+import { inquiryRoutes } from "../data/inquiry.js";
 const creators = await getCollection("creators");
 const live = import.meta.env.PUBLIC_CONTACT_MODE?.trim() === "live";
 const sitekey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY?.trim();
 ---
 <section class="section-shell inquiry-section" id="inquiry">
-  <div class="inquiry-intro"><p class="eyebrow"><span>01</span>WORK INQUIRY</p><h2>つくりたいことを，<br />聞かせてください．</h2><p>撮影，制作，作品の取扱い，取材などのご相談を承ります．内容に応じてクリエイターと連携し，HSAPよりご連絡します．</p><p>窓口：<a href="mailto:hsap@hacksick.com">hsap@hacksick.com</a></p><p class="preview-note" id="form-mode">{live ? "送信内容はHSAPの窓口へ届きます．" : "PREVIEW / 操作確認用フォームです．入力内容は送信・保存されません．実際のご相談はメールでお寄せください．"}</p></div>
+  <div class="inquiry-intro"><p class="eyebrow"><span>CONTACT FORM</span>お問い合わせ</p><h2>ご相談内容を，<br />お聞かせください．</h2><p id="inquiry-route-description">{inquiryRoutes.organization.description}</p><p>受付窓口：<a id="inquiry-recipient" href={`mailto:${inquiryRoutes.organization.email}`}>{inquiryRoutes.organization.email}</a></p><p class="preview-note" id="form-mode">{live ? "選択した相談先の受付窓口へ送信します．" : "PREVIEW / 操作確認用フォームです．入力内容は送信・保存されません．実際のご相談はメールでお寄せください．"}</p></div>
   <div class="inquiry-panel" data-live={String(live)}>
     <p class="form-step" id="form-step" aria-live="polite">01 INPUT / ご相談内容の入力</p>
     <form id="inquiry-form">
       <fieldset id="inquiry-fields">
         <legend class="sr-only">お問い合わせ内容</legend>
-        <label>依頼したいクリエイター<select name="creator" id="inquiry-creator"><option value="">指定なし・まずは相談したい</option>{creators.map(creator => <option value={creator.id}>{creator.data.name}</option>)}</select></label>
-        <label>ご相談の種類 <span class="required">必須</span><select name="category" required><option value="photography">写真撮影</option><option value="production">制作・共同企画</option><option value="distribution">書籍・作品の取扱い</option><option value="press">取材・メディア掲載</option><option value="other">その他</option></select></label>
+        <label>相談先 <span class="required">必須</span><select name="route" required>{Object.entries(inquiryRoutes).map(([id,route]) => <option value={id}>{route.label}</option>)}</select></label>
+        <label id="inquiry-creator-field" hidden>依頼したいクリエイター<select name="creator" id="inquiry-creator"><option value="">指定なし・まずは相談したい</option>{creators.filter(creator => creator.data.projects.includes("hsap")).map(creator => <option value={creator.id}>{creator.data.name}</option>)}</select></label>
+        <label>ご相談の種類 <span class="required">必須</span><select name="category" required>{inquiryRoutes.organization.categories.map(category => <option value={category.value}>{category.label}</option>)}</select></label>
         <div class="form-grid"><label>お名前 <span class="required">必須</span><input name="name" autocomplete="name" required maxlength="100" /></label><label>会社・団体名<input name="organization" autocomplete="organization" maxlength="150" /></label></div>
         <label>メールアドレス <span class="required">必須</span><input name="email" type="email" autocomplete="email" required maxlength="254" /></label>
         <div class="form-grid"><label>希望時期<input name="schedule" maxlength="150" placeholder="例：12月中，希望日は相談したい" /></label><label>ご予算<input name="budget" maxlength="150" placeholder="例：5万円程度，見積もりを相談したい" /></label></div>
-        <label>ご相談内容 <span class="required">必須</span><textarea name="message" required minlength="10" maxlength="5000" rows="7" placeholder="制作・撮影したいもの，用途，場所，納期などをお知らせください．決まっていないことがあっても構いません．"></textarea></label>
+        <label>ご相談内容 <span class="required">必須</span><textarea name="message" required minlength="10" maxlength="5000" rows="7" placeholder="ご相談の目的，取り組みたいこと，希望時期などをお知らせください．決まっていないことがあっても構いません．"></textarea></label>
         <p class="form-help">参考資料はURLでご案内ください．パスワードや機密情報は記入しないでください．</p>
         <div class="form-trap" aria-hidden="true"><label>Website<input name="website" tabindex="-1" autocomplete="off" /></label></div>
         <label class="form-consent"><input type="checkbox" name="consent" required /><span><a href="/privacy/" target="_blank" rel="noreferrer">お問い合わせにおける個人情報の取扱い</a>を確認し，同意します．</span></label>
@@ -27,12 +29,13 @@ const sitekey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY?.trim();
       {live && sitekey && <><script is:inline src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit" async defer></script><div id="inquiry-verification" data-sitekey={sitekey}></div></>}
       <div class="form-actions"><button type="button" class="button" id="inquiry-back">入力に戻る</button><button type="button" class="button button-dark" id="inquiry-send">{live ? "この内容で送信する →" : "テストを完了する →"}</button></div>
     </section>
-    <section id="inquiry-done" hidden tabindex="-1"><h3>{live ? "お問い合わせを受け付けました．" : "フォームの操作確認が完了しました．"}</h3><p>{live ? "ご入力のメールアドレスへ，HSAPよりご連絡します．" : "メールの送信や入力内容の保存は行っていません．実際のご相談はhsap@hacksick.comへご連絡ください．"}</p><a class="button" href="/creators/">クリエイターを見る →</a></section>
+    <section id="inquiry-done" hidden tabindex="-1"><h3>{live ? "お問い合わせを受け付けました．" : "フォームの操作確認が完了しました．"}</h3><p id="inquiry-done-message">{live ? "ご入力のメールアドレスへ，担当窓口よりご連絡します．" : "メールの送信や入力内容の保存は行っていません．実際のご相談は，選択した受付窓口へメールでお寄せください．"}</p><a class="button" href="/about/">HackSickについて →</a></section>
     <p id="inquiry-error" role="alert" hidden></p>
-    <noscript><p>フォームの操作にはJavaScriptが必要です．<a href="mailto:hsap@hacksick.com">メールでお問い合わせください．</a></p></noscript>
+    <noscript><p>フォームの操作にはJavaScriptが必要です．HackSickへの相談は<a href={`mailto:${inquiryRoutes.organization.email}`}>{inquiryRoutes.organization.email}</a>，クリエイターへの仕事依頼は<a href={`mailto:${inquiryRoutes.creator.email}`}>{inquiryRoutes.creator.email}</a>へメールでお問い合わせください．</p></noscript>
   </div>
 </section>
 <script>
+  import { inquiryRoutes } from "../data/inquiry.js";
   const form = document.querySelector<HTMLFormElement>("#inquiry-form")!;
   const fields = document.querySelector<HTMLFieldSetElement>("#inquiry-fields")!;
   const confirm = document.querySelector<HTMLElement>("#inquiry-confirm")!;
@@ -41,12 +44,28 @@ const sitekey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY?.trim();
   const error = document.querySelector<HTMLElement>("#inquiry-error")!;
   const step = document.querySelector<HTMLElement>("#form-step")!;
   const send = document.querySelector<HTMLButtonElement>("#inquiry-send")!;
+  const route = form.elements.namedItem("route") as HTMLSelectElement;
   const creator = form.elements.namedItem("creator") as HTMLSelectElement;
   const category = form.elements.namedItem("category") as HTMLSelectElement;
   const params = new URLSearchParams(location.search);
-  if ([...creator.options].some(o => o.value === params.get("creator"))) creator.value = params.get("creator")!;
+  const routeData = () => inquiryRoutes[route.value as keyof typeof inquiryRoutes];
+  const syncRoute = () => {
+    const info = routeData();
+    const previousCategory = category.value;
+    category.replaceChildren(...info.categories.map(item => new Option(item.label, item.value)));
+    if ([...category.options].some(option => option.value === previousCategory)) category.value = previousCategory;
+    document.getElementById("inquiry-route-description")!.textContent = info.description;
+    const recipient = document.querySelector<HTMLAnchorElement>("#inquiry-recipient")!;
+    recipient.textContent = info.email; recipient.href = `mailto:${info.email}`;
+    document.getElementById("inquiry-creator-field")!.hidden = route.value !== "creator";
+    if (route.value !== "creator") creator.value = "";
+  };
+  route.value = params.get("route") === "creator" || (!params.has("route") && params.has("creator")) ? "creator" : "organization";
+  syncRoute();
+  route.addEventListener("change", syncRoute);
+  if (route.value === "creator" && [...creator.options].some(o => o.value === params.get("creator"))) creator.value = params.get("creator")!;
   if ([...category.options].some(o => o.value === params.get("category"))) category.value = params.get("category")!;
-  const labels: Record<string,string> = { creator:"クリエイター", category:"ご相談の種類", name:"お名前", organization:"会社・団体名", email:"メールアドレス", schedule:"希望時期", budget:"ご予算", message:"ご相談内容" };
+  const labels: Record<string,string> = { route:"相談先", creator:"クリエイター", category:"ご相談の種類", name:"お名前", organization:"会社・団体名", email:"メールアドレス", schedule:"希望時期", budget:"ご予算", message:"ご相談内容" };
   let payload: Record<string,string> = {};
   type Turnstile = {
     render: (container: HTMLElement, options: { sitekey: string; action: string }) => string;
@@ -70,9 +89,10 @@ const sitekey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY?.trim();
     payload = Object.fromEntries(new FormData(form).entries()) as Record<string,string>;
     summary.replaceChildren();
     for (const [key,label] of Object.entries(labels)) {
+      if (key === "creator" && route.value !== "creator") continue;
       const dt = document.createElement("dt"); dt.textContent = label;
       const dd = document.createElement("dd");
-      dd.textContent = key === "creator" ? creator.selectedOptions[0].text : key === "category" ? category.selectedOptions[0].text : payload[key] || "指定なし";
+      dd.textContent = key === "route" ? `${routeData().label}（${routeData().email}）` : key === "creator" ? creator.selectedOptions[0].text : key === "category" ? category.selectedOptions[0].text : payload[key] || "指定なし";
       summary.append(dt,dd);
     }
     form.hidden = true; fields.disabled = true; confirm.hidden = false; error.hidden = true;
@@ -92,10 +112,11 @@ const sitekey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY?.trim();
         payload.token = widgetId !== undefined ? getTurnstile()?.getResponse(widgetId) ?? "" : "";
         if (!payload.token) throw new Error("送信前の確認が完了していません．認証欄の表示を確認し，少し待ってから再度お試しください．");
         const response = await fetch("/api/contact", { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(payload) });
-        if (!response.ok) throw new Error("送信できませんでした．入力内容は保持されています．時間をおいて再度お試しいただくか，hsap@hacksick.comへご連絡ください．");
+        if (!response.ok) throw new Error(`送信できませんでした．入力内容は保持されています．時間をおいて再度お試しいただくか，${routeData().email}へご連絡ください．`);
       }
       confirm.hidden = true; done.hidden = false; step.textContent = "03 COMPLETE";
-      form.reset(); payload = {}; summary.replaceChildren(); done.focus();
+      const chosenRoute = route.value;
+      form.reset(); route.value = chosenRoute; syncRoute(); payload = {}; summary.replaceChildren(); done.focus();
     } catch (e) {
       error.textContent = e instanceof Error ? e.message : "送信できませんでした．"; error.hidden = false;
       if (widgetId !== undefined && payload.token) getTurnstile()?.reset(widgetId);

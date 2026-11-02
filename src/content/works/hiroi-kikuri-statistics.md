@@ -9,7 +9,7 @@ thumbnail: /images/works/hiroi-kikuri-statistics.webp
 thumbnailWidth: 626
 thumbnailHeight: 900
 images: [/images/works/hiroi-kikuri-statistics.webp]
-creators: [shizuku-kirimine]
+creators: [kirimine-shizuku]
 projects: []
 events: []
 credits: [HackSick, 霧峰 雫]

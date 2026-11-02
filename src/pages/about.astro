@@ -3,6 +3,7 @@ import PageHero from "../components/PageHero.astro";
 import SectionHeading from "../components/SectionHeading.astro";
 import { organization } from "../data/site";
 import BaseLayout from "../layouts/BaseLayout.astro";
+import HackSickStructure from "../components/HackSickStructure.astro";
 ---
 
 <BaseLayout title="About｜HackSick" description="HackSickがどのような場所で、何を大切にしているかを紹介します。">
@@ -15,6 +16,8 @@ import BaseLayout from "../layouts/BaseLayout.astro";
       <p>完成した成果だけでなく、未完成のアイデアや、答えのない問いも歓迎します。話して終わるのではなく、実際につくり、外へ発表するところまでを支えます。</p>
     </div>
   </section>
+
+  <HackSickStructure />
 
   <section class="principles-section">
     <div class="section-shell">

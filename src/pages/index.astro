@@ -5,6 +5,7 @@ import Hero from "../components/Hero.astro";
 import Join from "../components/Join.astro";
 import Philosophy from "../components/Philosophy.astro";
 import NewsList from "../components/NewsList.astro";
+import HackSickStructure from "../components/HackSickStructure.astro";
 import { formatDateTime } from "../data/site";
 import BaseLayout from "../layouts/BaseLayout.astro";
 
@@ -71,13 +72,14 @@ const exploreLinks = [
       </a>
       <a class="home-status-item" href={upcomingEvent ? `/events/${upcomingEvent.id}/` : "/events/"}>
         <span>NEXT EVENT</span>
-        <strong>{upcomingEvent?.data.title ?? "EVENT UPDATES"}</strong>
-        <small>{upcomingEvent ? formatDateTime(upcomingEvent.data.startDate) : "次の開催情報を見る。"}</small>
+        <strong>{upcomingEvent?.data.title ?? "HackSick LT / 月1回開催"}</strong>
+        <small>{upcomingEvent ? formatDateTime(upcomingEvent.data.startDate) : "最終土曜日を目安に開催．最新の募集情報へ．"}</small>
         <i aria-hidden="true">→</i>
       </a>
     </div>
   </section>
 
+  <HackSickStructure />
   <Philosophy />
 
   <section class="home-explore section-shell" aria-labelledby="explore-title">

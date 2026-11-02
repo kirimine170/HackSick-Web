@@ -22,7 +22,3 @@ featured: true
 ## Works
 
 [『あのことの関係性について』](/works/anokoto-no-kankeisei-ni-tsuite/)の紹介ページをご覧いただけます．
-
-## Contact
-
-HSAPでの制作や作品の取扱いに関する相談は，[お問い合わせフォーム](/contact/?creator=matsumi-koen)へお寄せください．
