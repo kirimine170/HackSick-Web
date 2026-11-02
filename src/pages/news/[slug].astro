@@ -1,0 +1,24 @@
+---
+import { getCollection, render, type CollectionEntry } from "astro:content";
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import { formatDate } from "../../data/site";
+export async function getStaticPaths() {
+  return (await getCollection("news")).map(news => ({ params: { slug: news.id }, props: { news } }));
+}
+interface Props { news: CollectionEntry<"news"> }
+const { news } = Astro.props;
+const { Content } = await render(news);
+const [creators, works, projects] = await Promise.all([getCollection("creators"), getCollection("works"), getCollection("projects")]);
+const related = [
+  ...creators.filter(item => news.data.creators.includes(item.id)).map(item => ({ label:item.data.name, href:`/creators/${item.id}/` })),
+  ...works.filter(item => news.data.works.includes(item.id)).map(item => ({ label:item.data.title, href:`/works/${item.id}/` })),
+  ...projects.filter(item => news.data.projects.includes(item.id)).map(item => ({ label:item.data.title, href:`/projects/${item.id}/` })),
+];
+---
+<BaseLayout title={`${news.data.title}｜News｜HackSick`} description={news.data.description}>
+  <article class="detail-page">
+    <header class="detail-hero section-shell"><p class="eyebrow"><span>NEWS</span>{news.data.category}</p><time datetime={news.data.date.toISOString()}>{formatDate(news.data.date)}</time>{news.data.pressRelease && <p>PRESS RELEASE</p>}<h1>{news.data.title}</h1><p>{news.data.description}</p></header>
+    <div class="detail-body section-shell prose"><Content /></div>
+    <nav class="section-shell news-related" aria-label="関連ページ">{related.map(item => <a class="button" href={item.href}>{item.label} →</a>)}<a class="button" href="/news/">News一覧へ →</a></nav>
+  </article>
+</BaseLayout>

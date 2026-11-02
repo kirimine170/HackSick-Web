@@ -9,7 +9,7 @@ export const site = {
 
 export const navigation = [
   { label: "About", href: "/about/" },
-  { label: "Activities", href: "/activities/" },
+  { label: "News", href: "/news/" },
   { label: "Projects", href: "/projects/" },
   { label: "Works", href: "/works/" },
   { label: "Events", href: "/events/" },

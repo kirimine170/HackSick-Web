@@ -3,7 +3,7 @@ name: 松見公園
 profile: 漫画，イラスト，小説を横断し，言葉と絵を行き来しながら作品を制作するクリエイター．HSAPでは作家としての制作に加え，写真作品の企画とディレクションにも参加します．
 fields: [Comics, Illustration, Literature]
 tags: [HSAP, Creative Direction]
-works: []
+works: [anokoto-no-kankeisei-ni-tsuite]
 projects: [hsap]
 events: []
 achievements: []
@@ -21,8 +21,8 @@ featured: true
 
 ## Works
 
-代表作品は，作者から掲載許諾を得たものから紹介します．
+[『あのことの関係性について』](/works/anokoto-no-kankeisei-ni-tsuite/)の紹介ページをご覧いただけます．
 
 ## Contact
 
-HSAPでの制作や作品の取扱いに関する相談は，[hsap@hacksick.com](mailto:hsap@hacksick.com)へご連絡ください．
+HSAPでの制作や作品の取扱いに関する相談は，[お問い合わせフォーム](/contact/?creator=matsumi-koen)へお寄せください．

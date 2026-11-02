@@ -1,0 +1,16 @@
+---
+import type { CollectionEntry } from "astro:content";
+import { formatDate } from "../data/site";
+interface Props { items: CollectionEntry<"news">[] }
+const { items } = Astro.props;
+---
+<ol class="news-list">
+  {items.map((item) => <li data-category={item.data.category}>
+    <a href={`/news/${item.id}/`}>
+      <time datetime={item.data.date.toISOString()}>{formatDate(item.data.date)}</time>
+      <span class="news-category">{item.data.category}</span>
+      <span class="news-title">{item.data.title}{item.data.pressRelease && <small>PRESS RELEASE</small>}</span>
+      <span aria-hidden="true">↗</span>
+    </a>
+  </li>)}
+</ol>

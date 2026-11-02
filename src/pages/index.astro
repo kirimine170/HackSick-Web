@@ -4,6 +4,7 @@ import About from "../components/About.astro";
 import Hero from "../components/Hero.astro";
 import Join from "../components/Join.astro";
 import Philosophy from "../components/Philosophy.astro";
+import NewsList from "../components/NewsList.astro";
 import { formatDateTime } from "../data/site";
 import BaseLayout from "../layouts/BaseLayout.astro";
 
@@ -15,6 +16,7 @@ const [events, projects] = await Promise.all([
 const activeProject = projects
   .filter((project) => project.data.status === "ongoing")
   .sort((a, b) => (b.data.startDate?.getTime() ?? 0) - (a.data.startDate?.getTime() ?? 0))[0];
+const news = (await getCollection("news")).sort((a,b) => b.data.date.getTime() - a.data.date.getTime()).slice(0, 3);
 const upcomingEvent = events
   .filter((event) => event.data.status === "upcoming" || event.data.status === "ongoing")
   .sort((a, b) => a.data.startDate.getTime() - b.data.startDate.getTime())[0];
@@ -55,6 +57,7 @@ const exploreLinks = [
 
 <BaseLayout>
   <Hero />
+  <section class="section-shell home-news"><p class="eyebrow"><span>LATEST</span>NEWS</p><h2>HackSickの最新情報</h2><NewsList items={news} /><a class="button" href="/news/">すべてのNewsを見る →</a></section>
   <About />
 
   <section class="home-status" aria-label="HackSickの現在の活動">

@@ -1,0 +1,84 @@
+---
+import { getCollection } from "astro:content";
+const creators = await getCollection("creators");
+const live = import.meta.env.PUBLIC_CONTACT_MODE === "live";
+const sitekey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY;
+---
+<section class="section-shell inquiry-section" id="inquiry">
+  <div class="inquiry-intro"><p class="eyebrow"><span>01</span>WORK INQUIRY</p><h2>つくりたいことを，<br />聞かせてください．</h2><p>撮影，制作，作品の取扱い，取材などのご相談を承ります．内容に応じてクリエイターと連携し，HSAPよりご連絡します．</p><p>窓口：<a href="mailto:hsap@hacksick.com">hsap@hacksick.com</a></p><p class="preview-note" id="form-mode">{live ? "送信内容はHSAPの窓口へ届きます．" : "PREVIEW / 操作確認用フォームです．入力内容は送信・保存されません．実際のご相談はメールでお寄せください．"}</p></div>
+  <div class="inquiry-panel" data-live={String(live)}>
+    <p class="form-step" id="form-step" aria-live="polite">01 INPUT / ご相談内容の入力</p>
+    <form id="inquiry-form">
+      <fieldset id="inquiry-fields">
+        <legend class="sr-only">お問い合わせ内容</legend>
+        <label>依頼したいクリエイター<select name="creator" id="inquiry-creator"><option value="">指定なし・まずは相談したい</option>{creators.map(creator => <option value={creator.id}>{creator.data.name}</option>)}</select></label>
+        <label>ご相談の種類 <span class="required">必須</span><select name="category" required><option value="photography">写真撮影</option><option value="production">制作・共同企画</option><option value="distribution">書籍・作品の取扱い</option><option value="press">取材・メディア掲載</option><option value="other">その他</option></select></label>
+        <div class="form-grid"><label>お名前 <span class="required">必須</span><input name="name" autocomplete="name" required maxlength="100" /></label><label>会社・団体名<input name="organization" autocomplete="organization" maxlength="150" /></label></div>
+        <label>メールアドレス <span class="required">必須</span><input name="email" type="email" autocomplete="email" required maxlength="254" /></label>
+        <div class="form-grid"><label>希望時期<input name="schedule" maxlength="150" placeholder="例：12月中，希望日は相談したい" /></label><label>ご予算<input name="budget" maxlength="150" placeholder="例：5万円程度，見積もりを相談したい" /></label></div>
+        <label>ご相談内容 <span class="required">必須</span><textarea name="message" required minlength="10" maxlength="5000" rows="7" placeholder="制作・撮影したいもの，用途，場所，納期などをお知らせください．決まっていないことがあっても構いません．"></textarea></label>
+        <p class="form-help">参考資料はURLでご案内ください．パスワードや機密情報は記入しないでください．</p>
+        <div class="form-trap" aria-hidden="true"><label>Website<input name="website" tabindex="-1" autocomplete="off" /></label></div>
+        <label class="form-consent"><input type="checkbox" name="consent" required /><span><a href="/privacy/" target="_blank" rel="noreferrer">お問い合わせにおける個人情報の取扱い</a>を確認し，同意します．</span></label>
+        <button type="submit" class="button button-dark">入力内容を確認する →</button>
+      </fieldset>
+    </form>
+    <section id="inquiry-confirm" hidden tabindex="-1"><h3>ご相談内容をご確認ください．</h3><dl id="inquiry-summary"></dl>
+      {live && sitekey && <><script is:inline src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script><div class="cf-turnstile" data-sitekey={sitekey} data-action="contact"></div></>}
+      <div class="form-actions"><button type="button" class="button" id="inquiry-back">入力に戻る</button><button type="button" class="button button-dark" id="inquiry-send">{live ? "この内容で送信する →" : "テストを完了する →"}</button></div>
+    </section>
+    <section id="inquiry-done" hidden tabindex="-1"><h3>{live ? "お問い合わせを受け付けました．" : "フォームの操作確認が完了しました．"}</h3><p>{live ? "ご入力のメールアドレスへ，HSAPよりご連絡します．" : "メールの送信や入力内容の保存は行っていません．実際のご相談はhsap@hacksick.comへご連絡ください．"}</p><a class="button" href="/creators/">クリエイターを見る →</a></section>
+    <p id="inquiry-error" role="alert" hidden></p>
+    <noscript><p>フォームの操作にはJavaScriptが必要です．<a href="mailto:hsap@hacksick.com">メールでお問い合わせください．</a></p></noscript>
+  </div>
+</section>
+<script>
+  const form = document.querySelector<HTMLFormElement>("#inquiry-form")!;
+  const fields = document.querySelector<HTMLFieldSetElement>("#inquiry-fields")!;
+  const confirm = document.querySelector<HTMLElement>("#inquiry-confirm")!;
+  const done = document.querySelector<HTMLElement>("#inquiry-done")!;
+  const summary = document.querySelector<HTMLElement>("#inquiry-summary")!;
+  const error = document.querySelector<HTMLElement>("#inquiry-error")!;
+  const step = document.querySelector<HTMLElement>("#form-step")!;
+  const send = document.querySelector<HTMLButtonElement>("#inquiry-send")!;
+  const creator = form.elements.namedItem("creator") as HTMLSelectElement;
+  const category = form.elements.namedItem("category") as HTMLSelectElement;
+  const params = new URLSearchParams(location.search);
+  if ([...creator.options].some(o => o.value === params.get("creator"))) creator.value = params.get("creator")!;
+  if ([...category.options].some(o => o.value === params.get("category"))) category.value = params.get("category")!;
+  const labels: Record<string,string> = { creator:"クリエイター", category:"ご相談の種類", name:"お名前", organization:"会社・団体名", email:"メールアドレス", schedule:"希望時期", budget:"ご予算", message:"ご相談内容" };
+  let payload: Record<string,string> = {};
+  form.addEventListener("submit", event => {
+    event.preventDefault();
+    payload = Object.fromEntries(new FormData(form).entries()) as Record<string,string>;
+    summary.replaceChildren();
+    for (const [key,label] of Object.entries(labels)) {
+      const dt = document.createElement("dt"); dt.textContent = label;
+      const dd = document.createElement("dd");
+      dd.textContent = key === "creator" ? creator.selectedOptions[0].text : key === "category" ? category.selectedOptions[0].text : payload[key] || "指定なし";
+      summary.append(dt,dd);
+    }
+    form.hidden = true; fields.disabled = true; confirm.hidden = false; error.hidden = true;
+    step.textContent = "02 CONFIRM / 入力内容の確認"; confirm.focus();
+  });
+  document.querySelector("#inquiry-back")!.addEventListener("click", () => {
+    fields.disabled = false; form.hidden = false; confirm.hidden = true; error.hidden = true;
+    step.textContent = "01 INPUT / ご相談内容の入力"; creator.focus();
+  });
+  send.addEventListener("click", async () => {
+    send.disabled = true; error.hidden = true;
+    try {
+      if (document.querySelector<HTMLElement>("[data-live]")!.dataset.live === "true") {
+        payload.token = document.querySelector<HTMLInputElement>('[name="cf-turnstile-response"]')?.value ?? "";
+        const response = await fetch("/api/contact", { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(payload) });
+        if (!response.ok) throw new Error("送信できませんでした．入力内容は保持されています．時間をおいて再度お試しいただくか，hsap@hacksick.comへご連絡ください．");
+      }
+      confirm.hidden = true; done.hidden = false; step.textContent = "03 COMPLETE";
+      form.reset(); payload = {}; summary.replaceChildren(); done.focus();
+    } catch (e) {
+      error.textContent = e instanceof Error ? e.message : "送信できませんでした．"; error.hidden = false;
+      const turnstile = (window as unknown as { turnstile?: { reset: () => void } }).turnstile;
+      turnstile?.reset();
+    } finally { send.disabled = false; }
+  });
+</script>

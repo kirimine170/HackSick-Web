@@ -8,6 +8,7 @@ import TagList from "../../components/TagList.astro";
 import WorkCard from "../../components/WorkCard.astro";
 import { formatDate } from "../../data/site";
 import BaseLayout from "../../layouts/BaseLayout.astro";
+import NewsList from "../../components/NewsList.astro";
 
 export async function getStaticPaths() {
   const creators = await getCollection("creators");
@@ -17,6 +18,7 @@ export async function getStaticPaths() {
 interface Props { creator: CollectionEntry<"creators"> }
 const { creator } = Astro.props as Props;
 const { Content } = await render(creator);
+const news = (await getCollection("news")).filter(item => item.data.creators.includes(creator.id)).sort((a,b) => b.data.date.getTime() - a.data.date.getTime());
 const [allProjects, allWorks, allEvents] = await Promise.all([getCollection("projects"), getCollection("works"), getCollection("events")]);
 const projects = allProjects.filter((project) => creator.data.projects.includes(project.id));
 const works = allWorks.filter((work) => creator.data.works.includes(work.id));
@@ -51,10 +53,13 @@ const structuredData = isHsapCreator ? {
         {creator.data.tagline && <p class="creator-detail-tagline">{creator.data.tagline}</p>}
         <p>{creator.data.profile}</p>
         <TagList tags={creator.data.fields} />
+        <a class="button button-dark" href={`/contact/?creator=${creator.id}`}>お仕事のご相談 →</a>
       </div>
     </header>
     <div class="detail-body section-shell prose"><Content /></div>
+    <section class="section-shell creator-request"><p class="eyebrow"><span>WORK WITH</span>{creator.data.name}</p><h2>制作・お仕事のご相談</h2><p>ご依頼の内容やスケジュールなどを，フォームからお知らせください．HSAPが窓口となり，ご相談を承ります．</p><a class="button button-dark" href={`/contact/?creator=${creator.id}`}>{creator.data.name}への仕事を相談する →</a></section>
     {creator.data.gallery.length > 0 && <PhotoCarousel images={creator.data.gallery} creatorName={creator.data.name} />}
+    {news.length > 0 && <section class="section-shell news-section"><h2>関連するNews</h2><NewsList items={news} /></section>}
     {socialLinks.length > 0 && <nav class="social-links section-shell" aria-label="Creatorの外部リンク">{socialLinks.map((link) => <a href={link.url} target="_blank" rel="noreferrer">{link.label} ↗</a>)}</nav>}
     {achievements.length > 0 && (
       <section class="achievement-section section-shell">

@@ -128,4 +128,18 @@ const activities = defineCollection({
   }),
 });
 
-export const collections = { events, projects, works, creators, activities };
+const news = defineCollection({
+  loader: glob({ pattern: "**/*.{md,mdx}", base: "./src/content/news" }),
+  schema: z.object({
+    title: z.string(),
+    description: z.string(),
+    date: z.coerce.date(),
+    category: z.enum(["RELEASE", "EVENT", "MEDIA", "INFORMATION"]),
+    pressRelease: z.boolean().default(false),
+    creators: z.array(z.string()).default([]),
+    works: z.array(z.string()).default([]),
+    projects: z.array(z.string()).default([]),
+  }),
+});
+
+export const collections = { events, projects, works, creators, activities, news };

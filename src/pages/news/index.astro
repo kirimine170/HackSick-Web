@@ -1,0 +1,31 @@
+---
+import { getCollection } from "astro:content";
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import PageHero from "../../components/PageHero.astro";
+import NewsList from "../../components/NewsList.astro";
+const news = (await getCollection("news")).sort((a,b) => b.data.date.getTime() - a.data.date.getTime());
+const categories = ["ALL", "RELEASE", "EVENT", "MEDIA", "INFORMATION"];
+---
+<BaseLayout title="News｜HackSick" description="HackSickの作品，イベント，プロジェクトに関する公式のお知らせ．">
+  <PageHero index="02" eyebrow="NEWS" title="新しい動き，ここから．" lead="作品の発表，イベントの開催，プロジェクトの最新情報をお届けします．" />
+  <section class="section-shell news-section">
+    <div class="news-filters" role="group" aria-label="お知らせのカテゴリ">
+      {categories.map(category => <button type="button" data-filter={category} aria-pressed={category === "ALL"}>{category}</button>)}
+    </div>
+    <NewsList items={news} />
+    <p id="news-empty" hidden role="status">このカテゴリのお知らせはまだありません．</p>
+    <aside class="editorial-link"><span>STORIES ON NOTE</span><h2>活動の背景と，つくる人の声．</h2><p>イベントレポートや制作の過程は，noteでお届けしています．</p><a href="https://note.com/hacksick" target="_blank" rel="noreferrer">noteで読み物を読む ↗</a></aside>
+  </section>
+</BaseLayout>
+<script>
+  const filters = document.querySelectorAll<HTMLButtonElement>("[data-filter]");
+  filters.forEach(button => button.addEventListener("click", () => {
+    filters.forEach(item => item.setAttribute("aria-pressed", String(item === button)));
+    let count = 0;
+    document.querySelectorAll<HTMLElement>("[data-category]").forEach(item => {
+      item.hidden = button.dataset.filter !== "ALL" && item.dataset.category !== button.dataset.filter;
+      if (!item.hidden) count++;
+    });
+    document.getElementById("news-empty")!.hidden = count > 0;
+  }));
+</script>
