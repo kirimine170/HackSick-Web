@@ -5,6 +5,7 @@
   --muted: #65656d;
   --line: rgba(16, 16, 20, 0.16);
   --pink: #d3147e;
+  --link: #a80f64;
   --purple: #693e9e;
   --blue: #3e8fd2;
   --mint: #55aaa3;
@@ -2507,6 +2508,36 @@ a {
 
 .prose p {
   line-height: 2;
+}
+
+.prose a:not(.button),
+.book-information table a {
+  color: var(--link);
+  text-decoration-line: underline;
+  text-decoration-thickness: 0.08em;
+  text-underline-offset: 0.22em;
+  text-decoration-skip-ink: auto;
+}
+
+.prose a:not(.button):is(:hover, :focus-visible),
+.book-information table a:is(:hover, :focus-visible) {
+  color: var(--ink);
+  text-decoration-thickness: 0.14em;
+}
+
+.prose li > a:only-child {
+  display: inline-block;
+  max-width: 100%;
+  min-height: 44px;
+  padding-block: 0.4rem;
+  font-weight: 650;
+}
+
+.prose li > a:only-child[href^="/"]::after {
+  content: "→";
+  content: "→" / "";
+  display: inline-block;
+  margin-inline-start: 0.55em;
 }
 
 .prose figure {
