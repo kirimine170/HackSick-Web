@@ -96,6 +96,8 @@ src/
 
 ## Content Management
 
+イベント報告の登壇者名は敬称略で統一します．登壇者一覧の見出しは「登壇者（敬称略）」とし，本文でも「さん」「氏」「様」などの敬称は付けません．本人の活動名に含まれる表記や，引用・発表タイトルはそのまま記載します．
+
 Event，Project，Work，Creator，Activityは `src/content/` 配下のMarkdownとして管理します．Schemaは `src/content.config.ts` にあり，`npm run check` と `npm run build` の両方で検証されます．
 
 外部URLと正式な問い合わせ先は，繰り返し使うものを `src/data/site.ts` に集約してください．Event固有のconnpass URLやWork固有の販売URLは，各ContentのFrontmatterに記載します．
