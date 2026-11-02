@@ -84,6 +84,8 @@ const works = defineCollection({
     ogImage: z.string().optional(),
     book: z.object({
       format: z.string(),
+      publisher: z.string().optional(),
+      production: z.string().optional(),
       price: z.number().positive(),
       currency: z.literal("JPY"),
       retailer: z.string(),

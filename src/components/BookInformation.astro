@@ -12,6 +12,8 @@ const price = book ? new Intl.NumberFormat("ja-JP").format(book.price) : "";
     <table><caption class="sr-only">『{work.data.title}』の作品情報</caption><colgroup><col style="width: 28%" /><col style="width: 72%" /></colgroup><tbody>
       <tr><th scope="row">書名</th><td>{work.data.title}</td></tr>
       <tr><th scope="row">著者</th><td>{authors.map((author,index) => <>{index > 0 && "，"}<a href={`/creators/${author.id}/`}>{author.data.name}</a></>)}</td></tr>
+      {book.publisher && <tr><th scope="row">発行</th><td>{book.publisher}</td></tr>}
+      {book.production && <tr><th scope="row">制作</th><td>{book.production}</td></tr>}
       <tr><th scope="row">作品形態</th><td>漫画短編集・四編収録</td></tr>
       <tr><th scope="row">判型</th><td>{book.format}</td></tr>
       <tr><th scope="row">取扱価格</th><td>{price}円（{book.retailer}店頭価格）</td></tr>

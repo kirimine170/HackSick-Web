@@ -46,6 +46,6 @@ for (const [name, label, author] of [
   await sharp(Buffer.from(svg)).webp({ quality: 90 }).toFile(path(`public/images/og/${name}.webp`));
 }
 await copyFile(coverPath, path(`public/press/${slug}/cover.webp`));
-await writeFile(path(`public/press/${slug}/credit.txt`), `書名：あのことの関係性について\n著者：松見公園\nサークル：きぐうのきわみ\n\nクレジット表記例\n書影：松見公園『あのことの関係性について』\n\n書影：提供原寸874×1240px，WebP形式．拡大補間は行っていません．\n紹介・報道で使用する際は上記クレジットをご記載ください．\n掲載方法や，より高解像度の画像のご相談：hsap@hacksick.com\n\nこの資料には陳列写真を含めていません．\n`);
+await writeFile(path(`public/press/${slug}/credit.txt`), `書名：あのことの関係性について\n著者：松見公園\nサークル：きぐうのきわみ\n発行・制作：HackSick\n\nクレジット表記例\n書影：松見公園『あのことの関係性について』\n\n書影：提供原寸874×1240px，WebP形式．拡大補間は行っていません．\n紹介・報道で使用する際は上記クレジットをご記載ください．\n掲載方法や，より高解像度の画像のご相談：hsap@hacksick.com\n\nこの資料には陳列写真を含めていません．\n`);
 execFileSync("zip", ["-j", "-q", new URL(`public/press/${slug}/press-kit.zip`, root).pathname, new URL(`public/press/${slug}/cover.webp`, root).pathname, new URL(`public/press/${slug}/credit.txt`, root).pathname]);
 console.log("Responsive covers，3 OGP layouts and press kit generated");

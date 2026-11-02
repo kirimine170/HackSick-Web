@@ -10,6 +10,8 @@ ogImage: /images/og/anokoto-work.webp
 firstPresentedAt: コミティア
 book:
   format: A5
+  publisher: HackSick
+  production: HackSick
   price: 1500
   currency: JPY
   retailer: タコシェ
@@ -19,7 +21,7 @@ book:
   pressKit: /press/anokoto-no-kankeisei-ni-tsuite/press-kit.zip
 tags: [Comics]
 creators: [matsumi-koen]
-credits: [著者：松見公園]
+credits: [著者：松見公園, 発行・制作：HackSick]
 ---
 
 ## この本について
