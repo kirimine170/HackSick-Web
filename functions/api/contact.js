@@ -8,7 +8,14 @@ export async function onRequestPost({ request, env }) {
     ...(!["true", true].includes(env.CONTACT_ENABLED) ? ["CONTACT_ENABLED=true"] : []),
     ...["RESEND_API_KEY", "CONTACT_FROM", "TURNSTILE_SECRET_KEY"].filter(name => !env[name]),
   ];
-  if (missing.length) return Response.json({ message: "Contact delivery is unavailable", missing }, { status: 503, headers: { "Cache-Control": "no-store" } });
+  if (missing.length) return Response.json({
+    message: "Contact delivery is unavailable", missing,
+    enableFlag: {
+      type: typeof env.CONTACT_ENABLED,
+      textLength: typeof env.CONTACT_ENABLED === "string" ? env.CONTACT_ENABLED.length : null,
+      trimmedTextTrue: typeof env.CONTACT_ENABLED === "string" && env.CONTACT_ENABLED.trim() === "true",
+    },
+  }, { status: 503, headers: { "Cache-Control": "no-store" } });
   if (!request.headers.get("content-type")?.includes("application/json")) return json(415, "JSON required");
   if (Number(request.headers.get("content-length")) > 24000) return json(413, "Request too large");
   try {
