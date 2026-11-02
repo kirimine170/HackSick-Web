@@ -26,7 +26,9 @@ for (const path of paths) {
   if (preview) assert.ok(noindex, `${path}: preview must stay noindex`);
   if (production) assert.ok(!noindex, `${path}: production must be indexable`);
   const ogImage = html.match(/property="og:image" content="([^"]+)"/)?.[1];
-  assert.ok(ogImage?.startsWith("https://hacksick.com/images/og/"), `${path}: page-specific OGP`);
+  assert.ok(ogImage && new URL(ogImage).pathname.startsWith("/images/og/"), `${path}: page-specific OGP`);
+  if (production) assert.equal(new URL(ogImage).origin, "https://hacksick.com");
+  if (preview) assert.ok(new URL(ogImage).hostname.endsWith(".hacksick-web.pages.dev"), `${path}: preview images must exist on the preview deployment`);
   const metadata = await sharp(resolve(root, new URL(ogImage).pathname.slice(1))).metadata();
   assert.equal(metadata.width, 1200); assert.equal(metadata.height, 630);
   for (const match of html.matchAll(/<script[^>]*type="application\/ld\+json"[^>]*>([\s\S]*?)<\/script>/g)) JSON.parse(match[1]);
