@@ -1,7 +1,7 @@
 ---
 import { getCollection, render, type CollectionEntry } from "astro:content";
 import BaseLayout from "../../layouts/BaseLayout.astro";
-import { formatDate } from "../../data/site";
+import { formatDate, links, getXHandle } from "../../data/site";
 import BookCover from "../../components/BookCover.astro";
 import BookInformation from "../../components/BookInformation.astro";
 import MosaicPhoto from "../../components/MosaicPhoto.astro";
@@ -19,6 +19,9 @@ const related = [
   ...projects.filter(item => news.data.projects.includes(item.id)).map(item => ({ label:item.data.title, href:`/projects/${item.id}/` })),
 ];
 const featuredBook = news.data.pressRelease ? works.find(work => news.data.works.includes(work.id) && work.data.book) : undefined;
+const bookAuthor = creators.find(creator => featuredBook?.data.creators.includes(creator.id));
+const twitterCreator = getXHandle(bookAuthor?.data.x);
+const imageAlt = featuredBook ? `${featuredBook.data.title}｜${bookAuthor?.data.name ?? "著者"}の漫画短編集` : news.data.title;
 const pageUrl = new URL(`/news/${news.id}/`, Astro.site).href;
 const structuredData = {
   "@context": "https://schema.org", "@type": "NewsArticle",
@@ -30,12 +33,27 @@ const structuredData = {
   image: new URL(news.data.ogImage ?? featuredBook?.data.thumbnail ?? "/og.png", Astro.site).href,
 };
 ---
-<BaseLayout title={`${news.data.title}｜News｜HackSick`} description={news.data.description} image={news.data.ogImage} imageWidth={1200} imageHeight={630} structuredData={structuredData} ogType="article">
+<BaseLayout title={`${news.data.title}｜News｜HackSick`} description={news.data.description} image={news.data.ogImage} imageWidth={1200} imageHeight={630} {imageAlt} {twitterCreator} structuredData={structuredData} ogType="article">
   <article class="detail-page">
-    <header class:list={["detail-hero", "section-shell", { "news-with-cover": Boolean(featuredBook) }]}><div class="news-header-copy"><p class="eyebrow"><span>NEWS</span>{news.data.category}</p><time datetime={news.data.date.toISOString()}>{formatDate(news.data.date)}</time>{news.data.pressRelease && <p>PRESS RELEASE</p>}<div class="news-headline"><h1>{news.data.titlePhrases.length > 0 ? news.data.titlePhrases.map(phrase => <span class="headline-phrase">{phrase}</span>) : news.data.title}</h1></div><p>{news.data.description}</p></div>{featuredBook && <figure class="news-cover"><BookCover work={featuredBook} loading="eager" /><figcaption>書影：松見公園『{featuredBook.data.title}』</figcaption></figure>}</header>
+    <header class:list={["detail-hero", "section-shell", { "news-with-cover": Boolean(featuredBook) }]}>
+      <div class="news-header-copy">
+        <p class="eyebrow"><span>{news.data.pressRelease ? "PRESS RELEASE" : "NEWS"}</span>{!news.data.pressRelease && news.data.category}</p>
+        <time datetime={news.data.date.toISOString()}>{formatDate(news.data.date)}</time>
+        <div class="news-headline"><h1>{news.data.titlePhrases.length > 0 ? news.data.titlePhrases.map(phrase => <span class="headline-phrase">{phrase}</span>) : news.data.title}</h1></div>
+        <p>{news.data.lead ?? news.data.description}</p>
+      </div>
+      {featuredBook && <figure class="news-cover"><BookCover work={featuredBook} loading="eager" /><figcaption>書影：{bookAuthor?.data.name}『{featuredBook.data.title}』</figcaption></figure>}
+    </header>
     <div class="detail-body section-shell prose"><Content /></div>
     {featuredBook && <BookInformation work={featuredBook} pressKit />}
     {news.id === "anokoto-no-kankeisei-ni-tsuite" && <section class="section-shell book-photo-section" id="display-photo"><figure class="book-photo"><MosaicPhoto src="/images/works/anokoto-display-800.webp" srcset="/images/works/anokoto-display-480.webp 480w, /images/works/anokoto-display-800.webp 800w" sizes="(max-width: 700px) 100vw, 800px" width={800} height={800} alt="タコシェ店頭で，ほかの書籍と並んで陳列されている『あのことの関係性について』．周囲の書籍・POPは三角形モザイクで表示．" clearArea={anokotoPhotoMask.clearArea} mosaicAreas={anokotoPhotoMask.mosaicAreas} /><figcaption>タコシェ店頭にて．撮影：霧峰／2026年10月30日．周囲の書籍・POPを加工して表示しています．</figcaption></figure></section>}
-    <nav class="section-shell news-related" aria-label="関連ページ">{related.map(item => <a class="button" href={item.href}>{item.label} →</a>)}<a class="button" href="/news/">News一覧へ →</a></nav>
+    {featuredBook && <section class="section-shell press-community" aria-labelledby="press-community-title">
+      <div class="press-community-content">
+        <h2 id="press-community-title">HackSickについて</h2>
+        <p>HackSickは，つくる人と，作品や技術に触れて「自分も何かしたい」と感じた人が，分野を越えて集まるコミュニティです．LT会で知識や問いを共有し，創作支援プロジェクトHSAPを通じて作品の制作・出版・発信にも取り組んでいます．</p>
+        <div class="book-actions"><a class="button button-dark" href={links.connpass} target="_blank" rel="noopener noreferrer">LT会の開催予定・参加申込 ↗</a><a class="text-link" href="/about/">HackSickについて詳しく見る →</a></div>
+      </div>
+    </section>}
+    <nav class="section-shell news-related" aria-label="関連ページ">{related.map(item => <a class="button" href={item.href}>{item.href === "/projects/hsap/" ? "創作支援プロジェクトHSAPについて" : item.label} →</a>)}<a class="button" href="/news/">News一覧へ →</a></nav>
   </article>
 </BaseLayout>

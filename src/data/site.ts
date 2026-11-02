@@ -25,6 +25,14 @@ export const links = {
   github: "https://github.com/kirimine170/HackSick-Web",
 } as const;
 
+export const getXHandle = (url?: string) => {
+  if (!url) return undefined;
+  const profile = new URL(url);
+  if (!["x.com", "www.x.com", "twitter.com", "www.twitter.com"].includes(profile.hostname)) return undefined;
+  const username = profile.pathname.split("/").filter(Boolean)[0];
+  return username && /^[a-zA-Z0-9_]{1,15}$/.test(username) ? `@${username}` : undefined;
+};
+
 const contactEmail = "shizuku.kirimine@hacksick.com";
 
 export const contact = {

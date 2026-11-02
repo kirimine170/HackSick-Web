@@ -6,7 +6,7 @@ import ProjectCard from "../../components/ProjectCard.astro";
 import SectionHeading from "../../components/SectionHeading.astro";
 import TagList from "../../components/TagList.astro";
 import WorkCard from "../../components/WorkCard.astro";
-import { formatDate } from "../../data/site";
+import { formatDate, getXHandle } from "../../data/site";
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import NewsList from "../../components/NewsList.astro";
 import BookCover from "../../components/BookCover.astro";
@@ -47,7 +47,7 @@ const structuredData = isHsapCreator ? {
 } : undefined;
 ---
 
-<BaseLayout title={`${creator.data.name}｜Creators｜HackSick`} description={creator.data.profile} image={creator.data.ogImage ?? creator.data.profileImage} imageWidth={creator.data.ogImage ? 1200 : undefined} imageHeight={creator.data.ogImage ? 630 : undefined} structuredData={structuredData}>
+<BaseLayout title={`${creator.data.name}｜Creators｜HackSick`} description={creator.data.profile} image={creator.data.ogImage ?? creator.data.profileImage} imageWidth={creator.data.ogImage ? 1200 : undefined} imageHeight={creator.data.ogImage ? 630 : undefined} imageAlt={creator.data.ogImage ? `${creator.data.name}のプロフィールと代表作品` : creator.data.profileImageAlt ?? `${creator.data.name}のプロフィール画像`} twitterCreator={getXHandle(creator.data.x)} structuredData={structuredData}>
   <article class="detail-page creator-detail">
     <header class="detail-hero section-shell creator-detail-hero">
       {featuredWork ? <figure class="creator-book-visual"><BookCover work={featuredWork} loading="eager" /><figcaption>代表作『{featuredWork.data.title}』の表紙</figcaption></figure> : <div class="creator-detail-mark" aria-hidden="true"><img src={creator.data.profileImage ?? "/images/hacksick-icon.webp"} alt="" width="1000" height="1000" /></div>}

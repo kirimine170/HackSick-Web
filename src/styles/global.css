@@ -320,7 +320,7 @@ a {
   min-width: 13rem;
   padding: 1rem 1.2rem;
   border: 1px solid var(--ink);
-  font-size: 0.75rem;
+  font-size: 0.875rem;
   font-weight: 700;
   letter-spacing: 0.08em;
   transition: color 200ms ease, background 200ms ease, transform 200ms ease;
@@ -352,7 +352,7 @@ a {
 .text-link {
   padding-block: 0.3rem;
   border-bottom: 1px solid var(--ink);
-  font-size: 0.75rem;
+  font-size: 0.875rem;
   font-weight: 700;
 }
 
@@ -2574,6 +2574,11 @@ a {
 .book-actions { display: flex; flex-wrap: wrap; gap: 1rem 2rem; margin-block: 1.5rem; }
 .book-actions .text-link { white-space: normal; }
 .book-price-note { color: var(--muted); font-size: 0.8rem; }
+.book-availability { padding: 1rem 1.2rem; border-left: 3px solid var(--pink); background: var(--white); font-size: 1rem; }
+.press-community { padding-block: 2rem 4rem; }
+.press-community-content { max-width: 48rem; margin-inline: auto; padding: clamp(1.25rem, 3vw, 2rem); border: 1px solid var(--line); border-top: 3px solid var(--pink); background: var(--white); }
+.press-community h2 { margin-top: 0; font-size: clamp(1.5rem, 3vw, 2rem); }
+.press-community .book-actions { align-items: center; margin-bottom: 0; }
 .press-kit { margin-top: 3rem; padding: clamp(1rem, 3vw, 2rem); border: 1px solid var(--line); background: var(--white); }
 .press-kit h3 { margin-top: 0; }
 .news-with-cover { display: grid; grid-template-columns: minmax(0, 1fr) minmax(14rem, 0.38fr); align-items: center; gap: clamp(2rem, 5vw, 5rem); }

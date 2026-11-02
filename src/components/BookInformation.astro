@@ -12,19 +12,20 @@ const price = book ? new Intl.NumberFormat("ja-JP").format(book.price) : "";
     <table><caption class="sr-only">『{work.data.title}』の作品情報</caption><colgroup><col style="width: 28%" /><col style="width: 72%" /></colgroup><tbody>
       <tr><th scope="row">書名</th><td>{work.data.title}</td></tr>
       <tr><th scope="row">著者</th><td>{authors.map((author,index) => <>{index > 0 && "，"}<a href={`/creators/${author.id}/`}>{author.data.name}</a></>)}</td></tr>
+      {book.circle && <tr><th scope="row">サークル</th><td>{book.circle}</td></tr>}
       {book.publisher && <tr><th scope="row">発行</th><td>{book.publisher}</td></tr>}
       {book.production && <tr><th scope="row">制作</th><td>{book.production}</td></tr>}
       <tr><th scope="row">作品形態</th><td>漫画短編集・四編収録</td></tr>
       <tr><th scope="row">判型</th><td>{book.format}</td></tr>
-      <tr><th scope="row">取扱価格</th><td>{price}円（{book.retailer}店頭価格）</td></tr>
-      <tr><th scope="row">取扱店</th><td><a href={book.retailerUrl} target="_blank" rel="noopener noreferrer">{book.retailer} ↗</a></td></tr>
+      <tr><th scope="row">取扱価格</th><td>{price}円{book.taxIncluded === true && "（税込）"}</td></tr>
+      <tr><th scope="row">取扱店</th><td><a href={book.retailerInfoUrl ?? book.retailerUrl} target="_blank" rel="noopener noreferrer">{book.retailer} ↗</a></td></tr>
       {work.data.firstPresentedAt && <tr><th scope="row">初出</th><td>{work.data.firstPresentedAt}</td></tr>}
     </tbody></table>
-    <p class="book-price-note">店頭での取扱いです．価格・在庫・通販での販売状況は，タコシェへお問い合わせください．</p>
+    {!work.data.purchaseUrl && <p class="book-availability"><strong>現在は{book.retailer}店頭でのお取扱いです．</strong><br />通販の商品ページが公開され次第，このページでお知らせします．</p>}
     <div class="book-actions">
       {work.data.purchaseUrl
         ? <a class="button button-dark" href={work.data.purchaseUrl} target="_blank" rel="noopener noreferrer" data-outbound="shop">タコシェの商品ページで購入する ↗</a>
-        : <a class="button button-dark" href={book.retailerUrl} target="_blank" rel="noopener noreferrer">タコシェの店舗・通販案内を見る ↗</a>}
+        : <a class="button button-dark" href={book.retailerInfoUrl ?? book.retailerUrl} target="_blank" rel="noopener noreferrer">タコシェの所在地・連絡先を見る ↗</a>}
       {authors.map(author => author.data.x && <a class="button" href={author.data.x} target="_blank" rel="noopener noreferrer">{author.data.name}のXを見る ↗</a>)}
     </div>
     <div class="book-actions">

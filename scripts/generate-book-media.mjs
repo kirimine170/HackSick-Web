@@ -38,7 +38,7 @@ for (const [name, label, author] of [
   <text x="64" y="348" font-size="58" font-weight="700">${titleLines[1]}</text>
   <text x="68" y="420" font-size="28" font-weight="600">${author}</text>
   <text x="68" y="477" font-size="24">A5判・四編収録</text>
-  <text x="68" y="527" font-size="23">タコシェ店頭取扱価格 ${price.toLocaleString("ja-JP")}円</text>
+  <text x="68" y="527" font-size="23">タコシェ店頭取扱価格 ${price.toLocaleString("ja-JP")}円（税込）</text>
   <text x="68" y="605" font-size="18" fill="#65656d">hacksick.com</text></g>
   <rect x="824" y="62" width="312" height="496" fill="white" stroke="#101014" stroke-opacity=".15"/>
   <image href="data:image/png;base64,${embeddedCover}" x="835" y="70" width="290" height="480" preserveAspectRatio="xMidYMid meet"/>

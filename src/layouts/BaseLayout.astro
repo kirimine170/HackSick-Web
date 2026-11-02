@@ -1,7 +1,7 @@
 ---
 import SiteFooter from "../components/SiteFooter.astro";
 import SiteHeader from "../components/SiteHeader.astro";
-import { site } from "../data/site";
+import { site, links, getXHandle } from "../data/site";
 import "@fontsource-variable/noto-sans-jp";
 import "@fontsource/zen-kaku-gothic-new/japanese-500.css";
 import "@fontsource/zen-kaku-gothic-new/japanese-700.css";
@@ -15,6 +15,7 @@ interface Props {
   imageWidth?: number;
   imageHeight?: number;
   imageAlt?: string;
+  twitterCreator?: string;
   noindex?: boolean;
   structuredData?: Record<string, unknown>;
   ogType?: "website" | "article";
@@ -27,6 +28,7 @@ const {
   imageWidth = 1200,
   imageHeight = 630,
   imageAlt = "HackSick公式サイト",
+  twitterCreator,
   noindex = false,
   structuredData,
   ogType = "website",
@@ -71,9 +73,12 @@ const imageType = imageExtension === "jpg" || imageExtension === "jpeg"
     <meta property="og:image:height" content={String(imageHeight)} />
     <meta property="og:image:alt" content={imageAlt} />
     <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:site" content={getXHandle(links.x)} />
+    {twitterCreator && <meta name="twitter:creator" content={twitterCreator} />}
     <meta name="twitter:title" content={title} />
     <meta name="twitter:description" content={description} />
     <meta name="twitter:image" content={imageUrl} />
+    <meta name="twitter:image:alt" content={imageAlt} />
     <script is:inline type="application/ld+json" set:html={JSON.stringify({
       "@context": "https://schema.org",
       "@type": "Organization",

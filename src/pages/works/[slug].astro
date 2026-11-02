@@ -5,7 +5,7 @@ import EventCard from "../../components/EventCard.astro";
 import ProjectCard from "../../components/ProjectCard.astro";
 import SectionHeading from "../../components/SectionHeading.astro";
 import TagList from "../../components/TagList.astro";
-import { formatDate } from "../../data/site";
+import { formatDate, getXHandle } from "../../data/site";
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import NewsList from "../../components/NewsList.astro";
 import BookCover from "../../components/BookCover.astro";
@@ -37,7 +37,7 @@ const structuredData = work.data.book ? {
 } : undefined;
 ---
 
-<BaseLayout title={`${work.data.title}｜Works｜HackSick`} description={work.data.description} image={work.data.ogImage ?? work.data.thumbnail} imageWidth={work.data.ogImage ? 1200 : thumbnailWidth} imageHeight={work.data.ogImage ? 630 : thumbnailHeight} imageAlt={work.data.ogImage ? `${work.data.title}｜松見公園` : `${work.data.title}の表紙`} structuredData={structuredData}>
+<BaseLayout title={`${work.data.title}｜Works｜HackSick`} description={work.data.description} image={work.data.ogImage ?? work.data.thumbnail} imageWidth={work.data.ogImage ? 1200 : thumbnailWidth} imageHeight={work.data.ogImage ? 630 : thumbnailHeight} imageAlt={work.data.ogImage ? `${work.data.title}｜${creators.map(creator => creator.data.name).join("・")}` : `${work.data.title}の表紙`} twitterCreator={getXHandle(creators[0]?.data.x)} structuredData={structuredData}>
   <article class="detail-page work-detail">
     <header class="detail-hero section-shell work-detail-hero">
       <div class="work-detail-cover">

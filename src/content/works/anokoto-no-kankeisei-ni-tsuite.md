@@ -12,10 +12,13 @@ book:
   format: A5
   publisher: HackSick
   production: HackSick
+  circle: きぐうのきわみ
   price: 1500
+  taxIncluded: true
   currency: JPY
   retailer: タコシェ
   retailerUrl: https://taco.shop-pro.jp/
+  retailerInfoUrl: https://taco.shop-pro.jp/?mode=sk#info
   coverSmall: /images/works/anokoto-no-kankeisei-ni-tsuite-320.webp
   coverMedium: /images/works/anokoto-no-kankeisei-ni-tsuite-640.webp
   pressKit: /press/anokoto-no-kankeisei-ni-tsuite/press-kit.zip
