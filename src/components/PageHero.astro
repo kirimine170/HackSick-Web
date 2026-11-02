@@ -4,14 +4,17 @@ interface Props {
   eyebrow: string;
   title: string;
   lead: string;
+  titleLines?: string[];
 }
 
-const { index, eyebrow, title, lead } = Astro.props;
+const { index, eyebrow, title, lead, titleLines: preferredLines } = Astro.props;
 const commaIndex = title.indexOf("、");
-const titleLines = commaIndex >= 0
+const titleLines = preferredLines ?? (commaIndex >= 0
   ? [title.slice(0, commaIndex + 1), title.slice(commaIndex + 1)]
-  : [title];
-const longestLine = Math.max(...titleLines.map((line) => Array.from(line).length));
+  : [title]);
+const longestLine = preferredLines
+  ? Array.from(title).length
+  : Math.max(...titleLines.map((line) => Array.from(line).length));
 const titleLengthClass = longestLine >= 11
   ? "page-title-long"
   : longestLine >= 9
@@ -22,7 +25,7 @@ const titleLengthClass = longestLine >= 11
 <section class="page-hero section-shell">
   <p class="eyebrow"><span>{index}</span>{eyebrow}</p>
   <div class="page-hero-grid">
-    <h1 class={titleLengthClass}>{titleLines.map((line) => <span>{line}</span>)}</h1>
+    <div class="page-hero-title"><h1 class={titleLengthClass}>{titleLines.map((line) => <span>{line}</span>)}</h1></div>
     <p>{lead}</p>
   </div>
   <div class="page-hero-signal" aria-hidden="true"><span></span><span></span><span></span></div>

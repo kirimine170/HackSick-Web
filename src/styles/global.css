@@ -46,6 +46,9 @@ h3 {
   font-family: var(--display);
   font-feature-settings: "palt" 1;
   font-kerning: normal;
+  overflow-wrap: anywhere;
+  line-break: strict;
+  text-wrap: balance;
 }
 
 body::selection {
@@ -302,6 +305,7 @@ a {
 
 .hero-actions {
   display: flex;
+  flex-wrap: wrap;
   gap: 2rem;
   align-items: center;
   margin-top: 2.4rem;
@@ -811,11 +815,10 @@ a {
   min-height: 7rem;
   padding: 1.25rem 0;
   border-bottom: 1px solid var(--ink);
-  transition: color 220ms ease, padding 220ms ease, background 220ms ease;
+  transition: color 220ms ease, background 220ms ease;
 }
 
 .explore-link:hover {
-  padding-inline: 1.25rem;
   color: var(--white);
   background: var(--ink);
 }
@@ -887,7 +890,7 @@ a {
   min-height: 12rem;
   padding: 2rem 0;
   border-bottom: 1px solid var(--ink);
-  transition: color 250ms ease, padding 250ms ease;
+  transition: color 250ms ease;
 }
 
 .activity-list li::before {
@@ -902,7 +905,6 @@ a {
 }
 
 .activity-list li:hover {
-  padding-inline: 1.5rem;
   color: var(--white);
 }
 
@@ -1135,7 +1137,7 @@ a {
 .site-footer {
   position: relative;
   display: grid;
-  grid-template-columns: minmax(10rem, 0.22fr) minmax(24rem, 0.78fr) minmax(9rem, 0.3fr) minmax(11rem, 0.35fr);
+  grid-template-columns: minmax(0, 0.22fr) minmax(0, 0.78fr) minmax(0, 0.3fr) minmax(0, 0.35fr);
   overflow: hidden;
   color: var(--white);
   background: var(--ink);
@@ -1224,6 +1226,7 @@ a {
 .footer-bottom {
   grid-column: 1 / -1;
   display: flex;
+  flex-wrap: wrap;
   justify-content: space-between;
   padding: 0.8rem var(--gutter);
   border-top: 1px solid rgba(255,255,255,0.2);
@@ -1265,22 +1268,6 @@ a {
   margin: 2rem 0;
 }
 
-@supports (animation-timeline: view()) {
-  .about-content,
-  .about-facts,
-  .home-status-inner,
-  .activities-heading,
-  .activity-list li,
-  .latest-grid,
-  .explore-intro,
-  .explore-link,
-  .join > * {
-    animation: reveal linear both;
-    animation-range: entry 5% cover 30%;
-    animation-timeline: view();
-  }
-}
-
 @keyframes grid-in {
   from { opacity: 0; transform: scale(1.03); }
   to { opacity: 1; transform: scale(1); }
@@ -1297,11 +1284,6 @@ a {
 
 @keyframes orb {
   to { transform: translate(18%, -12%) scale(1.15); }
-}
-
-@keyframes reveal {
-  from { opacity: 0; transform: translateY(3rem); }
-  to { opacity: 1; transform: translateY(0); }
 }
 
 @media (max-width: 1180px) {
@@ -1714,7 +1696,7 @@ a {
   letter-spacing: -0.07em;
   line-height: 0.94;
   text-wrap: balance;
-  word-break: auto-phrase;
+  word-break: normal;
 }
 
 .section-heading > div > p {
@@ -1762,7 +1744,6 @@ a {
   line-height: 0.88;
   text-wrap: balance;
   word-break: normal;
-  word-break: auto-phrase;
   line-break: strict;
 }
 
@@ -1782,7 +1763,6 @@ a {
 
 .page-hero h1 span {
   display: block;
-  white-space: nowrap;
 }
 
 .page-hero-grid > p {
@@ -1956,7 +1936,7 @@ a {
   letter-spacing: -0.065em;
   line-height: 0.98;
   text-wrap: balance;
-  word-break: auto-phrase;
+  word-break: normal;
 }
 
 .card-description,
@@ -2395,7 +2375,7 @@ a {
   letter-spacing: -0.055em;
   line-height: 1;
   text-wrap: balance;
-  word-break: keep-all;
+  word-break: normal;
 }
 
 .archive-year h2 + p {
@@ -2864,7 +2844,7 @@ a {
   letter-spacing: -0.055em;
   line-height: 1;
   text-wrap: balance;
-  word-break: auto-phrase;
+  word-break: normal;
 }
 
 .achievement-content > p:not(.achievement-organization) {
@@ -2940,14 +2920,14 @@ a {
 
 .contact-routes a {
   display: grid;
-  grid-template-columns: 1fr auto;
-  padding: 1.5rem 0;
+  grid-template-columns: minmax(0, 1fr) auto;
+  column-gap: 1rem;
+  padding: 1.5rem clamp(1rem, 2vw, 1.5rem);
   border-bottom: 1px solid var(--ink);
-  transition: color 220ms ease, background 220ms ease, padding 220ms ease;
+  transition: color 220ms ease, background 220ms ease;
 }
 
 .contact-routes a:hover {
-  padding-inline: 1.25rem;
   color: var(--white);
   background: var(--ink);
 }
@@ -2989,7 +2969,7 @@ a {
 }
 
 .contact-routes .contact-route-email {
-  padding: clamp(1.6rem, 3vw, 2.7rem);
+  padding-block: clamp(1.6rem, 3vw, 2.7rem);
   color: var(--white);
   background: var(--ink);
 }
@@ -3000,7 +2980,8 @@ a {
 
 .contact-route-email strong {
   overflow-wrap: anywhere;
-  font-size: clamp(1rem, 2.5vw, 2.7rem);
+  font-size: clamp(1rem, 3.8cqi, 1.8rem);
+  letter-spacing: -0.02em;
 }
 
 .contact-route-email span,
@@ -3434,4 +3415,289 @@ a {
   #inquiry-summary { grid-template-columns: 1fr; gap: .5rem; }
   #inquiry-summary dd { margin-bottom: 1rem; }
   .creator-request .button { white-space: normal; }
+}
+
+/* Size display text against its own column，including when the page reaches max-width．
+   Keep Japanese line boxes tall enough for wrapped glyphs and avoid phrase dictionaries
+   that can make long names wider than their cards． */
+.hero-copy,
+.about-heading,
+.page-hero-title,
+.section-heading > div,
+.content-card,
+.creator-card-content,
+.work-card-content,
+.statement-grid article,
+.join-page article,
+.contact-page > div:first-child,
+.contact-routes,
+.detail-title-grid > div,
+.work-detail-title,
+.creator-detail-hero > div,
+.philosophy-content,
+.not-found > div {
+  min-width: 0;
+  container-type: inline-size;
+}
+
+.heading-line {
+  display: block;
+}
+
+.email-part {
+  display: inline-block;
+  max-width: 100%;
+}
+
+.philosophy h2 {
+  font-size: clamp(3rem, min(12cqi, 20svh), 12.5rem);
+}
+
+.hero h1 {
+  font-size: clamp(2.5rem, 15cqi, 7.4rem);
+  line-height: 1.2;
+}
+
+.about h2 {
+  font-size: clamp(1.75rem, 8.5cqi, 4.8rem);
+  line-height: 1.35;
+}
+
+.page-hero h1 {
+  font-size: clamp(2.4rem, 11cqi, 7.5rem);
+  line-height: 1.3;
+}
+
+.page-hero h1.page-title-medium {
+  font-size: clamp(2.2rem, 9.5cqi, 6.5rem);
+}
+
+.page-hero h1.page-title-long {
+  font-size: clamp(1.8rem, 7.8cqi, 5.5rem);
+}
+
+.section-heading h2 {
+  font-size: clamp(2rem, 9cqi, 6.3rem);
+  line-height: 1.3;
+}
+
+.detail-hero h1,
+.creator-detail-hero h1 {
+  font-size: clamp(2.25rem, 11cqi, 7rem);
+  line-height: 1.3;
+}
+
+.work-detail-title h1 {
+  font-size: clamp(2rem, 8cqi, 5.5rem);
+}
+
+.content-card h3 {
+  font-size: clamp(1.6rem, 8cqi, 3.6rem);
+  line-height: 1.35;
+}
+
+.creator-card {
+  grid-template-columns: minmax(7rem, 0.28fr) minmax(0, 0.72fr);
+  gap: clamp(1rem, 2vw, 2rem);
+}
+
+.creator-card h3 {
+  font-size: clamp(1.5rem, 9cqi, 2.8rem);
+}
+
+.work-card-content h3 {
+  font-size: clamp(1.6rem, 8cqi, 3.4rem);
+}
+
+.statement-grid h3,
+.join-page h2 {
+  font-size: clamp(1.6rem, 9cqi, 3.5rem);
+  line-height: 1.35;
+}
+
+.contact-page h2 {
+  font-size: clamp(2rem, 8.5cqi, 4rem);
+  line-height: 1.35;
+}
+
+.contact-routes strong {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.not-found h1 {
+  font-size: clamp(2rem, 7cqi, 6rem);
+  line-height: 1.35;
+}
+
+.activities h2,
+.join h2,
+.explore-intro h2,
+.activity-list h3,
+.archive-year h2,
+.achievement-content h3,
+.footer-title {
+  line-height: 1.3;
+}
+
+.organization-map > h2,
+.home-explore h2 {
+  text-wrap: balance;
+}
+
+.button {
+  min-width: min(13rem, 100%);
+  max-width: 100%;
+  gap: clamp(0.75rem, 2vw, 2.5rem);
+  text-wrap: balance;
+  overflow-wrap: anywhere;
+}
+
+.button > [aria-hidden] {
+  flex-shrink: 0;
+}
+
+.inquiry-intro,
+.inquiry-intro a,
+.tag-list li,
+.eyebrow,
+.section-heading-eyebrow,
+.contact-routes span,
+.contact-routes small,
+.news-category,
+.about-facts dd,
+.detail-meta dd,
+.footer-main,
+.footer-links,
+.footer-site-links,
+.footer-bottom {
+  overflow-wrap: anywhere;
+}
+
+.card-meta {
+  flex-wrap: wrap;
+  overflow-wrap: anywhere;
+}
+
+.achievement-meta {
+  flex-wrap: wrap;
+}
+
+.prose,
+.photo-carousel-credit,
+.achievement-meta,
+.home-status-item span,
+.home-status-item small {
+  overflow-wrap: anywhere;
+}
+
+.detail-meta,
+.event-detail .detail-meta {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 12rem), 1fr));
+}
+
+.detail-meta dt {
+  overflow-wrap: anywhere;
+}
+
+.card-grid,
+.home-status,
+.home-explore {
+  container-type: inline-size;
+}
+
+@container (max-width: 40rem) {
+  .work-card,
+  .home-status-inner {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .explore-link {
+    grid-template-columns: 2.25rem minmax(0, 1fr) 1.5rem;
+    gap: 0.8rem;
+  }
+
+  .explore-name {
+    grid-column: 2;
+    flex-wrap: wrap;
+  }
+
+  .explore-description {
+    grid-column: 2 / -1;
+  }
+
+  .explore-link i {
+    grid-column: 3;
+    grid-row: 1 / 3;
+  }
+}
+
+.event-format {
+  max-width: 100%;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  line-height: 1.4;
+}
+
+.detail-meta > div,
+.about-facts > div,
+.footer-main,
+.footer-links,
+.footer-site-links,
+.footer-bottom {
+  min-width: 0;
+}
+
+@media (max-width: 980px) {
+  .section-heading,
+  .page-hero-grid,
+  .detail-title-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 700px) {
+  .creator-card {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .site-footer {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 800px) {
+  .news-list a {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
+  }
+}
+
+@media (max-width: 480px) {
+  .detail-meta,
+  .event-detail .detail-meta {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .detail-meta > div {
+    border-right: 0;
+  }
+
+  .news-list a {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .news-list time,
+  .news-category,
+  .news-title {
+    grid-column: 1;
+  }
+
+  .news-title,
+  .news-list a > span:last-child {
+    grid-row: 3;
+  }
+
+  .news-list a > span:last-child {
+    grid-column: 2;
+  }
 }

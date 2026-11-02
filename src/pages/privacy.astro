@@ -4,7 +4,7 @@ import PageHero from "../components/PageHero.astro";
 const live = import.meta.env.PUBLIC_CONTACT_MODE?.trim() === "live";
 ---
 <BaseLayout title="お問い合わせにおける個人情報の取扱い｜HackSick" description="HackSick／HSAPのお問い合わせフォームでお預かりする情報の利用目的と取扱いをご案内します．">
-  <PageHero index="PRIVACY" eyebrow="CONTACT POLICY" title="お問い合わせにおける個人情報の取扱い" lead="仕事のご相談にあたり，お預かりする情報についてご案内します．" />
+  <PageHero index="PRIVACY" eyebrow="CONTACT POLICY" title="お問い合わせにおける個人情報の取扱い" titleLines={["お問い合わせにおける", "個人情報の取扱い"]} lead="仕事のご相談にあたり，お預かりする情報についてご案内します．" />
   <div class="section-shell prose detail-body">
     {!live && <p class="preview-note">PREVIEW / この環境の通常フォームは操作確認用です．入力内容は送信・保存されません．実際のご相談は，選択した受付窓口へメールでお寄せください．</p>}
     <h2>取得する情報と利用目的</h2><p>実際の受付では，HackSick／HSAPは，相談先，お名前，所属，メールアドレス，ご依頼の対象，ご相談内容，希望時期，予算を，お問い合わせへの回答，見積もり，企画・制作の調整と連絡のために利用します．所属，希望時期，予算の入力は任意です．</p>

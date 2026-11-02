@@ -4,6 +4,7 @@ import { contact, links } from "../data/site";
 import BaseLayout from "../layouts/BaseLayout.astro";
 import InquiryForm from "../components/InquiryForm.astro";
 import { inquiryRoutes } from "../data/inquiry.js";
+const [emailLocal, emailDomain] = contact.email.split("@");
 ---
 
 <BaseLayout title="Contact｜HackSick" description="HackSickとの共同企画、制作、研究、取材、支援・協賛に関するお問い合わせ窓口です。">
@@ -19,12 +20,12 @@ import { inquiryRoutes } from "../data/inquiry.js";
   <section class="contact-page section-shell" id="contact">
     <div>
       <p class="eyebrow"><span>LINKS</span>OTHER CONTACT ROUTES</p>
-      <h2>参加登録と，<br />最新のお知らせ．</h2>
+      <h2><span class="heading-line">参加登録と，</span><span class="heading-line">最新のお知らせ．</span></h2>
     </div>
     <div class="contact-routes">
       <a class="contact-route-email" href={contact.emailHref}>
         <span>HACKSICK / EMAIL</span>
-        <strong>{contact.email}</strong>
+        <strong><bdi class="email-part">{emailLocal}@</bdi><wbr /><bdi class="email-part">{emailDomain}</bdi></strong>
         <small>一般のお問い合わせ／共同企画／制作／研究／取材／協賛／連携</small>
         <i aria-hidden="true">→</i>
       </a>
