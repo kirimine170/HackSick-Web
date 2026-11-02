@@ -9,7 +9,7 @@ const request = (data, headers = {}) => new Request(`${origin}/api/contact`, { m
 
 test("unconfigured delivery fails closed", async () => assert.equal((await onRequestPost({ request:request(valid), env:{} })).status,503));
 test("enable flag supports text and JSON booleans but rejects other truthy values", async () => {
-  for (const value of ["true",true]) {
+  for (const value of ["true",true,"true "," true","true\n"]) {
     // An empty payload stops at validation without contacting any external provider．
     assert.equal((await onRequestPost({request:request({}),env:{...env,CONTACT_ENABLED:value}})).status,400);
   }
