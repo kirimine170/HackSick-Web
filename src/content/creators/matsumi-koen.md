@@ -1,7 +1,11 @@
 ---
 name: 松見公園
+profileImage: /images/works/anokoto-no-kankeisei-ni-tsuite.webp
+profileImageAlt: 松見公園の漫画短編集『あのことの関係性について』の表紙
+ogImage: /images/og/matsumi-koen.webp
+featuredWork: anokoto-no-kankeisei-ni-tsuite
 profile: サークル「きぐうのきわみ」としてコミティアに参加しながら漫画を描くクリエイター．漫画のほか，詩なども制作しています．漫画短編集『あのことの関係性について』の著者．
-fields: [Comics, Poetry, Literature]
+fields: [Comics, Poetry]
 tags: [HSAP, Creative Direction]
 works: [anokoto-no-kankeisei-ni-tsuite]
 projects: [hsap]
@@ -17,12 +21,9 @@ featured: true
 
 以前は合同文芸同人誌『文画』を制作していました．小説や詩を寄稿する参加者を募り，自身の漫画と一緒に一冊にまとめて頒布していました．『文画』の制作は現在休止しています．
 
-## HSAPでの活動
+## HSAPでの実績
 
-[HSAP](/projects/hsap/)のパイロットプロジェクトへ作家として参加し，既存作品と在庫の整理，漫画や詩などのポートフォリオの作成，作品紹介文とプロフィールの整備，販売先への取扱相談に取り組む予定です．
+[HSAP](/projects/hsap/)では，漫画短編集『あのことの関係性について』の作品紹介，プレス記事の作成，書影・著者プロフィールの整備を行っています．
 
-また，写真作品の企画と共同ディレクションにも参加します．撮影前に表現したい感情や物語を整理し，撮影後は写真の選定，並び順，文章，媒体までを含めて作品を構成します．
-
-## Works
-
-[『あのことの関係性について』](/works/anokoto-no-kankeisei-ni-tsuite/)は，二人のキャラクターの関係性を描いた漫画短編集です．『あの子はきっと冥王星』，『桑野くんは私に夢中』，『三角帽子』，『オタクが描いた漫画に面白いと言ってくれる女子の例』の四編を収録しています．
+- [作品紹介・取扱情報](/works/anokoto-no-kankeisei-ni-tsuite/)
+- [プレス記事](/news/anokoto-no-kankeisei-ni-tsuite/)

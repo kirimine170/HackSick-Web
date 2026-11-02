@@ -1,0 +1,7 @@
+---
+import type { CollectionEntry } from "astro:content";
+interface Props { work: CollectionEntry<"works">; loading?: "eager" | "lazy"; sizes?: string }
+const { work, loading = "lazy", sizes = "(max-width: 700px) 70vw, 320px" } = Astro.props;
+const { thumbnail, thumbnailWidth = 874, thumbnailHeight = 1240, book } = work.data;
+---
+{thumbnail && <img class="book-cover-image" src={book?.coverMedium ?? thumbnail} srcset={book ? `${book.coverSmall} 320w, ${book.coverMedium} 640w, ${thumbnail} ${thumbnailWidth}w` : undefined} sizes={book ? sizes : undefined} alt={`『${work.data.title}』の表紙`} width={thumbnailWidth} height={thumbnailHeight} loading={loading} decoding="async" />}

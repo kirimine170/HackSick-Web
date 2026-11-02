@@ -2520,6 +2520,51 @@ a {
   line-height: 1.7;
 }
 
+.prose table,
+.book-information table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+.prose :is(th, td),
+.book-information :is(th, td) {
+  padding: 1rem 0.75rem;
+  border-bottom: 1px solid var(--line);
+  vertical-align: top;
+  text-align: left;
+  overflow-wrap: anywhere;
+}
+
+.book-information th { width: 28%; font-size: 0.85rem; }
+.book-information td { width: 72%; }
+.book-information { padding-block: 1rem 4rem; }
+.book-information-content { max-width: 48rem; margin-inline: auto; }
+.book-information h2 { font-size: clamp(1.6rem, 3vw, 2.5rem); }
+.book-actions { display: flex; flex-wrap: wrap; gap: 1rem 2rem; margin-block: 1.5rem; }
+.book-actions .text-link { white-space: normal; }
+.book-price-note { color: var(--muted); font-size: 0.8rem; }
+.press-kit { margin-top: 3rem; padding: clamp(1rem, 3vw, 2rem); border: 1px solid var(--line); background: var(--white); }
+.press-kit h3 { margin-top: 0; }
+.news-with-cover { display: grid; grid-template-columns: minmax(0, 1fr) minmax(14rem, 0.38fr); align-items: center; gap: clamp(2rem, 5vw, 5rem); }
+.news-header-copy { min-width: 0; }
+.news-cover, .creator-book-visual { margin: 0; }
+.book-cover-image { width: min(100%, 22rem); height: auto; margin-inline: auto; object-fit: contain; }
+.news-cover figcaption, .creator-book-visual figcaption, .book-photo figcaption { margin-top: 1rem; color: var(--muted); font-size: 0.8rem; line-height: 1.7; }
+.book-photo-section { padding-block: 0 4rem; }
+.book-photo { max-width: 48rem; margin: 0 auto; }
+.mosaic-photo { position: relative; overflow: hidden; isolation: isolate; background: var(--paper); }
+.mosaic-photo img { display: block; width: 100%; height: auto; }
+.mosaic-source { filter: blur(12px); }
+.mosaic-photo .mosaic-clear { position: absolute; inset: 0; clip-path: var(--mosaic-clear-area); }
+.mosaic-photo canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+.mosaic-photo[data-ready="true"] :is(.mosaic-source, .mosaic-clear) { opacity: 0; }
+@media (max-width: 800px) {
+  .news-with-cover { grid-template-columns: minmax(0, 1fr); }
+  .news-cover { width: min(65%, 17rem); margin-inline: auto; }
+  .book-information :is(th, td) { padding: 0.8rem 0.5rem; }
+}
+
 .news-headline {
   min-width: 0;
   container-type: inline-size;

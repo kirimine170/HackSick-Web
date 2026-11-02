@@ -8,6 +8,8 @@ import TagList from "../../components/TagList.astro";
 import { formatDate } from "../../data/site";
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import NewsList from "../../components/NewsList.astro";
+import BookCover from "../../components/BookCover.astro";
+import BookInformation from "../../components/BookInformation.astro";
 
 export async function getStaticPaths() {
   const works = await getCollection("works");
@@ -24,18 +26,26 @@ const creators = allCreators.filter((creator) => work.data.creators.includes(cre
 const thumbnailWidth = work.data.thumbnailWidth ?? 227;
 const thumbnailHeight = work.data.thumbnailHeight ?? 320;
 const news = (await getCollection("news")).filter(item => item.data.works.includes(work.id)).sort((a,b) => b.data.date.getTime() - a.data.date.getTime());
+const structuredData = work.data.book ? {
+  "@context": "https://schema.org", "@type": "Book",
+  name: work.data.title, description: work.data.description, inLanguage: "ja",
+  url: new URL(`/works/${work.id}/`, Astro.site).href,
+  image: new URL(work.data.thumbnail ?? "/og.png", Astro.site).href,
+  author: creators.map(creator => ({ "@type": "Person", name: creator.data.name, url: new URL(`/creators/${creator.id}/`, Astro.site).href })),
+  offers: { "@type": "Offer", price: work.data.book.price, priceCurrency: work.data.book.currency, url: work.data.purchaseUrl ?? work.data.book.retailerUrl, seller: { "@type": "BookStore", name: work.data.book.retailer } },
+} : undefined;
 ---
 
-<BaseLayout title={`${work.data.title}｜Works｜HackSick`} description={work.data.description} image={work.data.thumbnail} imageWidth={thumbnailWidth} imageHeight={thumbnailHeight} imageAlt={`${work.data.title}の表紙`}>
+<BaseLayout title={`${work.data.title}｜Works｜HackSick`} description={work.data.description} image={work.data.ogImage ?? work.data.thumbnail} imageWidth={work.data.ogImage ? 1200 : thumbnailWidth} imageHeight={work.data.ogImage ? 630 : thumbnailHeight} imageAlt={work.data.ogImage ? `${work.data.title}｜松見公園` : `${work.data.title}の表紙`} structuredData={structuredData}>
   <article class="detail-page work-detail">
     <header class="detail-hero section-shell work-detail-hero">
       <div class="work-detail-cover">
-        {work.data.thumbnail && <img src={work.data.thumbnail} alt={`${work.data.title}の表紙`} width={thumbnailWidth} height={thumbnailHeight} />}
+        {work.data.thumbnail && (work.data.book ? <BookCover work={work} loading="eager" /> : <img src={work.data.thumbnail} alt={`${work.data.title}の表紙`} width={thumbnailWidth} height={thumbnailHeight} />)}
         {!work.data.thumbnail && <div class="book-type-cover"><span>BOOK / 松見公園</span><strong>{work.data.title}</strong><small>書籍紹介</small></div>}
       </div>
       <div class="work-detail-title">
         <p class="eyebrow"><span>WORK</span>{work.data.type}</p>
-        <h1>{work.data.title}</h1>
+        <h1>{work.data.titlePhrases.length > 0 ? work.data.titlePhrases.map(phrase => <span class="headline-phrase">{phrase}</span>) : work.data.title}</h1>
         <p>{work.data.description}</p>
         <TagList tags={work.data.tags} />
       </div>
@@ -43,14 +53,15 @@ const news = (await getCollection("news")).filter(item => item.data.works.includ
         <div><dt>Type</dt><dd>{work.data.type}</dd></div>
         {work.data.releaseDate && <div><dt>Released</dt><dd>{formatDate(work.data.releaseDate)}</dd></div>}
         {work.data.firstPresentedAt && <div><dt>First Presented</dt><dd>{work.data.firstPresentedAt}</dd></div>}
-        {work.data.credits.length > 0 && <div><dt>Credit</dt><dd>{work.data.credits.join("、")}</dd></div>}
+        {work.data.credits.length > 0 && <div><dt>Credit</dt><dd>{work.data.credits.join("，")}</dd></div>}
       </dl>
     </header>
     <div class="detail-body section-shell prose"><Content /></div>
+    {work.data.book && <BookInformation work={work} pressKit />}
     {news.length > 0 && <section class="section-shell news-section"><h2>関連するNews</h2><NewsList items={news} /></section>}
-    {work.data.purchaseUrl && <div class="detail-actions section-shell"><a class="button button-dark" href={work.data.purchaseUrl} target="_blank" rel="noreferrer">{work.data.purchaseLabel ?? "販売ページを見る"} <span aria-hidden="true">↗</span></a></div>}
-    {projects.length > 0 && <section class="related-section section-shell"><SectionHeading eyebrow="RELATED PROJECTS" title="関連するProject。" /><div class="card-grid">{projects.map((project) => <ProjectCard project={project} />)}</div></section>}
-    {events.length > 0 && <section class="related-section section-shell"><SectionHeading eyebrow="RELATED EVENTS" title="関連するEvent。" /><div class="card-grid">{events.map((event) => <EventCard event={event} />)}</div></section>}
-    {creators.length > 0 && <section class="related-section section-shell"><SectionHeading eyebrow="RELATED CREATORS" title="関連するCreator。" /><div class="card-grid">{creators.map((creator) => <CreatorCard creator={creator} />)}</div></section>}
+    {work.data.purchaseUrl && !work.data.book && <div class="detail-actions section-shell"><a class="button button-dark" href={work.data.purchaseUrl} target="_blank" rel="noreferrer">{work.data.purchaseLabel ?? "販売ページを見る"} <span aria-hidden="true">↗</span></a></div>}
+    {projects.length > 0 && <section class="related-section section-shell"><SectionHeading eyebrow="RELATED PROJECTS" title="関連するProject．" /><div class="card-grid">{projects.map((project) => <ProjectCard project={project} />)}</div></section>}
+    {events.length > 0 && <section class="related-section section-shell"><SectionHeading eyebrow="RELATED EVENTS" title="関連するEvent．" /><div class="card-grid">{events.map((event) => <EventCard event={event} />)}</div></section>}
+    {creators.length > 0 && <section class="related-section section-shell"><SectionHeading eyebrow="RELATED CREATORS" title="関連するCreator．" /><div class="card-grid">{creators.map((creator) => <CreatorCard creator={creator} />)}</div></section>}
   </article>
 </BaseLayout>

@@ -1,0 +1,34 @@
+---
+import { getCollection, type CollectionEntry } from "astro:content";
+interface Props { work: CollectionEntry<"works">; pressKit?: boolean }
+const { work, pressKit = false } = Astro.props;
+const { book } = work.data;
+const authors = (await getCollection("creators")).filter(creator => work.data.creators.includes(creator.id));
+const price = book ? new Intl.NumberFormat("ja-JP").format(book.price) : "";
+---
+{book && <section class="section-shell book-information" aria-labelledby={`book-information-${work.id}`}>
+  <div class="book-information-content">
+    <h2 id={`book-information-${work.id}`}>作品情報</h2>
+    <table><caption class="sr-only">『{work.data.title}』の作品情報</caption><colgroup><col style="width: 28%" /><col style="width: 72%" /></colgroup><tbody>
+      <tr><th scope="row">書名</th><td>{work.data.title}</td></tr>
+      <tr><th scope="row">著者</th><td>{authors.map((author,index) => <>{index > 0 && "，"}<a href={`/creators/${author.id}/`}>{author.data.name}</a></>)}</td></tr>
+      <tr><th scope="row">作品形態</th><td>漫画短編集・四編収録</td></tr>
+      <tr><th scope="row">判型</th><td>{book.format}</td></tr>
+      <tr><th scope="row">取扱価格</th><td>{price}円（{book.retailer}店頭価格）</td></tr>
+      <tr><th scope="row">取扱店</th><td><a href={book.retailerUrl} target="_blank" rel="noopener noreferrer">{book.retailer} ↗</a></td></tr>
+      {work.data.firstPresentedAt && <tr><th scope="row">初出</th><td>{work.data.firstPresentedAt}</td></tr>}
+    </tbody></table>
+    <p class="book-price-note">店頭での取扱いです．価格・在庫・通販での販売状況は，タコシェへお問い合わせください．</p>
+    <div class="book-actions">
+      {work.data.purchaseUrl
+        ? <a class="button button-dark" href={work.data.purchaseUrl} target="_blank" rel="noopener noreferrer" data-outbound="shop">タコシェの商品ページで購入する ↗</a>
+        : <a class="button button-dark" href={book.retailerUrl} target="_blank" rel="noopener noreferrer">タコシェの店舗・通販案内を見る ↗</a>}
+      {authors.map(author => author.data.x && <a class="button" href={author.data.x} target="_blank" rel="noopener noreferrer">{author.data.name}のXを見る ↗</a>)}
+    </div>
+    <div class="book-actions">
+      <a class="text-link" href={`/contact/?route=creator&creator=${work.data.creators[0]}&category=press#inquiry`}>取材・メディア掲載の相談 →</a>
+      <a class="text-link" href={`/contact/?route=creator&creator=${work.data.creators[0]}&category=distribution#inquiry`}>作品の取扱い・展示の相談 →</a>
+    </div>
+    {pressKit && <aside class="press-kit"><h3>報道・紹介用の書影</h3><p>提供原寸の表紙画像（874×1240px）と，クレジット表記例をまとめています．</p><p>表記例：書影：松見公園『あのことの関係性について』</p><a class="button" href={book.pressKit} download>書影・クレジットをダウンロード ↓</a><p class="book-price-note">より高解像度の画像や，掲載方法については取材窓口へご相談ください．</p></aside>}
+  </div>
+</section>}

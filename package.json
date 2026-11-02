@@ -10,7 +10,9 @@
     "check": "astro check",
     "check:images": "node scripts/check-images.mjs",
     "check:links": "node scripts/check-links.mjs",
-    "check:copy": "node scripts/check-production-copy.mjs"
+    "check:copy": "node scripts/check-production-copy.mjs",
+    "check:press": "node scripts/check-press-pages.mjs",
+    "check:mosaic": "node --test scripts/mosaic.test.mjs"
   },
   "dependencies": {
     "@astrojs/sitemap": "3.7.3",

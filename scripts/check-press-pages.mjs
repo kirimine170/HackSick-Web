@@ -1,0 +1,46 @@
+import assert from "node:assert/strict";
+import { readFile, stat } from "node:fs/promises";
+import { resolve } from "node:path";
+import sharp from "sharp";
+
+const root = resolve("dist");
+const paths = ["news/anokoto-no-kankeisei-ni-tsuite", "works/anokoto-no-kankeisei-ni-tsuite", "creators/matsumi-koen"];
+const preview = process.argv.includes("--preview");
+const production = process.argv.includes("--production");
+assert.ok(!(preview && production), "Choose one deployment environment");
+const documents = [];
+for (const path of paths) {
+  const html = await readFile(resolve(root, path, "index.html"), "utf8");
+  documents.push(html);
+  const section = html.match(/<section[^>]*class="[^"]*book-information[\s\S]*?<\/section>/)?.[0];
+  assert.ok(section, `${path}: shared book information is missing`);
+  for (const text of ["A5", "1,500円", "タコシェ", "コミティア"]) assert.ok(section.includes(text), `${path}: ${text}`);
+  assert.ok(section.includes('scope="row"'), `${path}: row headings are missing`);
+  assert.ok(!section.includes("通販で購入"), `${path}: no public product URL exists yet`);
+  const links = [...html.matchAll(/href="([^"]+)"/g)].map(match => new URL(match[1].replaceAll("&amp;", "&"), "https://hacksick.com"));
+  for (const category of ["press", "distribution"]) assert.ok(links.some(url => url.pathname === "/contact/" && url.searchParams.get("category") === category), `${path}: ${category} route`);
+  assert.ok(links.some(url => url.href === "https://x.com/amzkoenn2"), `${path}: author X link`);
+  const canonical = html.match(/rel="canonical" href="([^"]+)"/)?.[1];
+  assert.equal(canonical, `https://hacksick.com/${path}/`);
+  const noindex = /<meta[^>]*name="robots"[^>]*content="[^"]*noindex/.test(html);
+  if (preview) assert.ok(noindex, `${path}: preview must stay noindex`);
+  if (production) assert.ok(!noindex, `${path}: production must be indexable`);
+  const ogImage = html.match(/property="og:image" content="([^"]+)"/)?.[1];
+  assert.ok(ogImage?.startsWith("https://hacksick.com/images/og/"), `${path}: page-specific OGP`);
+  const metadata = await sharp(resolve(root, new URL(ogImage).pathname.slice(1))).metadata();
+  assert.equal(metadata.width, 1200); assert.equal(metadata.height, 630);
+  for (const match of html.matchAll(/<script[^>]*type="application\/ld\+json"[^>]*>([\s\S]*?)<\/script>/g)) JSON.parse(match[1]);
+}
+const structured = html => [...html.matchAll(/<script[^>]*type="application\/ld\+json"[^>]*>([\s\S]*?)<\/script>/g)].map(match => JSON.parse(match[1]));
+const article = structured(documents[0]).find(item => item["@type"] === "NewsArticle");
+assert.equal(article?.datePublished, "2026-11-02");
+const book = structured(documents[1]).find(item => item["@type"] === "Book");
+assert.equal(book?.offers?.price, 1500); assert.equal(book?.offers?.priceCurrency, "JPY");
+assert.equal(book?.author?.[0]?.name, "松見公園");
+assert.ok(!documents[2].includes("取り組む予定です"), "Creator page must describe completed work");
+assert.ok(!documents[1].includes(">Literature<"), "Comic must not have the Literature tag");
+const kit = resolve(root, "press/anokoto-no-kankeisei-ni-tsuite/press-kit.zip");
+assert.ok((await stat(kit)).size > 0);
+const zip = await readFile(kit);
+assert.ok(zip.includes(Buffer.from("cover.webp"))); assert.ok(zip.includes(Buffer.from("credit.txt")));
+console.log(`3 press-related pages：facts，contact routes，1200×630 OGP，structured data and press kit OK${preview ? "（preview noindex）" : production ? "（production indexable）" : ""}`);

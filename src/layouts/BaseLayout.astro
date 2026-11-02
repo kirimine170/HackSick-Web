@@ -17,6 +17,7 @@ interface Props {
   imageAlt?: string;
   noindex?: boolean;
   structuredData?: Record<string, unknown>;
+  ogType?: "website" | "article";
 }
 
 const {
@@ -28,6 +29,7 @@ const {
   imageAlt = "HackSick公式サイト",
   noindex = false,
   structuredData,
+  ogType = "website",
 } = Astro.props;
 
 const canonical = new URL(Astro.url.pathname, Astro.site);
@@ -54,7 +56,7 @@ const imageType = imageExtension === "jpg" || imageExtension === "jpeg"
     <link rel="icon" type="image/png" href="/favicon.png" />
     <link rel="manifest" href="/site.webmanifest" />
 
-    <meta property="og:type" content="website" />
+    <meta property="og:type" content={ogType} />
     <meta property="og:site_name" content={site.name} />
     <meta property="og:locale" content={site.locale} />
     <meta property="og:title" content={title} />

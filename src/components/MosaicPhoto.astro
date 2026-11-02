@@ -1,0 +1,25 @@
+---
+interface Props {
+  src: string;
+  srcset?: string;
+  sizes?: string;
+  width: number;
+  height: number;
+  alt: string;
+  clearArea: [number, number][];
+  preserveAreas?: [number, number][][];
+  mosaicAreas?: [number, number][][];
+  pattern?: "triangle" | "hexagon";
+  columns?: number;
+}
+const { src, srcset, sizes, width, height, alt, clearArea, preserveAreas = [], mosaicAreas = [[[0,0],[1,0],[1,1],[0,1]]], pattern = "triangle", columns = 20 } = Astro.props;
+const clearPolygon = `polygon(${clearArea.map(([x,y]) => `${x * 100}% ${y * 100}%`).join(",")})`;
+---
+<div class="mosaic-photo" data-mosaic-photo data-pattern={pattern} data-columns={columns} data-clear-areas={JSON.stringify([clearArea, ...preserveAreas])} data-mosaic-areas={JSON.stringify(mosaicAreas)} style={`--mosaic-clear-area: ${clearPolygon}`}>
+  <img class="mosaic-source" {src} {srcset} {sizes} {alt} {width} {height} loading="lazy" decoding="async" />
+  <img class="mosaic-clear" {src} {srcset} {sizes} alt="" aria-hidden="true" {width} {height} loading="lazy" decoding="async" />
+  <canvas hidden aria-hidden="true"></canvas>
+</div>
+<script>
+  import "../scripts/mosaic-photos";
+</script>

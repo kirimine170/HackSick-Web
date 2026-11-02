@@ -15,7 +15,7 @@ const thumbnailHeight = work.data.thumbnailHeight ?? 320;
   <a class="card-hit" href={`/works/${work.id}/`} aria-label={`${work.data.title}の詳細`}></a>
   <div class="work-card-image">
     {work.data.thumbnail ? (
-      <img src={work.data.thumbnail} alt={`${work.data.title}の表紙`} width={thumbnailWidth} height={thumbnailHeight} loading="lazy" />
+      <img src={work.data.book?.coverSmall ?? work.data.thumbnail} srcset={work.data.book ? `${work.data.book.coverSmall} 320w, ${work.data.book.coverMedium} 640w` : undefined} sizes={work.data.book ? "(max-width: 700px) 70vw, 280px" : undefined} alt={`${work.data.title}の表紙`} width={thumbnailWidth} height={thumbnailHeight} loading="lazy" />
     ) : (
       <div class="image-placeholder" aria-hidden="true">WORK</div>
     )}
