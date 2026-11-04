@@ -2704,12 +2704,12 @@ a {
 }
 
 .creator-gallery {
-  padding-top: clamp(5rem, 9vw, 9rem);
-  padding-bottom: clamp(5rem, 9vw, 9rem);
+  padding-top: 0;
+  padding-bottom: 0;
 }
 
 .photo-carousel-frame {
-  margin-top: clamp(3rem, 6vw, 6rem);
+  margin-top: 0;
   border: 1px solid var(--ink);
   background: var(--ink);
 }
@@ -2801,7 +2801,7 @@ a {
 
 .photo-carousel-image {
   position: relative;
-  height: clamp(24rem, 62vw, 52rem);
+  height: clamp(18rem, 50svh, 48rem);
   overflow: hidden;
   background:
     radial-gradient(circle at 50% 50%, rgba(62, 143, 210, 0.09), transparent 45%),
@@ -3166,7 +3166,7 @@ a {
   }
 
   .photo-carousel-toolbar {
-    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-columns: minmax(0, 1fr) auto auto;
   }
 
   .photo-carousel-status {
@@ -3174,11 +3174,7 @@ a {
   }
 
   .photo-carousel-controls {
-    grid-column: 1 / -1;
-    grid-template-columns: 1fr 1fr;
-    min-height: 3.2rem;
-    border-top: 1px solid rgba(255, 255, 255, 0.38);
-    border-left: 0;
+    grid-template-columns: repeat(2, 2.75rem);
   }
 
   .photo-carousel-controls button:first-child {
@@ -3186,7 +3182,8 @@ a {
   }
 
   .photo-carousel-image {
-    height: min(72svh, 34rem);
+    height: auto;
+    aspect-ratio: 3 / 2;
   }
 
   .photo-carousel-slide figcaption {

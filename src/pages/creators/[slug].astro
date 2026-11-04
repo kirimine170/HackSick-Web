@@ -37,6 +37,8 @@ const achievements = creator.data.achievements.map((achievement) => {
 });
 const socialLinks = [creator.data.website && { label: "Website", url: creator.data.website }, creator.data.portfolioUrl && { label: "Portfolio", url: creator.data.portfolioUrl }, creator.data.github && { label: "GitHub", url: creator.data.github }, creator.data.x && { label: "X", url: creator.data.x }, creator.data.instagram && { label: "Instagram", url: creator.data.instagram }, ...creator.data.otherLinks].filter(Boolean) as { label: string; url: string }[];
 const isHsapCreator = ["matsumi-koen", "marmite-daikon-oroshi"].includes(creator.id);
+const hasGallery = creator.data.gallery.length > 0;
+const inquiryHref = isHsapCreator ? `/contact/?route=creator&creator=${creator.id}#inquiry` : "/contact/?route=organization#inquiry";
 const structuredData = isHsapCreator ? {
   "@context": "https://schema.org",
   "@type": "Person",
@@ -49,21 +51,21 @@ const structuredData = isHsapCreator ? {
 
 <BaseLayout title={`${creator.data.name}｜Creators｜HackSick`} description={creator.data.profile} image={creator.data.ogImage ?? creator.data.profileImage} imageWidth={creator.data.ogImage ? 1200 : undefined} imageHeight={creator.data.ogImage ? 630 : undefined} imageAlt={creator.data.ogImage ? `${creator.data.name}のプロフィールと代表作品` : creator.data.profileImageAlt ?? `${creator.data.name}のプロフィール画像`} twitterCreator={getXHandle(creator.data.x)} structuredData={structuredData}>
   <article class="detail-page creator-detail">
-    <header class="detail-hero section-shell creator-detail-hero">
-      {featuredWork ? <figure class="creator-book-visual"><BookCover work={featuredWork} loading="eager" /><figcaption>代表作『{featuredWork.data.title}』の表紙</figcaption></figure> : <div class="creator-detail-mark" aria-hidden="true"><img src={creator.data.profileImage ?? "/images/hacksick-icon.webp"} alt="" width="1000" height="1000" /></div>}
+    <header class:list={["detail-hero section-shell creator-detail-hero", { "creator-detail-hero-gallery": hasGallery }]}>
+      {!hasGallery && (featuredWork ? <figure class="creator-book-visual"><BookCover work={featuredWork} loading="eager" /><figcaption>代表作『{featuredWork.data.title}』の表紙</figcaption></figure> : <div class="creator-detail-mark" aria-hidden="true"><img src={creator.data.profileImage ?? "/images/hacksick-icon.webp"} alt="" width="1000" height="1000" /></div>)}
       <div>
-        <p class="eyebrow"><span>CREATOR</span>PROFILE</p>
+        <p class="eyebrow"><span>CREATOR</span>{hasGallery ? "PHOTOGRAPHY" : "PROFILE"}</p>
         <h1>{creator.data.name}</h1>
-        {creator.data.tagline && <p class="creator-detail-tagline">{creator.data.tagline}</p>}
+        {!hasGallery && creator.data.tagline && <p class="creator-detail-tagline">{creator.data.tagline}</p>}
         <p>{creator.data.profile}</p>
-        <TagList tags={creator.data.fields} />
-        <a class="button button-dark" href={isHsapCreator ? `/contact/?route=creator&creator=${creator.id}#inquiry` : "/contact/?route=organization#inquiry"}>{isHsapCreator ? "お仕事のご相談 →" : "共同企画・運営へのご相談 →"}</a>
+        {!hasGallery && <><TagList tags={creator.data.fields} /><a class="button button-dark" href={inquiryHref}>{isHsapCreator ? "お仕事のご相談 →" : "共同企画・運営へのご相談 →"}</a></>}
       </div>
+      {hasGallery && <a class="button" href={inquiryHref}>撮影のご相談 →</a>}
     </header>
+    {hasGallery && <PhotoCarousel images={creator.data.gallery} creatorName={creator.data.name} />}
     <div class="detail-body section-shell prose"><Content /></div>
     {featuredWork && <BookInformation work={featuredWork} />}
-    {isHsapCreator && <section class="section-shell creator-request"><p class="eyebrow"><span>WORK WITH</span>{creator.data.name}</p><h2>制作・お仕事のご相談</h2><p>ご依頼の内容やスケジュールなどを，フォームからお知らせください．HackSickの創作支援プロジェクトHSAPが，クリエイターと連携してご相談を承ります．</p><a class="button button-dark" href={`/contact/?route=creator&creator=${creator.id}#inquiry`}>{creator.data.name}への仕事を相談する →</a></section>}
-    {creator.data.gallery.length > 0 && <PhotoCarousel images={creator.data.gallery} creatorName={creator.data.name} />}
+    {isHsapCreator && <section class="section-shell creator-request"><p class="eyebrow"><span>WORK WITH</span>{creator.data.name}</p><h2>{hasGallery ? "撮影のご相談" : "制作・お仕事のご相談"}</h2><p>{hasGallery ? "撮影したいもの，用途，希望時期をフォームからお聞かせください．HSAPが，クリエイターと連携してご相談を承ります．" : "ご依頼の内容やスケジュールなどを，フォームからお知らせください．HackSickの創作支援プロジェクトHSAPが，クリエイターと連携してご相談を承ります．"}</p><a class="button button-dark" href={inquiryHref}>{hasGallery ? "撮影を相談する →" : `${creator.data.name}への仕事を相談する →`}</a></section>}
     {news.length > 0 && <section class="section-shell news-section"><h2>関連するNews</h2><NewsList items={news} /></section>}
     {socialLinks.length > 0 && <nav class="social-links section-shell" aria-label="Creatorの外部リンク">{socialLinks.map((link) => <a href={link.url} target="_blank" rel="noreferrer">{link.label} ↗</a>)}</nav>}
     {achievements.length > 0 && (
@@ -96,3 +98,42 @@ const structuredData = isHsapCreator ? {
     {events.length > 0 && <section class="related-section section-shell"><SectionHeading eyebrow="EVENTS" title="直近に関わったEvent．" /><div class="card-grid">{events.slice(0,3).map((event) => <EventCard event={event} compact />)}</div>{events.length > 3 && <a class="button" href="/events/#archive">過去の開催記録を見る →</a>}</section>}
   </article>
 </BaseLayout>
+
+<style>
+  .creator-detail-hero-gallery {
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 1.25rem 2rem;
+    align-items: end;
+    min-height: 0;
+    padding-block: clamp(1.5rem, 3vw, 3rem);
+    border-bottom: 0;
+  }
+
+  .creator-detail-hero-gallery h1 {
+    font-size: clamp(1.5rem, 4.5cqi, 3.5rem);
+    letter-spacing: -0.04em;
+    line-height: 1.4;
+  }
+
+  .creator-detail-hero-gallery > div > p:not(.eyebrow) {
+    max-width: 48rem;
+    margin: 0.75rem 0 0;
+    color: var(--muted);
+    font-size: 0.9rem;
+    line-height: 1.8;
+  }
+
+  .creator-detail-hero-gallery .eyebrow {
+    margin: 0 0 0.75rem;
+  }
+
+  @media (max-width: 700px) {
+    .creator-detail-hero-gallery {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .creator-detail-hero-gallery > .button {
+      justify-self: start;
+    }
+  }
+</style>

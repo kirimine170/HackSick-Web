@@ -1,6 +1,4 @@
 ---
-import SectionHeading from "./SectionHeading.astro";
-
 interface GalleryImage {
   src: string;
   alt: string;
@@ -19,15 +17,9 @@ const total = images.length;
 ---
 
 <section class="creator-gallery section-shell" data-photo-carousel aria-roledescription="carousel" aria-label={`${creatorName}の作品写真`}>
-  <SectionHeading
-    eyebrow="SELECTED WORKS"
-    title="写真作品"
-    description="風景やプロダクトを対象に，光，質感，形を捉えた写真を紹介します．"
-  />
-
   <div class="photo-carousel-frame">
     <div class="photo-carousel-toolbar">
-      <p class="photo-carousel-credit">PHOTOGRAPHY / {creatorName}</p>
+      <h2 class="photo-carousel-credit">写真作品</h2>
       <p class="photo-carousel-status" data-carousel-status aria-live="polite">01 / {String(total).padStart(2, "0")}</p>
       <div class="photo-carousel-controls">
         <button type="button" data-carousel-previous aria-label="前の写真" disabled>←</button>
@@ -46,7 +38,8 @@ const total = images.length;
                   alt={image.alt}
                   width={image.width}
                   height={image.height}
-                  loading="lazy"
+                  loading={index === 0 ? "eager" : "lazy"}
+                  fetchpriority={index === 0 ? "high" : "auto"}
                   decoding="async"
                 />
               </div>
