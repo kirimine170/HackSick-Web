@@ -29,7 +29,7 @@ hero:
 
 ## 与可工業による「Akesola Air」の発表
 
-与可工業は「Akesola Air」を発表し，実演と質疑応答を行いました．会場では作品の紹介・展示に加え，DRY LABの見学と交流も行いました．
+与可工業は，モバイル空気式目覚まし「Akesola Air」を発表し，実演と質疑応答を行いました．会場では作品の紹介・展示に加え，DRY LABの見学と交流も行いました．
 
 <figure>
   <img src="/images/news/sds-meetup-2026-11/yoka-akesola-air.webp" alt="Akesola Airの実機と紹介パネルを手に発表する与可工業．" width="1600" height="1067" loading="lazy" decoding="async" />
