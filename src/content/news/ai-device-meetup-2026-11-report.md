@@ -22,6 +22,8 @@ hero:
 
 株式会社ユニバーサルパイン代表・船橋穂天が登壇し，AIデバイス「Wiz」について講演しました．続いて，HackSick代表・霧峰との対談と，来場者との質疑応答を行いました．
 
+当日の様子は，[ユニバーサルパインの開催レポート](https://universalpine.com/news/20261105)でも紹介されています．
+
 <figure>
   <img src="/images/news/sds-meetup-2026-11/funahashi-dialogue.webp" alt="ステージ上で対談する霧峰（左）と船橋穂天（右）．" width="1600" height="1067" loading="lazy" decoding="async" />
   <figcaption>講演に続き，船橋穂天と霧峰が対談．撮影：マーマイト大根おろし（HackSick）</figcaption>
@@ -30,6 +32,8 @@ hero:
 ## 与可工業による「Akesola Air」の発表
 
 与可工業は，モバイル空気式目覚まし「Akesola Air」を発表し，実演と質疑応答を行いました．会場では作品の紹介・展示に加え，DRY LABの見学と交流も行いました．
+
+製品の詳細は，[Akesola Airの公式サイト](https://akesola.tech/ja/)をご覧ください．
 
 <figure>
   <img src="/images/news/sds-meetup-2026-11/yoka-akesola-air.webp" alt="Akesola Airの実機と紹介パネルを手に発表する与可工業．" width="1600" height="1067" loading="lazy" decoding="async" />
