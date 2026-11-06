@@ -159,6 +159,13 @@ const news = defineCollection({
     lead: z.string().optional(),
     date: z.coerce.date(),
     ogImage: z.string().optional(),
+    hero: z.object({
+      src: z.string(),
+      alt: z.string(),
+      width: z.number().int().positive(),
+      height: z.number().int().positive(),
+      caption: z.string(),
+    }).optional(),
     category: z.enum(["RELEASE", "EVENT", "MEDIA", "INFORMATION"]),
     pressRelease: z.boolean().default(false),
     creators: z.array(z.string()).default([]),

@@ -5,10 +5,10 @@ startDate: 2026-11-05T18:00:00+09:00
 endDate: 2026-11-05T20:00:00+09:00
 location: SAKURA DEEPTECH SHIBUYA（東京都渋谷区桜丘町1番2号 セントラルビル12階）
 format: offline
-status: upcoming
+status: finished
 tags: [Technology, AI, Robotics, Hardware]
 registrationUrl: https://luma.com/cqr4b080
-registrationLabel: Lumaで詳細・参加登録を見る
+registrationLabel: Lumaの開催情報を見る
 organizers: [SAKURA DEEPTECH SHIBUYA]
 coorganizers: [株式会社ユニバーサルパイン, HackSick]
 featured: true
@@ -17,7 +17,9 @@ externalLinks:
     url: https://www.sakuradeeptechshibuya.com/topics/1918/
 ---
 
-モノづくりに関心のあるスタートアップ，事業担当者，研究開発や技術活用に取り組む方に向けた交流イベントです．HackSickは株式会社ユニバーサルパインとともに共催します．
+このイベントは終了しました．[船橋穂天の講演・対談と，与可工業の発表を紹介する開催レポート](/news/ai-device-meetup-2026-11-report/)をご覧ください．
+
+モノづくりに関心のあるスタートアップ，事業担当者，研究開発や技術活用に取り組む方に向けた交流イベントです．HackSickは株式会社ユニバーサルパインとともに共催しました．
 
 ## 開催概要
 
@@ -25,6 +27,6 @@ externalLinks:
 - 会場：SAKURA DEEPTECH SHIBUYA，セントラルビル12階（エントランスは3階）
 - 参加費：無料
 - 定員：50名
-- 参加登録：[Lumaのイベントページ](https://luma.com/cqr4b080)
+- 開催情報：[Lumaのイベントページ](https://luma.com/cqr4b080)
 
-株式会社ユニバーサルパイン代表・船橋穂天氏の講演に加え，ロボットのデモ，ドライラボ見学，交流を予定しています．最新の内容と参加条件は，[主催者の案内](https://www.sakuradeeptechshibuya.com/topics/1918/)と申込ページをご確認ください．
+株式会社ユニバーサルパイン代表・船橋穂天によるAIデバイス「Wiz」の講演と霧峰との対談・質疑応答，与可工業による「Akesola Air」の発表を行いました．作品の紹介・展示，DRY LAB見学と交流も実施しました．事前の開催案内は，[主催者の案内](https://www.sakuradeeptechshibuya.com/topics/1918/)をご覧ください．

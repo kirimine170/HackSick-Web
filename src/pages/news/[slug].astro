@@ -21,7 +21,7 @@ const related = [
 const featuredBook = news.data.pressRelease ? works.find(work => news.data.works.includes(work.id) && work.data.book) : undefined;
 const bookAuthor = creators.find(creator => featuredBook?.data.creators.includes(creator.id));
 const twitterCreator = getXHandle(bookAuthor?.data.x);
-const imageAlt = featuredBook ? `${featuredBook.data.title}｜${bookAuthor?.data.name ?? "著者"}の漫画短編集` : news.data.title;
+const imageAlt = news.data.hero?.alt ?? (featuredBook ? `${featuredBook.data.title}｜${bookAuthor?.data.name ?? "著者"}の漫画短編集` : news.data.title);
 const pageUrl = new URL(`/news/${news.id}/`, Astro.site).href;
 const structuredData = {
   "@context": "https://schema.org", "@type": "NewsArticle",
@@ -35,7 +35,7 @@ const structuredData = {
 ---
 <BaseLayout title={`${news.data.title}｜News｜HackSick`} description={news.data.description} image={news.data.ogImage} imageWidth={1200} imageHeight={630} {imageAlt} {twitterCreator} structuredData={structuredData} ogType="article">
   <article class="detail-page">
-    <header class:list={["detail-hero", "section-shell", { "news-with-cover": Boolean(featuredBook) }]}>
+    <header class:list={["detail-hero", "section-shell", { "news-with-cover": Boolean(featuredBook), "news-with-photo": Boolean(news.data.hero) }]}>
       <div class="news-header-copy">
         <p class="eyebrow"><span>{news.data.pressRelease ? "PRESS RELEASE" : "NEWS"}</span>{!news.data.pressRelease && news.data.category}</p>
         <time datetime={news.data.date.toISOString()}>{formatDate(news.data.date)}</time>
@@ -43,6 +43,7 @@ const structuredData = {
         <p>{news.data.lead ?? news.data.description}</p>
       </div>
       {featuredBook && <figure class="news-cover"><BookCover work={featuredBook} loading="eager" /><figcaption>書影：{bookAuthor?.data.name}『{featuredBook.data.title}』</figcaption></figure>}
+      {news.data.hero && <figure class="news-hero-photo"><img src={news.data.hero.src} alt={news.data.hero.alt} width={news.data.hero.width} height={news.data.hero.height} loading="eager" fetchpriority="high" decoding="async" /><figcaption>{news.data.hero.caption}</figcaption></figure>}
     </header>
     <div class="detail-body section-shell prose"><Content /></div>
     {featuredBook && <BookInformation work={featuredBook} pressKit />}
@@ -57,3 +58,10 @@ const structuredData = {
     <nav class="section-shell news-related" aria-label="関連ページ">{related.map(item => <a class="button" href={item.href}>{item.href === "/projects/hsap/" ? "創作支援プロジェクトHSAPについて" : item.label} →</a>)}<a class="button" href="/news/">News一覧へ →</a></nav>
   </article>
 </BaseLayout>
+
+<style>
+  .news-with-photo { min-height: 0; padding-bottom: clamp(2rem, 4vw, 4rem); }
+  .news-hero-photo { max-width: 70rem; margin: clamp(2rem, 4vw, 4rem) 0 0; }
+  .news-hero-photo img { width: 100%; height: auto; }
+  .news-hero-photo figcaption { margin-top: 0.75rem; color: var(--muted); font-size: 0.8rem; line-height: 1.7; }
+</style>
