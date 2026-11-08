@@ -20,7 +20,8 @@ book:
   currency: JPY
   retailer: タコシェ
   retailerUrl: https://taco.shop-pro.jp/
-  retailerInfoUrl: https://taco.shop-pro.jp/?mode=sk#info
+  retailerAddress: 東京都中野区中野5-52-15 中野ブロードウェイ3階
+  retailerMapUrl: "https://www.google.com/maps/search/?api=1&query=%E3%82%BF%E3%82%B3%E3%82%B7%E3%82%A7%20%E4%B8%AD%E9%87%8E%E3%83%96%E3%83%AD%E3%83%BC%E3%83%89%E3%82%A6%E3%82%A7%E3%82%A4"
   coverSmall: /images/works/anokoto-no-kankeisei-ni-tsuite-320.webp
   coverMedium: /images/works/anokoto-no-kankeisei-ni-tsuite-640.webp
   pressKit: /press/anokoto-no-kankeisei-ni-tsuite/press-kit.zip

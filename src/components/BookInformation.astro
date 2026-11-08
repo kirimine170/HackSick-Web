@@ -18,13 +18,13 @@ const price = book ? new Intl.NumberFormat("ja-JP").format(book.price) : "";
       <tr><th scope="row">作品形態</th><td>漫画短編集・四編収録</td></tr>
       <tr><th scope="row">判型</th><td>{book.format}</td></tr>
       <tr><th scope="row">取扱価格</th><td>{price}円{book.taxIncluded === true && "（税込）"}</td></tr>
-      <tr><th scope="row">取扱店</th><td><a href={book.retailerInfoUrl ?? book.retailerUrl} target="_blank" rel="noopener noreferrer">{book.retailer} ↗</a></td></tr>
+      <tr><th scope="row">取扱店</th><td><a href={book.retailerUrl} target="_blank" rel="noopener noreferrer">{book.retailer} ↗</a>{book.retailerAddress && <><br />{book.retailerAddress}</>}</td></tr>
       {work.data.firstPresentedAt && <tr><th scope="row">初出</th><td>{work.data.firstPresentedAt}</td></tr>}
     </tbody></table>
     {!work.data.purchaseUrl && <p class="book-availability"><strong>現在は{book.retailer}店頭でのお取扱いです．</strong><br />通販の商品ページが公開され次第，このページでお知らせします．</p>}
     <div class="book-actions">
       {work.data.purchaseUrl && <a class="button button-dark" href={work.data.purchaseUrl} target="_blank" rel="noopener noreferrer" data-outbound="shop">{work.data.purchaseLabel ?? "通販で購入する"} ↗</a>}
-      <a class:list={["button", { "button-dark": !work.data.purchaseUrl }]} href={book.retailerInfoUrl ?? book.retailerUrl} target="_blank" rel="noopener noreferrer">{book.retailer}の所在地・連絡先を見る ↗</a>
+      <a class:list={["button", { "button-dark": !work.data.purchaseUrl }]} href={book.retailerMapUrl ?? book.retailerUrl} target="_blank" rel="noopener noreferrer">{book.retailerMapUrl ? `${book.retailer}をGoogle マップで見る` : `${book.retailer}のサイトを見る`} ↗</a>
       {authors.map(author => author.data.x && <a class="button" href={author.data.x} target="_blank" rel="noopener noreferrer">{author.data.name}のXを見る ↗</a>)}
     </div>
     <div class="book-actions">
