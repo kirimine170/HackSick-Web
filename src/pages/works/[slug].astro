@@ -33,7 +33,11 @@ const structuredData = work.data.book ? {
   image: new URL(work.data.thumbnail ?? "/og.png", Astro.site).href,
   author: creators.map(creator => ({ "@type": "Person", name: creator.data.name, url: new URL(`/creators/${creator.id}/`, Astro.site).href })),
   ...(work.data.book.publisher ? { publisher: { "@type": "Organization", name: work.data.book.publisher } } : {}),
-  offers: { "@type": "Offer", price: work.data.book.price, priceCurrency: work.data.book.currency, url: work.data.purchaseUrl ?? work.data.book.retailerUrl, seller: { "@type": "BookStore", name: work.data.book.retailer } },
+  offers: {
+    "@type": "Offer", price: work.data.book.price, priceCurrency: work.data.book.currency,
+    url: work.data.purchaseUrl ?? work.data.book.retailerUrl,
+    ...(!work.data.purchaseUrl && { seller: { "@type": "BookStore", name: work.data.book.retailer } }),
+  },
 } : undefined;
 ---
 

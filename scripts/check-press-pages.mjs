@@ -5,6 +5,7 @@ import sharp from "sharp";
 
 const root = resolve("dist");
 const paths = ["news/anokoto-no-kankeisei-ni-tsuite", "works/anokoto-no-kankeisei-ni-tsuite", "creators/matsumi-koen"];
+const purchaseUrl = "https://hacksick.square.site/product/-/B7WPK6VNARQJTYCLQ2TRMCYJ";
 const preview = process.argv.includes("--preview");
 const production = process.argv.includes("--production");
 assert.ok(!(preview && production), "Choose one deployment environment");
@@ -16,7 +17,7 @@ for (const path of paths) {
   assert.ok(section, `${path}: shared book information is missing`);
   for (const text of ["A5", "1,500円", "タコシェ", "コミティア"]) assert.ok(section.includes(text), `${path}: ${text}`);
   assert.ok(section.includes('scope="row"'), `${path}: row headings are missing`);
-  assert.ok(!section.includes("通販で購入"), `${path}: no public product URL exists yet`);
+  assert.ok(section.includes(`href="${purchaseUrl}"`) && section.includes("HackSickショップで購入する"), `${path}: Square purchase button is missing`);
   const links = [...html.matchAll(/href="([^"]+)"/g)].map(match => new URL(match[1].replaceAll("&amp;", "&"), "https://hacksick.com"));
   for (const category of ["press", "distribution"]) assert.ok(links.some(url => url.pathname === "/contact/" && url.searchParams.get("category") === category), `${path}: ${category} route`);
   assert.ok(links.some(url => url.href === "https://x.com/amzkoenn2"), `${path}: author X link`);
@@ -38,6 +39,7 @@ const article = structured(documents[0]).find(item => item["@type"] === "NewsArt
 assert.equal(article?.datePublished, "2026-11-02");
 const book = structured(documents[1]).find(item => item["@type"] === "Book");
 assert.equal(book?.offers?.price, 1500); assert.equal(book?.offers?.priceCurrency, "JPY");
+assert.equal(book?.offers?.url, purchaseUrl);
 assert.equal(book?.author?.[0]?.name, "松見公園");
 assert.ok(!documents[2].includes("取り組む予定です"), "Creator page must describe completed work");
 assert.ok(!documents[1].includes(">Literature<"), "Comic must not have the Literature tag");

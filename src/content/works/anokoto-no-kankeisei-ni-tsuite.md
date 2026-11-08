@@ -8,6 +8,8 @@ thumbnailWidth: 874
 thumbnailHeight: 1240
 ogImage: /images/og/anokoto-work.webp
 firstPresentedAt: コミティア
+purchaseUrl: https://hacksick.square.site/product/-/B7WPK6VNARQJTYCLQ2TRMCYJ
+purchaseLabel: HackSickショップで購入する
 book:
   format: A5
   publisher: HackSick

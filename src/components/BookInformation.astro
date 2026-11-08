@@ -23,9 +23,8 @@ const price = book ? new Intl.NumberFormat("ja-JP").format(book.price) : "";
     </tbody></table>
     {!work.data.purchaseUrl && <p class="book-availability"><strong>現在は{book.retailer}店頭でのお取扱いです．</strong><br />通販の商品ページが公開され次第，このページでお知らせします．</p>}
     <div class="book-actions">
-      {work.data.purchaseUrl
-        ? <a class="button button-dark" href={work.data.purchaseUrl} target="_blank" rel="noopener noreferrer" data-outbound="shop">タコシェの商品ページで購入する ↗</a>
-        : <a class="button button-dark" href={book.retailerInfoUrl ?? book.retailerUrl} target="_blank" rel="noopener noreferrer">タコシェの所在地・連絡先を見る ↗</a>}
+      {work.data.purchaseUrl && <a class="button button-dark" href={work.data.purchaseUrl} target="_blank" rel="noopener noreferrer" data-outbound="shop">{work.data.purchaseLabel ?? "通販で購入する"} ↗</a>}
+      <a class:list={["button", { "button-dark": !work.data.purchaseUrl }]} href={book.retailerInfoUrl ?? book.retailerUrl} target="_blank" rel="noopener noreferrer">{book.retailer}の所在地・連絡先を見る ↗</a>
       {authors.map(author => author.data.x && <a class="button" href={author.data.x} target="_blank" rel="noopener noreferrer">{author.data.name}のXを見る ↗</a>)}
     </div>
     <div class="book-actions">
