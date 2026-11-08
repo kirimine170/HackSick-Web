@@ -14,7 +14,7 @@ const [emailLocal, emailDomain] = contact.email.split("@");
     <div class="organization-branches">
       {Object.entries(inquiryRoutes).map(([id,route]) => <article class="organization-branch"><p class="eyebrow">{id === "organization" ? "HACKSICK" : "HSAP / CREATOR INQUIRY"}</p><h3>{route.label}</h3><p>{route.description}</p><p class="contact-address">{route.email}</p><a class="button button-dark" href={`/contact/?route=${id}#inquiry`}>この窓口へ相談する →</a><a class="contact-email-link" href={`mailto:${route.email}`}>メールで相談する ↗</a></article>)}
     </div>
-    <p>HSAP（HackSick Artifacts Project）は，HackSickが運営する創作支援プロジェクトです．<a class="text-link" href="/about/#organization">活動と役割を見る →</a></p>
+    <p>HSAP（HackSick Artifacts Project）は，HackSickが運営する創作支援プロジェクトです．<a class="text-link" href="/projects/hsap/">支援内容と参加クリエイターを見る →</a></p>
   </section>
   <InquiryForm />
   <section class="contact-page section-shell" id="contact">

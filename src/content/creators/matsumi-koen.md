@@ -23,7 +23,7 @@ featured: true
 
 ## HSAPでの実績
 
-[HSAP](/projects/hsap/)では，漫画短編集『あのことの関係性について』の作品紹介，プレス記事の作成，書影・著者プロフィールの整備を行っています．
+[HSAP](/projects/hsap/)では，漫画短編集『あのことの関係性について』の作品紹介，プレス記事の作成，書影・著者プロフィールの整備を行いました．
 
 - [作品紹介・取扱情報](/works/anokoto-no-kankeisei-ni-tsuite/)
 - [プレス記事](/news/anokoto-no-kankeisei-ni-tsuite/)

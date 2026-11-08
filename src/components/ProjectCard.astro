@@ -24,6 +24,6 @@ const { project } = Astro.props;
     <p class="card-description">{project.data.description}</p>
   </div>
   <TagList tags={project.data.tags} />
-  <p class="card-relation-count">{String(project.data.events.length).padStart(2, "0")} EVENTS</p>
+  {project.data.events.length > 0 && <p class="card-relation-count">{String(project.data.events.length).padStart(2, "0")} EVENTS</p>}
   <span class="card-arrow" aria-hidden="true">↘</span>
 </article>
