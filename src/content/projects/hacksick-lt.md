@@ -16,6 +16,7 @@ events:
   - hacksick-lt-08
   - hacksick-lt-09
   - hacksick-lt-10
+  - hacksick-lt-11
 works: []
 creators: [kirimine-shizuku]
 externalLinks:
