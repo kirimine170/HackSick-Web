@@ -22,7 +22,7 @@ hero:
 
 株式会社ユニバーサルパイン代表・船橋穂天が登壇し，AIデバイス「Wiz」について講演しました．続いて，HackSick代表・霧峰との対談と，来場者との質疑応答を行いました．
 
-当日の様子は，[ユニバーサルパインの開催レポート](https://universalpine.com/news/20261105)でも紹介されています．SAKURA DEEPTECH SHIBUYAの公式開催レポート「<a href="https://www.sakuradeeptechshibuya.com/topics/2011/" target="_blank" rel="noreferrer">「AIデバイスの未来を拓くモノづくりMEETUP DAY！〜ロボット＆ドライラボ見学・交流会〜」が開催されました</a>」も公開されています．
+当日の様子は，<a href="https://universalpine.com/news/20261105" target="_blank" rel="noreferrer">ユニバーサルパインの開催レポート</a>でも紹介されています．<a href="https://www.sakuradeeptechshibuya.com/topics/2011/" target="_blank" rel="noreferrer">SAKURA DEEPTECH SHIBUYAの公式開催レポート</a>も公開されています．
 
 <figure>
   <img src="/images/news/sds-meetup-2026-11/funahashi-dialogue.webp" alt="ステージ上で対談する霧峰（左）と船橋穂天（右）．" width="1600" height="1067" loading="lazy" decoding="async" />
@@ -33,7 +33,7 @@ hero:
 
 与可工業は，モバイル空気式目覚まし「Akesola Air」を発表し，実演と質疑応答を行いました．会場では作品の紹介・展示に加え，DRY LABの見学と交流も行いました．
 
-製品の詳細は，[Akesola Airの公式サイト](https://akesola.tech/ja/)をご覧ください．
+製品の詳細は，<a href="https://akesola.tech/ja/" target="_blank" rel="noreferrer">Akesola Airの公式サイト</a>をご覧ください．
 
 <figure>
   <img src="/images/news/sds-meetup-2026-11/yoka-akesola-air.webp" alt="Akesola Airの実機と紹介パネルを手に発表する与可工業．" width="1600" height="1067" loading="lazy" decoding="async" />
@@ -42,6 +42,23 @@ hero:
 
 当日の様子や展示の詳細は，HackSickのnote「<a href="https://note.com/hacksick/n/ndc4fc003baba" target="_blank" rel="noreferrer">船橋穂天氏のWiz講演と作品展示　SDSモノづくりMEETUP DAY開催レポート</a>」でお届けしています．
 
-次回のHackSick LT会は，2026年11月28日（土）を予定しています．募集情報は[公式connpass](https://hacksick.connpass.com/)でご案内します．
+次回のHackSick LT会は，2026年11月28日（土）を予定しています．募集情報は<a href="https://hacksick.connpass.com/" target="_blank" rel="noreferrer">公式connpass</a>でご案内します．
 
-[イベントの開催概要を見る](/events/ai-device-meetup-2026-11/)
+## 関連リンク
+
+- <a href="https://note.com/hacksick/n/ndc4fc003baba" target="_blank" rel="noreferrer">HackSickのnoteレポート</a>
+- <a href="https://www.sakuradeeptechshibuya.com/topics/2011/" target="_blank" rel="noreferrer">SAKURA DEEPTECH SHIBUYAの公式開催レポート</a>
+- <a href="https://universalpine.com/news/20261105" target="_blank" rel="noreferrer">ユニバーサルパインの開催レポート</a>
+- <a href="https://akesola.tech/ja/" target="_blank" rel="noreferrer">Akesola Airの公式サイト</a>
+- [開催前の案内](/news/ai-device-meetup-2026-11/)
+- [イベントの開催概要](/events/ai-device-meetup-2026-11/)
+
+## クレジット
+
+- 主催：SAKURA DEEPTECH SHIBUYA
+- 共催：株式会社ユニバーサルパイン・HackSick
+- 登壇：船橋穂天（株式会社ユニバーサルパイン代表）
+- 発表：与可工業（Akesola Air）
+- 対談：霧峰（HackSick代表）
+- 撮影：マーマイト大根おろし（HackSick）
+- 会場：SAKURA DEEPTECH SHIBUYA（渋谷サクラステージ）
