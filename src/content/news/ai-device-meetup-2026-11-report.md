@@ -22,7 +22,7 @@ hero:
 
 株式会社ユニバーサルパイン代表・船橋穂天が登壇し，AIデバイス「Wiz」について講演しました．続いて，HackSick代表・霧峰との対談と，来場者との質疑応答を行いました．
 
-当日の様子は，[ユニバーサルパインの開催レポート](https://universalpine.com/news/20261105)でも紹介されています．
+当日の様子は，[ユニバーサルパインの開催レポート](https://universalpine.com/news/20261105)でも紹介されています．SAKURA DEEPTECH SHIBUYAの公式開催レポート「<a href="https://www.sakuradeeptechshibuya.com/topics/2011/" target="_blank" rel="noreferrer">「AIデバイスの未来を拓くモノづくりMEETUP DAY！〜ロボット＆ドライラボ見学・交流会〜」が開催されました</a>」も公開されています．
 
 <figure>
   <img src="/images/news/sds-meetup-2026-11/funahashi-dialogue.webp" alt="ステージ上で対談する霧峰（左）と船橋穂天（右）．" width="1600" height="1067" loading="lazy" decoding="async" />
@@ -40,7 +40,7 @@ hero:
   <figcaption>与可工業による「Akesola Air」の発表．撮影：マーマイト大根おろし（HackSick）</figcaption>
 </figure>
 
-当日の様子や展示の詳細は，[HackSickのnote](https://note.com/hacksick)でお届けします．※イベントレポートは後日掲載予定です．
+当日の様子や展示の詳細は，HackSickのnote「<a href="https://note.com/hacksick/n/ndc4fc003baba" target="_blank" rel="noreferrer">船橋穂天氏のWiz講演と作品展示　SDSモノづくりMEETUP DAY開催レポート</a>」でお届けしています．
 
 次回のHackSick LT会は，2026年11月28日（土）を予定しています．募集情報は[公式connpass](https://hacksick.connpass.com/)でご案内します．
 
