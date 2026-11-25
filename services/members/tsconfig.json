@@ -11,5 +11,5 @@
     "skipLibCheck": true
   },
   "include": ["src/**/*.ts", "test/**/*.ts"],
-  "exclude": ["src/client.ts", "src/shop-client.ts", "src/coffee-client.ts", "src/member-pass-client.ts", "src/shop-admin-rules-client.ts", "src/shipping-client.ts"]
+  "exclude": ["src/client.ts", "src/*-client.ts"]
 }

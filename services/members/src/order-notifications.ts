@@ -36,7 +36,9 @@ export async function deliverOrderNotifications(env:Env,transport:typeof fetch=f
     const items=quote.lines.map(line=>`${line.name} × ${line.quantity}`).join("\n");
     const discount = quote.discountJpy ? `${quote.discountLabel ?? "会員割引"}：${quote.discountJpy}円\n` : "";
     const coffeeReturns = quote.lines.some(line => line.bags !== 0) ? "食品のお客様都合による返品・交換はお受けできません．" : "";
-    const purchaseUrl = (order.order_channel === "shop" ? env.SHOP_BASE_URL : env.AUTH_BASE_URL) ?? "https://members.hacksick.com/";
+    const purchaseUrl = order.order_channel === "shop" && env.SHOP_BASE_URL
+      ? new URL(`/orders?receipt=${encodeURIComponent(order.id)}`, env.SHOP_BASE_URL).href
+      : env.AUTH_BASE_URL ?? "https://members.hacksick.com/";
     const body=buyer?`HackSickストアでのご注文を受け付けました．\n\n受付番号：${order.id}\n${items}\n${discount}送料：${quote.shippingJpy}円\nお支払い合計：${quote.totalJpy}円（税込）\n\n${quote.fulfillmentHint??"決済完了後5日以内を目安に出荷します"}．\n購入状況：${purchaseUrl}\n\n${coffeeReturns}不良品・誤配送はHackSick負担で対応します．到着後7日以内を目安にご連絡ください．\nお問い合わせ：shop@hacksick.com`:
       `会員ショップの${order.state==="review"?"確認が必要な購入":"新規注文"}があります．\n受付番号：${order.id}\nSquare注文ID：${order.square_order_id??"未作成"}\n${items}\n合計：${quote.totalJpy}円\n\n運営画面：https://members.hacksick.com/\nSquareの注文・決済記録を確認してください．`;
     let subject = buyer ? "HackSick ご注文を受け付けました" : `HackSick会員ショップ ${order.state === "review" ? "確認待ち" : "新規注文"}`;

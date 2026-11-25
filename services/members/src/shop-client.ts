@@ -1,4 +1,5 @@
 import { initializeShopRules } from "./shop-admin-rules-client.ts";
+import { readCart, writeCart } from "./storefront-cart-client.ts";
 const el = <T extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id) as T;
 const money = (n: number) => `${n.toLocaleString("ja-JP")}円`;
 const text = (tag: string, value: string, className = "") => { const node = document.createElement(tag); node.textContent = value; node.className = className; return node; };
@@ -7,10 +8,10 @@ async function api<T>(path: string, body?: unknown): Promise<T> {
   const data = await res.json() as T & { error?: string }; if (!res.ok) throw new Error(data.error ?? "処理を完了できませんでした．"); return data;
 }
 interface ProductImage { src: string; alt: string; width?: number; height?: number }
-type ShippingAddress = Record<"name" | "phone" | "postalCode" | "prefecture" | "city" | "addressLine1" | "addressLine2", string>;
+export type ShippingAddress = Record<"name" | "phone" | "postalCode" | "prefecture" | "city" | "addressLine1" | "addressLine2", string>;
 type Source = "hacksick" | "essen";
-interface Product { fulfillmentSource?: Source; sku: string; name: string; unitPriceJpy: number; bags: number; category: string; description: string; workUrl?: string; images?: ProductImage[] }
-interface Shop { wallets?: boolean; essenLocationId?: string; products: (Product & { available: number })[]; policy: { discountPercent: number; recurringDiscountPercent: number; recurringCheckoutEnabled: boolean }; stock: { shared: boolean; available: boolean }; eligible: boolean; canPurchase: boolean; storefront: boolean; enabled: boolean; paymentFormPreview?:boolean; environment: string; applicationId: string; locationId: string; buyerEmail: string | null; shippingAddress?: ShippingAddress | null }
+export interface Product { fulfillmentSource?: Source; sku: string; name: string; unitPriceJpy: number; bags: number; category: string; description: string; workUrl?: string; images?: ProductImage[] }
+export interface Shop { wallets?: boolean; essenLocationId?: string; products: (Product & { available: number })[]; policy: { discountPercent: number; recurringDiscountPercent: number; recurringCheckoutEnabled: boolean }; stock: { shared: boolean; available: boolean }; eligible: boolean; canPurchase: boolean; storefront: boolean; enabled: boolean; paymentFormPreview?:boolean; environment: string; applicationId: string; locationId: string; buyerEmail: string | null; shippingAddress?: ShippingAddress | null }
 interface Quote { discountLabel?: string; fulfillmentSource?: Source; subtotalJpy: number; discountPercent: number; discountJpy: number; shippingJpy: number; totalJpy: number; fulfillmentHint?:string; lines?: { name: string; quantity: number }[] }
 interface Shipment { label?: string; trackingNumbers: string[]; shippedAt: string; trackingUrl: string }
 interface Checkout { dispatch?: {plannedDate:string|null;held:boolean} | null; id: string; state: string; quote: Quote; expiresAt: string; shipment?: Shipment | null }
@@ -48,6 +49,7 @@ let requestId = crypto.randomUUID();
 let revision = 0;
 let checkoutBusy = false;
 let initialized = false;
+let view: "member" | "cart" | "checkout" = "member";
 let currentQuote: Quote | null = null;
 const cartQuantities = new Map<string, number>();
 let card: SquareCard | null = null;
@@ -69,6 +71,9 @@ function buttonState() {
   const walletsReady = Boolean(shop?.enabled && currentQuote && !checkoutBusy && walletRevision === revision);
   el("checkout-wallets").hidden = !walletsReady;
   el("checkout-submit").textContent = currentQuote ? `${money(currentQuote.totalJpy)}を支払って注文する` : "数量と合計金額を確認してください";
+  const checkoutLink = el<HTMLAnchorElement>("cart-checkout");
+  checkoutLink.hidden = view !== "cart" || !shop?.enabled || !currentQuote;
+  checkoutLink.href = `/checkout?from=${source()}`;
 }
 function loadCard() {
   cardTask = cardTask.catch(() => {}).then(loadCardForSource);
@@ -101,18 +106,38 @@ async function quote() {
     : "食品のお客様都合による返品・交換はお受けできません．不良品・誤配送はHackSick負担で対応します．到着後7日以内を目安にshop@hacksick.comへご連絡ください．";
   if (!lines.length) { el("shop-quote").replaceChildren(text("p", "数量を選ぶと，送料を含む合計金額を確認できます．")); return; }
   if (!shop.canPurchase) return;
-  const data = await api<Quote>("/api/shop/quote", { items: lines, couponCode: couponCode() }); if (version !== revision) return; currentQuote = data;
+  const summary = el("shop-quote");
+  if (view !== "member" && lines.some(line => line.quantity > (shop.products.find(p => p.sku === line.sku)?.available ?? 0))) {
+    summary.replaceChildren(text("p", "在庫数に合わせて数量を調整してください．"));
+    return;
+  }
+  summary.replaceChildren(text("p", "商品代金と送料を確認しています．"));
+  let data: Quote;
+  try { data = await api<Quote>("/api/shop/quote", { items: lines, couponCode: couponCode() }); }
+  catch (error) {
+    if (version === revision) summary.replaceChildren(text("p", (error as Error).message));
+    return;
+  }
+  if (version !== revision) return;
+  currentQuote = data;
+  const contents = text("ul", "", "checkout-line-summary");
+  if (view === "checkout") contents.append(...(data.lines ?? []).map(line => text("li", `${line.name} × ${line.quantity}`)));
   const dl = document.createElement("dl"); dl.className = "price-summary";
   dl.append(text("dt", "商品代金（税込）"), text("dd", money(data.subtotalJpy)));
   if (data.discountJpy) dl.append(text("dt", data.discountLabel ?? `珈琲の会員特典${data.discountPercent}％`), text("dd", money(-data.discountJpy)));
   dl.append(text("dt", "送料"), text("dd", money(data.shippingJpy)), text("dt", "お支払い合計"), text("dd", money(data.totalJpy)));
-  el("shop-quote").replaceChildren(dl); buttonState();
-  void prepareWallets(version, data);
+  summary.replaceChildren(...(view === "checkout" ? [contents, dl] : [dl])); buttonState();
+  if (view !== "cart") void prepareWallets(version, data);
 }
-async function refreshOrders() {
-  const result = await api<{ checkouts: Checkout[] }>("/api/shop/checkouts"); const container = el("shop-orders"); container.replaceChildren();
+async function refreshOrders(storefront = false) {
+  const response = await fetch("/api/shop/checkouts", { cache: "no-store" });
+  if (!response.ok && !(storefront && response.status === 401)) throw new Error("購入状況を確認できませんでした．");
+  const result: { checkouts: Checkout[] } = response.ok ? await response.json() : { checkouts: [] };
+  const container = el("shop-orders"); container.replaceChildren();
   if (!result.checkouts.length) { container.append(text("p", "購入履歴はまだありません．", "small")); return; }
-  for (const original of result.checkouts) {
+  const receipt = new URLSearchParams(location.search).get("receipt");
+  const selected = result.checkouts.find(order => order.id === receipt);
+  for (const original of selected ? [selected, ...result.checkouts.filter(order => order !== selected)] : result.checkouts) {
     let order = original;
     if (["paying", "review", "paid"].includes(order.state)) order = await api<Checkout>(`/api/shop/checkouts/${order.id}`);
     const row = text("article", "", "panel order-row");
@@ -132,15 +157,19 @@ async function refreshOrders() {
     container.append(row);
   }
 }
+export async function loadStorefrontOrders() {
+  el("orders-refresh").onclick = () => { void refreshOrders(true).catch(error => { el("notice").textContent = error.message; }); };
+  await refreshOrders(true);
+}
 async function refreshShopState() {
   shop = await api<Shop>("/api/shop");
   el("shop-status").textContent = !shop.canPurchase ? "購入資格については運営へお問い合わせください．" : !shop.enabled ? "現在，購入受付を確認中です．" : !shop.products.some(p => p.available > 0) ? "現在在庫切れです．" : shop.environment === "sandbox" ? "テスト環境です．実際のカードでは購入しないでください．" : shop.eligible ? `珈琲の単発購入に会員特典${shop.policy.discountPercent}％を適用できます．` : "通常価格でご購入いただけます．";
   el("shop-benefit-description").textContent = `有効なHSAP・月額会員は，珈琲の単品と5袋セットが${shop.policy.discountPercent}％引きです．`;
 }
-export function prefillShippingAddress(formId: string) {
-  if (!shop?.shippingAddress) return false;
+export function prefillShippingAddress(formId: string, address = shop?.shippingAddress) {
+  if (!address) return false;
   const form = el<HTMLFormElement>(formId);
-  const fields = Object.entries(shop.shippingAddress).map(([name, value]) => ({
+  const fields = Object.entries(address).map(([name, value]) => ({
     field: form.elements.namedItem(name) as HTMLInputElement | HTMLSelectElement,
     value,
   }));
@@ -151,12 +180,12 @@ export function prefillShippingAddress(formId: string) {
 function freezeForm(busy: boolean) {
   for (const field of el("checkout-form").querySelectorAll<HTMLInputElement | HTMLSelectElement>("input,select")) field.disabled = busy;
 }
-function productPhoto(photo: ProductImage) {
+export function productPhoto(photo: ProductImage) {
   const link = document.createElement("a"); link.href = photo.src; link.target = "_blank"; link.rel = "noopener"; link.className = "product-photo-link"; link.setAttribute("aria-label", `${photo.alt}の写真を拡大する`);
   const image = document.createElement("img"); image.src = photo.src; image.alt = photo.alt; if (photo.width) image.width = photo.width; if (photo.height) image.height = photo.height; image.loading = "lazy"; image.decoding = "async"; image.className = "product-photo"; link.append(image);
   return link;
 }
-function productGallery(product: Product, photos: ProductImage[]) {
+export function productGallery(product: Product, photos: ProductImage[]) {
   const gallery = text("div", "", "product-gallery");
   gallery.setAttribute("role", "group");
   gallery.setAttribute("aria-roledescription", "カルーセル");
@@ -224,18 +253,6 @@ function productCard(product: Product, gallery = false) {
   return node;
 }
 
-export async function loadStorefrontCatalog() {
-  const data = await api<{ products: Product[] }>("/api/storefront");
-  el("storefront-products").replaceChildren(...data.products.map(product => {
-    const node = productCard(product);
-    const link = text("a", "商品を見る") as HTMLAnchorElement;
-    link.href = `/products/${product.sku}`;
-    node.append(link);
-    return node;
-  }));
-  if (!data.products.length) el("storefront-products").append(text("p","公開中の商品が見つかりません．限定商品はログインしてご確認ください．"));
-}
-
 function renderCartProducts() {
   const products = el("shop-products");
   products.replaceChildren();
@@ -251,7 +268,90 @@ function renderCartProducts() {
   }
 }
 
-export async function loadShop(manager: boolean) {
+function renderStorefrontCart() {
+  const cart = readCart();
+  const products = el("shop-products");
+  products.replaceChildren();
+  const items = shop.products.filter(product => cart.has(product.sku));
+  const groups = new Set(items.map(product => product.fulfillmentSource ?? "hacksick"));
+  const selector = el<HTMLSelectElement>("checkout-source");
+  for (const option of selector.options) option.disabled = !groups.has(option.value as Source);
+  if (view === "cart" && !groups.has(source())) selector.value = groups.values().next().value ?? "hacksick";
+  el("checkout-source-label").hidden = view !== "cart" || groups.size < 2;
+  el("checkout-source-note").hidden = view !== "cart" || groups.size < 2;
+  const selected = items.filter(product => (product.fulfillmentSource ?? "hacksick") === source());
+  const unavailable = [...cart.keys()].filter(sku => !items.some(item => item.sku === sku));
+  if (view === "cart" && unavailable.length) {
+    const notice = text("div", "", "cart-unavailable");
+    const remove = text("button", "購入できない商品を削除", "store-secondary") as HTMLButtonElement;
+    remove.type = "button";
+    remove.addEventListener("click", () => {
+      for (const sku of unavailable) cart.delete(sku);
+      saveStorefrontCart(cart);
+    });
+    notice.append(text("p", "現在表示できない商品がカートにあります．限定商品は対象アカウントでログインすると確認できます．"), remove);
+    products.append(notice);
+  }
+  if (!selected.length) {
+    products.append(text("p", "カートに商品が入っていません．"));
+    return false;
+  }
+  for (const product of selected) {
+    const input = document.createElement("input");
+    input.type = view === "cart" ? "number" : "hidden";
+    input.min = "1";
+    input.max = String(Math.min(100, product.available));
+    input.value = String(cart.get(product.sku));
+    input.dataset.sku = product.sku;
+    if (view === "checkout") {
+      products.append(input);
+      continue;
+    }
+    input.addEventListener("change", () => {
+      const amount = Number(input.value);
+      if (!Number.isInteger(amount) || amount < 1 || amount > 100) { input.value = String(cart.get(product.sku)); return; }
+      cart.set(product.sku, amount);
+      saveStorefrontCart(cart);
+    });
+    const row = text("article", "", "store-cart-row");
+    const photo = product.images?.[0];
+    if (photo) row.append(productPhoto(photo));
+    const details = text("div", "", "store-cart-product");
+    const productLink = text("a", product.name) as HTMLAnchorElement;
+    productLink.href = `/products/${product.sku}`;
+    details.append(productLink, text("p", `${money(product.unitPriceJpy)}（税込）`, "small"));
+    if (product.available < Number(input.value)) details.append(text("p", product.available ? `現在の在庫 ${product.available}点` : "在庫切れ", "small"));
+    const controls = text("div", "", "store-cart-controls");
+    const label = text("label", "数量", "small");
+    input.setAttribute("aria-label", `${product.name}の数量`);
+    label.append(input);
+    const remove = text("button", "削除", "store-secondary") as HTMLButtonElement;
+    remove.type = "button";
+    remove.setAttribute("aria-label", `${product.name}を削除`);
+    remove.addEventListener("click", () => { cart.delete(product.sku); saveStorefrontCart(cart); });
+    controls.append(label, remove);
+    row.append(details, controls);
+    products.append(row);
+  }
+  return true;
+}
+
+function saveStorefrontCart(cart: Map<string, number>) {
+  try { writeCart(cart); }
+  catch (error) { el("notice").textContent = (error as Error).message; }
+  resetAcceptance();
+  renderStorefrontCart();
+  void quote();
+}
+
+const couponKey = "hacksick-shop-coupon";
+function rememberCoupon() {
+  try { sessionStorage.setItem(couponKey, couponCode()); } catch { /* 遷移後に入力し直せる． */ }
+}
+
+export async function loadShop(manager: boolean, page: typeof view = "member") {
+  view = page;
+  el<HTMLFormElement>("checkout-form").noValidate = view === "cart";
   el("shop").hidden = false;
   const previousEmail = shop?.buyerEmail;
   await refreshShopState();
@@ -262,33 +362,55 @@ export async function loadShop(manager: boolean) {
   email.disabled = !guest;
   el("checkout-email-label").hidden = !guest;
   el("guest-benefits").hidden = !guest;
+  if (guest) el("guest-benefits").querySelector("a")!.href = `/login?return=${encodeURIComponent(`/${view}${location.search}`)}`;
   el("checkout-coupon-label").hidden = guest;
   const hasEssen = shop.products.some(p => p.fulfillmentSource === "essen");
   el("checkout-source-label").hidden = !hasEssen;
   el("checkout-source-note").hidden = !hasEssen;
   el<HTMLSelectElement>("checkout-source").value = shop.products.find(p => p.sku === selectedProduct())?.fulfillmentSource ?? "hacksick";
-  renderCartProducts();
+  if (view === "member") renderCartProducts();
+  else {
+    const selected = new URLSearchParams(location.search).get("from");
+    el<HTMLSelectElement>("checkout-source").value = selected === "essen" ? "essen" : "hacksick";
+    const hasItems = renderStorefrontCart();
+    el("checkout-shipping").hidden = view === "cart" || !hasItems;
+    el("checkout-summary-title").hidden = false;
+    el("checkout-summary").hidden = view === "checkout" && !hasItems;
+    el("checkout-items").hidden = view === "checkout" && hasItems;
+    if (!guest) {
+      try { el<HTMLInputElement>("checkout-coupon").value = sessionStorage.getItem(couponKey) ?? ""; }
+      catch { /* 入力欄はそのまま使用できる． */ }
+    }
+  }
   if (!initialized) {
     initialized = true;
     const prefectures = "北海道 青森県 岩手県 宮城県 秋田県 山形県 福島県 茨城県 栃木県 群馬県 埼玉県 千葉県 東京都 神奈川県 新潟県 富山県 石川県 福井県 山梨県 長野県 岐阜県 静岡県 愛知県 三重県 滋賀県 京都府 大阪府 兵庫県 奈良県 和歌山県 鳥取県 島根県 岡山県 広島県 山口県 徳島県 香川県 愛媛県 高知県 福岡県 佐賀県 長崎県 熊本県 大分県 宮崎県 鹿児島県 沖縄県".split(" ");
     for (const p of prefectures) { const option = document.createElement("option"); option.value = p; option.textContent = p; el("prefectures").append(option); }
-    el("checkout-form").addEventListener("submit", event => { event.preventDefault(); if (card && cardLocation === (source() === "essen" ? shop.essenLocationId : shop.locationId)) void completePurchase(card, "card"); });
+    el("checkout-form").addEventListener("submit", event => {
+      event.preventDefault();
+      if (view === "cart") { rememberCoupon(); void quote(); return; }
+      if (card && cardLocation === (source() === "essen" ? shop.essenLocationId : shop.locationId)) void completePurchase(card, "card");
+    });
     el("checkout-apple").addEventListener("click", () => { if (apple) void completePurchase(apple, "apple"); });
     el("checkout-google").addEventListener("click", event => { event.preventDefault(); if (google) void completePurchase(google, "google"); });
     el("checkout-source").addEventListener("change", () => {
       resetAcceptance();
       ++revision; currentQuote = null; buttonState();
+      if (view === "cart") { renderStorefrontCart(); void quote(); return; }
       renderCartProducts();
       void loadCard().then(quote).catch(error => message(error.message));
     });
-    el("checkout-coupon").addEventListener("change", () => { resetAcceptance(); void quote().catch(error => message(error.message)); });
+    el("checkout-coupon").addEventListener("change", () => { if (view !== "member") rememberCoupon(); resetAcceptance(); void quote().catch(error => message(error.message)); });
     for (const input of el("checkout-form").querySelectorAll<HTMLInputElement | HTMLSelectElement>(".shipping-form input:not([name=terms]),.shipping-form select")) {
       input.addEventListener("change", resetAcceptance);
     }
     el("orders-refresh").addEventListener("click", () => { void refreshOrders().catch(e => message(e.message)); });
   }
-  if (prefillShippingAddress("checkout-form")) el("shipping-address-note").hidden = false;
-  await loadCard().catch(error=>message((error as Error).message)); await quote(); await refreshOrders(); if (manager) await loadShopAdmin();
+  if (view !== "cart" && prefillShippingAddress("checkout-form")) el("shipping-address-note").hidden = false;
+  if (view === "member" || (view === "checkout" && quantities().length)) await loadCard().catch(error => message(error.message));
+  await quote();
+  if (view === "member") await refreshOrders();
+  if (manager) await loadShopAdmin();
 }
 function resetAcceptance() {
   requestId = crypto.randomUUID();
@@ -351,6 +473,19 @@ async function completePurchase(method: SquareCard | SquareWallet, kind: "card" 
       result = await api<Checkout>(`/api/shop/checkouts/${result.id}/pay`, { sourceId: token.token, verificationToken: walletVerification?.token, confirmedTotalJpy: total });
     }
     if (result.state === "paid") {
+      if (view === "checkout") {
+        const cart = readCart();
+        for (const line of items) {
+          const remaining = (cart.get(line.sku) ?? 0) - line.quantity;
+          if (remaining > 0) cart.set(line.sku, remaining);
+          else cart.delete(line.sku);
+        }
+        try { writeCart(cart); } catch { /* 注文は支払済みのため，先に購入状況を案内する． */ }
+        el<HTMLInputElement>("checkout-coupon").value = "";
+        rememberCoupon();
+        location.assign(`/orders?receipt=${result.id}`);
+        return;
+      }
       message(`ご注文を受け付けました．お支払い ${money(result.quote.totalJpy)}．受付番号 ${result.id}`);
       resetAcceptance(); el<HTMLInputElement>("checkout-coupon").value = "";
       for (const input of el("shop-products").querySelectorAll<HTMLInputElement>("input")) {
@@ -359,9 +494,13 @@ async function completePurchase(method: SquareCard | SquareWallet, kind: "card" 
       }
     } else if (["failed","canceled"].includes(result.state)) {
       resetAcceptance(); message("お支払いは完了していません．購入状況を確認してからお試しください．");
+    } else if (view === "checkout") {
+      location.assign(`/orders?receipt=${result.id}`);
+      return;
     } else message("お支払い結果を確認中です．もう一度支払わず，購入状況をご確認ください．");
-    await refreshShopState(); await refreshOrders();
-  } catch (error) { message((error as Error).message); await refreshOrders().catch(() => {}); }
+    await refreshShopState();
+    if (view === "member") await refreshOrders();
+  } catch (error) { message((error as Error).message); if (view === "member") await refreshOrders().catch(() => {}); }
   finally {
     checkoutBusy = false; freezeForm(false);
     el<HTMLInputElement>("checkout-email").disabled = Boolean(shop.buyerEmail);

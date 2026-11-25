@@ -127,17 +127,13 @@ export function createWorker(deliverOTP?: DeliverOTP, gatewayFactory: (env: Env)
     }
     if (!url.pathname.startsWith("/api/")) {
       if (url.pathname === "/shipping.html" || url.pathname === "/shipping.js") return json({ error: "ページが見つかりません．" }, 404);
-      if (/^\/products\/[A-Z0-9_-]{1,64}$/.test(url.pathname)) {
+      if (/^\/products\/[A-Z0-9_-]{1,64}$/.test(url.pathname) ||
+          (storefront && ["/cart", "/checkout", "/orders", "/coffee", "/login"].includes(url.pathname))) {
         return env.ASSETS.fetch(new Request(new URL("/", url), request));
       }
       return env.ASSETS.fetch(request);
     }
-    if (storefront && url.pathname === "/api/storefront" && request.method === "GET") return json({
-      products: [...STOREFRONT_PRODUCTS.map(product => ({ ...product, ...shopProductMedia(product.bags) })), ...(await shopProducts(env)).map(visibleShopProduct)],
-      plans: COFFEE_SUBSCRIPTIONS.plans.map(plan => ({ ...plan, quote: previewCoffeeSubscription(plan.id, false) })),
-      trial: trialPricing(),
-    });
-    if (storefront && !/^\/api\/(?:me$|auth\/|shop(?:\/|$)|coffee(?:\/|$))/.test(url.pathname)) {
+    if (storefront && !/^\/api\/(?:me$|storefront$|auth\/|shop(?:\/|$)|coffee(?:\/|$))/.test(url.pathname)) {
       return json({ error: "ページが見つかりません．" }, 404);
     }
     if (url.pathname === "/api/square/oauth/callback" && request.method === "GET") {
@@ -187,6 +183,12 @@ export function createWorker(deliverOTP?: DeliverOTP, gatewayFactory: (env: Env)
     if (url.pathname.startsWith("/api/auth/")) return auth.handler(request);
     if (request.method !== "GET" && request.headers.get("Origin") !== origin) return json({ error: "送信元を確認できません．" }, 403);
     const session = await auth.api.getSession({ headers: request.headers });
+    if (storefront && url.pathname === "/api/storefront" && request.method === "GET") return json({
+      products: [...STOREFRONT_PRODUCTS.map(product => ({ ...product, ...shopProductMedia(product.bags) })),
+        ...(await shopProducts(env, session?.user.emailVerified ? session.user.id : undefined)).map(visibleShopProduct)],
+      plans: COFFEE_SUBSCRIPTIONS.plans.map(plan => ({ ...plan, quote: previewCoffeeSubscription(plan.id, false) })),
+      trial: trialPricing(),
+    });
     const shopMedia = url.pathname.match(/^\/api\/shop\/media\/([A-Z0-9_-]{1,64})$/);
     if (shopMedia && request.method === "GET") {
       const product = (await shopProducts(env, session?.user.emailVerified ? session.user.id : undefined)).find(row => row.sku === shopMedia[1]);
@@ -198,6 +200,9 @@ export function createWorker(deliverOTP?: DeliverOTP, gatewayFactory: (env: Env)
         { headers: { "Content-Type": image.photo_type, "Cache-Control": "no-store" } });
     }
     const account = session?.user.emailVerified ? session.user : null;
+    if (storefront && url.pathname === "/api/shop/shipping-address" && request.method === "GET") {
+      return account ? json({ shippingAddress: await lastShippingAddress(env.DB, account.id) }) : json({ error: "ログインしてください．" }, 401);
+    }
     const guestRoute = storefront && (
       (request.method === "GET" && ["/api/shop", "/api/shop/checkouts"].includes(url.pathname)) ||
       (request.method === "POST" && ["/api/shop/quote", "/api/shop/checkouts"].includes(url.pathname)) ||

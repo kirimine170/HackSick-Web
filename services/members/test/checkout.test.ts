@@ -136,6 +136,11 @@ test("共通Square在庫の会員決済を，実際の認証とD1で検証する
     const publicCatalog = await (await shopCall("/api/storefront")).json() as any;
     assert.deepEqual(publicCatalog.products.map((product: any) => product.unitPriceJpy), [432, 2052, 1500]);
     assert.deepEqual(publicCatalog.plans.map((plan: any) => plan.quote.totalJpy), [11664, 8078, 3524]);
+    for (const path of ["/cart", "/checkout", "/orders", "/coffee", "/login", "/products/HS-COFFEE-MOCHA-5PACK"]) {
+      const page = await shopCall(path);
+      assert.equal(page.status, 200);
+      assert.equal(await page.text(), "asset");
+    }
     assert.equal((await shopCall("/api/shop/checkouts")).status, 401);
     assert.equal((await shopCall("/api/me", operator.cookie)).status, 401);
     const email = "customer@example.invalid";
@@ -176,6 +181,7 @@ test("共通Square在庫の会員決済を，実際の認証とD1で検証する
       assert.equal(publicShop.buyerEmail, null);
       assert.equal(publicShop.shippingAddress, undefined);
       assert.equal(publicShop.eligible, false);
+      assert.equal((await shopCall("/api/shop/shipping-address", guestCookie)).status, 401);
       const quote = await shopCall("/api/shop/quote", guestCookie, { items: single });
       assert.equal((await quote.json() as any).totalJpy, 932);
       assert.equal((await shopCall("/api/shop/quote", guestCookie, { items: single, couponCode: "LT-TEST" })).status, 400);
@@ -239,6 +245,24 @@ test("共通Square在庫の会員決済を，実際の認証とD1で検証する
     const account = await (await call("/api/me",monthly.cookie)).json() as {member:{id:string}};
     const rule = { memberId: account.member.id, status: "special-sale" };
     assert.equal((await call("/api/admin/shop/status", operator.cookie, rule)).status, 200);
+    const storefront = (path: string, cookie = "", payload?: object) => worker.fetch(new Request(env.SHOP_BASE_URL! + path, {
+      method: payload ? "POST" : "GET",
+      headers: { Cookie: cookie, Origin: env.SHOP_BASE_URL!, "Content-Type": "application/json", "cf-connecting-ip": "192.0.2.234" },
+      ...(payload ? { body: JSON.stringify(payload) } : {}),
+    }), env);
+    const email = "monthly@example.invalid";
+    assert.equal((await storefront("/api/auth/email-otp/send-verification-otp", "", { email, type: "sign-in" })).status, 200);
+    const authenticated = await storefront("/api/auth/sign-in/email-otp", "", { email, otp: codes.get(email) });
+    assert.equal(authenticated.status, 200);
+    const shopCookie = authenticated.headers.getSetCookie().map(value => value.split(";")[0]).join("; ");
+    async function showsPrivate(cookie = "") {
+      const response = await storefront("/api/storefront", cookie);
+      assert.equal(response.headers.get("cache-control"), "no-store");
+      const catalog = await response.json() as { products: { sku: string }[] };
+      return catalog.products.some(product => product.sku === sku);
+    }
+    assert.equal(await showsPrivate(), false);
+    assert.equal(await showsPrivate(shopCookie), true);
     const privatePhoto = await call(`/api/shop/media/${sku}`, monthly.cookie);
     assert.equal(privatePhoto.status, 200);
     assert.equal(privatePhoto.headers.get("cache-control"), "no-store");
@@ -248,6 +272,7 @@ test("共通Square在庫の会員決済を，実際の認証とD1で検証する
     assert.equal((await call("/api/shop/quote", other.cookie, {items})).status, 400);
     const order = await prepare(monthly.cookie,purchase(crypto.randomUUID(),items));
     assert.equal((await call("/api/admin/shop/status", operator.cookie, {...rule,enabled:false})).status, 200);
+    assert.equal(await showsPrivate(shopCookie), false);
     assert.equal((await call(`/api/shop/checkouts/${order.id}/pay`,monthly.cookie,{sourceId:"cnon:synthetic-token",confirmedTotalJpy:1040})).status,403);
     assert.equal((await call(`/api/shop/media/${sku}`, monthly.cookie)).status, 404);
     assert.equal((await call("/api/shop/checkouts", monthly.cookie, purchase(crypto.randomUUID(), items))).status, 400);
