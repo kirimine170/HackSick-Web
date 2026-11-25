@@ -10,14 +10,14 @@
 </head>
 <body>
   <a class="skip" href="#main">本文へ</a>
-  <header><a id="brand-link" class="brand" href="https://hacksick.com">HackSick<span id="brand-label">MEMBERS</span></a><nav aria-label="メニュー"><button id="admin-toggle" hidden>運営画面</button><a id="shop-nav" href="https://shop.hacksick.com/">通常ストア ↗</a><a id="coffee-nav" href="#coffee" hidden>珈琲定期便</a><a id="members-nav" href="https://members.hacksick.com/" hidden>会員ページ ↗</a><button id="logout" hidden>ログアウト</button></nav></header>
+  <header><a id="brand-link" class="brand" href="https://hacksick.com">HackSick<span id="brand-label">MEMBERS</span></a><nav aria-label="メニュー"><button id="admin-toggle" hidden>運営画面</button><a id="shop-nav" href="https://shop.hacksick.com/">通常ストア ↗</a><a id="cart-nav" href="/?view=cart#shop" hidden>カート・購入状況</a><a id="coffee-nav" href="#coffee" hidden>珈琲定期便</a><a id="members-nav" href="https://members.hacksick.com/" hidden>会員ページ ↗</a><button id="logout" hidden>ログアウト</button></nav></header>
   <main id="main">
     <p id="member-eyebrow" class="eyebrow">CREATE TOGETHER，KEEP GOING．</p>
     <h1 id="page-title">創りたいを，<br><span>続けていく．</span></h1>
     <p id="notice" role="status" aria-live="polite">ログイン状態を確認しています．</p>
     <section id="storefront-catalog" hidden aria-labelledby="storefront-title">
       <h2 id="storefront-title">珈琲と書籍</h2>
-      <div id="storefront-products" class="cards"></div><p><a id="catalog-all" href="/" hidden>すべての商品を見る</a></p>
+      <div id="storefront-products" class="cards"></div>
     </section>
     <section id="shop-preview" class="panel shop-preview" hidden aria-labelledby="shop-preview-title">
       <a class="product-photo-link" href="/images/burn-the-midnight-oil-brewing.jpg" target="_blank" rel="noopener" aria-label="珈琲を淹れている様子の写真を拡大する"><img class="product-photo" src="/images/burn-the-midnight-oil-brewing.jpg" alt="カップに掛けたドリップバッグにお湯を注いで珈琲を淹れている様子" width="1800" height="1201" decoding="async"></a>
@@ -83,9 +83,11 @@
       <p class="small">国内送料500円．割引前の商品代金合計（税込・送料を除く）5,000円以上で送料無料．決済完了後5日以内を目安に出荷します．</p>
       <form id="checkout-form"><label id="checkout-source-label" hidden>発送元<select id="checkout-source"><option value="hacksick">HackSick発送</option><option value="essen">ESSEN直送</option></select></label>
         <p id="checkout-source-note" class="small" hidden>発送元ごとに送料を計算し，別々にお会計します．</p>
-        <div id="shop-products" class="cards"></div><label>クーポンコード（任意）<input id="checkout-coupon" maxlength="64" autocomplete="off" autocapitalize="characters"></label><div id="shop-quote" class="panel" aria-live="polite"></div>
+        <div id="shop-products" class="cards"></div><p id="guest-benefits" class="small" hidden><a href="#login">ログインして会員価格やクーポンを使う</a></p><label id="checkout-coupon-label">クーポンコード（任意）<input id="checkout-coupon" maxlength="64" autocomplete="off" autocapitalize="characters"></label><div id="shop-quote" class="panel" aria-live="polite"></div>
         <div class="panel shipping-form"><h3>お届け先（日本国内）</h3>
           <p class="small">配送先とログイン用メールは，発送・決済のためSquareへ送信します．カード情報はSquareが提供する入力欄から直接Squareへ送信され，HackSickでは保存しません．<a href="/privacy.html" target="_blank" rel="noopener">情報の取り扱い ↗</a></p>
+          <label id="checkout-email-label" hidden>注文連絡用メールアドレス<input id="checkout-email" name="contactEmail" type="email" autocomplete="email" maxlength="254"><span class="small">受付・発送の連絡をお送りします．この端末で購入状況を確認できます．</span></label>
+          <p id="shipping-address-note" class="small" hidden>前回の配送先を入力しました．今回のお届け先をご確認ください．</p>
           <div class="address-grid"><label>お届け先の氏名<input name="name" autocomplete="shipping name" maxlength="100" required></label><label>電話番号<input name="phone" type="tel" autocomplete="shipping tel" maxlength="25" required></label>
           <label>郵便番号<input name="postalCode" autocomplete="shipping postal-code" pattern="[0-9]{3}-?[0-9]{4}" maxlength="8" required></label><label>都道府県<select name="prefecture" id="prefectures" autocomplete="shipping address-level1" required><option value="">選択してください</option></select></label>
           <label>市区町村<input name="city" autocomplete="shipping address-level2" maxlength="100" required></label><label>町名・番地<input name="addressLine1" autocomplete="shipping address-line1" maxlength="200" required></label></div>

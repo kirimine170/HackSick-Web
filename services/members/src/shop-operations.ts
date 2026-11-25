@@ -79,15 +79,16 @@ async function usage(db: D1Database, couponId: string, userId: string, exclude: 
     .bind(userId, couponId, exclude).first<{ uses: number; spent: number; personal: number }>())!;
 }
 
-export async function quoteShopOrder(env: Env, userId: string, items: unknown, storefront: boolean, couponSelector?: { code: unknown } | { id: string }, exclude = "") {
-  const access = await memberAccess(env.DB, userId);
-  if (access.member?.status === "blocked" || (!storefront && !access.benefit.eligible)) throw new InputError(info);
-  const extras = await shopProducts(env, userId, access);
-  const quote = memberQuote(items, { eligible: access.benefit.eligible, storefront, extras });
+export async function quoteShopOrder(env: Env, userId: string | null, items: unknown, storefront: boolean, couponSelector?: { code: unknown } | { id: string }, exclude = "") {
+  const access = userId ? await memberAccess(env.DB, userId) : undefined;
+  if (access?.member?.status === "blocked" || (!storefront && !access?.benefit.eligible)) throw new InputError(info);
+  const extras = await shopProducts(env, userId ?? undefined, access);
+  const quote = memberQuote(items, { eligible: Boolean(access?.benefit.eligible), storefront, extras });
   const sources = new Set(quote.lines.map(line => extras.find(p => p.sku === line.sku)?.fulfillment_source ?? "hacksick"));
   if (sources.size !== 1) throw new InputError("発送元が異なる商品は，カートで発送元を選び，別々にお会計ください．");
   const result: ShopQuote = { ...quote, fulfillmentSource: [...sources][0] };
   if (!couponSelector) return result;
+  if (!userId) throw new InputError("クーポンをご利用の場合はログインしてください．");
   const coupon = "code" in couponSelector
     ? await env.DB.prepare("SELECT * FROM shop_coupons WHERE code=?").bind(validKey(String(couponSelector.code ?? "").trim().toUpperCase(), "クーポンコード", codePattern)).first<Coupon>()
     : await env.DB.prepare("SELECT * FROM shop_coupons WHERE id=?").bind(couponSelector.id).first<Coupon>();

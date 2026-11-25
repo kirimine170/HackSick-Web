@@ -7,7 +7,8 @@ import { issueMemberPass, readMemberPass } from "./member-pass.ts";
 import { estimateCoffeeOrder, integer, quoteOrder } from "./commerce.ts";
 import { isPromotionKind, PROMOTION_POLICY, simulatePromotion } from "./promotion-policy.ts";
 import { COFFEE_COST_POLICY } from "./coffee-cost-policy.ts";
-import { CHECKOUT_POLICY, SHOP_PRODUCTS, STOREFRONT_PRODUCTS, CheckoutConflict, memberAccess } from "./checkout.ts";
+import { CHECKOUT_POLICY, SHOP_PRODUCTS, STOREFRONT_PRODUCTS, CheckoutConflict, memberAccess, type shippingRecipient } from "./checkout.ts";
+import { shopGuest } from "./guest-checkout.ts";
 import { checkoutConfigured, checkoutAvailable, squareGateway, validSquareSignature, type SquareGateway } from "./square.ts";
 import { importHsap } from "./hsap.ts";
 import { beginSquareAuthorization, finishSquareAuthorization, squareAccessToken, squareConnectionStatus } from "./square-oauth.ts";
@@ -23,6 +24,17 @@ import { COFFEE_SUBSCRIPTIONS, previewCoffeeSubscription } from "./coffee-subscr
 
 const json = (value: unknown, status = 200) => Response.json(value, { status });
 const id = () => crypto.randomUUID();
+
+async function lastShippingAddress(db: D1Database, userId: string) {
+  const order = await db.prepare("SELECT recipient_json FROM member_orders WHERE auth_user_id=? AND state='paid' ORDER BY created_at DESC LIMIT 1").bind(userId).first<{ recipient_json: string }>();
+  if (!order) return null;
+  const recipient = JSON.parse(order.recipient_json) as ReturnType<typeof shippingRecipient>;
+  const address = recipient.address;
+  if (address?.country !== "JP") return null;
+  return { name: recipient.display_name, phone: recipient.phone_number, postalCode: address.postal_code,
+    prefecture: address.administrative_district_level_1, city: address.locality, addressLine1: address.address_line_1,
+    addressLine2: address.address_line_2 ?? "" };
+}
 
 function audit(db: D1Database, actor: string, member: string, action: string, detail: unknown, now: string) {
   return db.prepare("INSERT INTO audit_log (id, actor_user_id, member_id, action, detail, created_at) VALUES (?, ?, ?, ?, ?, ?)")
@@ -185,8 +197,15 @@ export function createWorker(deliverOTP?: DeliverOTP, gatewayFactory: (env: Env)
       return new Response(image.photo instanceof ArrayBuffer ? image.photo : Uint8Array.from(image.photo),
         { headers: { "Content-Type": image.photo_type, "Cache-Control": "no-store" } });
     }
-    if (!session?.user.emailVerified) return json({ error: "ログインしてください．" }, 401);
-    const user = session.user;
+    const account = session?.user.emailVerified ? session.user : null;
+    const guestRoute = storefront && (
+      (request.method === "GET" && ["/api/shop", "/api/shop/checkouts"].includes(url.pathname)) ||
+      (request.method === "POST" && ["/api/shop/quote", "/api/shop/checkouts"].includes(url.pathname)) ||
+      (/^\/api\/shop\/checkouts\/[0-9a-f-]{36}(?:\/(?:pay|cancel))?$/i.test(url.pathname) && ["GET", "POST"].includes(request.method))
+    );
+    const guest = !account && guestRoute ? await shopGuest(request, env, url.pathname === "/api/shop") : null;
+    const user = account ?? guest;
+    if (!user) return json({ error: guestRoute ? "ショップを開き直して購入状況をご確認ください．" : "ログインしてください．" }, 401);
     const db = env.DB;
     const now = new Date().toISOString();
     if (partner) {
@@ -200,7 +219,7 @@ export function createWorker(deliverOTP?: DeliverOTP, gatewayFactory: (env: Env)
       return json(match[2] === "dispatch" ? await saveDispatch(db, order.id, user.id, body, "essen")
         : await recordShipment(env, order, user.id, body, gatewayFactory(env), user.email));
     }
-    const operator = await db.prepare("SELECT role FROM operators WHERE auth_user_id = ?").bind(user.id).first<{ role: "viewer" | "manager" }>();
+    const operator = account ? await db.prepare("SELECT role FROM operators WHERE auth_user_id = ?").bind(user.id).first<{ role: "viewer" | "manager" }>() : null;
 
     if (url.pathname === "/api/me" && request.method === "GET") {
       // 初回のみ，運営が確認したメールの所有者へ紐付ける．既存紐付けは自動変更しない．
@@ -227,8 +246,8 @@ export function createWorker(deliverOTP?: DeliverOTP, gatewayFactory: (env: Env)
     }
 
     if (url.pathname === "/api/shop" && request.method === "GET") {
-      const access = await memberAccess(db, user.id);
-      const extras = await shopProducts(env, user.id, access);
+      const access = account ? await memberAccess(db, account.id) : undefined;
+      const extras = await shopProducts(env, account?.id, access);
       const connected = Boolean(env.SQUARE_ACCESS_TOKEN || (await squareConnectionStatus(env)).connected);
       let inventory: Awaited<ReturnType<typeof sharedInventory>> | null = null;
       if (connected) {
@@ -241,23 +260,29 @@ export function createWorker(deliverOTP?: DeliverOTP, gatewayFactory: (env: Env)
         }
       }
       const products = (storefront ? STOREFRONT_PRODUCTS : SHOP_PRODUCTS).map(p => ({ ...p, ...shopProductMedia(p.bags), fulfillmentSource: "hacksick" }));
-      const canPurchase = access.member?.status !== "blocked" && (storefront || access.benefit.eligible);
+      const canPurchase = access?.member?.status !== "blocked" && (storefront || Boolean(access?.benefit.eligible));
       const enabled = checkoutChannelEnabled(env, storefront) && inventory !== null && await checkoutAvailable(env);
-      return json({ products: [...products, ...extras.map(visibleShopProduct)].map(p => ({ ...p, available: inventory?.find(i => i.sku === p.sku)?.available ?? 0 })),
-        policy: CHECKOUT_POLICY, stock: { shared: true, available: inventory !== null }, eligible: access.benefit.eligible, canPurchase, storefront, enabled,
+      const response = json({ products: [...products, ...extras.map(visibleShopProduct)].map(p => ({ ...p, available: inventory?.find(i => i.sku === p.sku)?.available ?? 0 })),
+        policy: CHECKOUT_POLICY, stock: { shared: true, available: inventory !== null }, eligible: Boolean(access?.benefit.eligible), canPurchase, storefront, enabled,
         wallets: env.WALLET_ENABLED === "true", paymentFormPreview: operator?.role === "manager" && inventory !== null, applicationId: env.SQUARE_CLIENT_ID,
-        locationId: env.SQUARE_LOCATION_ID, essenLocationId: env.ESSEN_LOCATION_ID, buyerEmail: user.email, environment: env.SQUARE_ENVIRONMENT === "production" ? "production" : "sandbox" });
+        locationId: env.SQUARE_LOCATION_ID, essenLocationId: env.ESSEN_LOCATION_ID, buyerEmail: account?.email ?? null, environment: env.SQUARE_ENVIRONMENT === "production" ? "production" : "sandbox",
+        ...(account ? { shippingAddress: await lastShippingAddress(db, account.id) } : {}) });
+      if (guest?.cookie) response.headers.append("Set-Cookie", guest.cookie);
+      return response;
     }
     if (url.pathname === "/api/shop/quote" && request.method === "POST") {
-      const access = await memberAccess(db, user.id);
-      if (access.member?.status === "blocked" || (!storefront && !access.benefit.eligible)) return json({ error: "現在の購入条件を確認してください．" }, 403);
+      const access = account ? await memberAccess(db, account.id) : undefined;
+      if (access?.member?.status === "blocked" || (!storefront && !access?.benefit.eligible)) return json({ error: "現在の購入条件を確認してください．" }, 403);
       const body = await readBody(request);
-      return json(await quoteShopOrder(env, user.id, body.items, storefront, body.couponCode ? { code: body.couponCode } : undefined));
+      return json(await quoteShopOrder(env, account?.id ?? null, body.items, storefront, body.couponCode ? { code: body.couponCode } : undefined));
     }
-    if (url.pathname === "/api/shop/checkouts" && request.method === "POST") return prepareSharedOrder(env, user, await readBody(request), gatewayFactory(env), storefront);
+    if (url.pathname === "/api/shop/checkouts" && request.method === "POST") {
+      const body = await readBody(request);
+      return prepareSharedOrder(env, user, body, gatewayFactory(env), storefront, guest ? normalizeEmail(body.contactEmail) : undefined);
+    }
     const checkoutPath = url.pathname.match(/^\/api\/shop\/checkouts\/([0-9a-f-]{36})(\/(?:pay|cancel))?$/i);
     if (checkoutPath && (request.method === "GET" || request.method === "POST")) {
-      if (request.method === "POST" && checkoutPath[2] === "/pay") return paySharedOrder(env, user.id, checkoutPath[1], await readBody(request), gatewayFactory(env), undefined, storefront);
+      if (request.method === "POST" && checkoutPath[2] === "/pay") return paySharedOrder(env, user.id, checkoutPath[1], await readBody(request), gatewayFactory(env), undefined, storefront, Boolean(guest));
       const row = await db.prepare("SELECT * FROM member_orders WHERE id = ? AND auth_user_id = ?").bind(checkoutPath[1], user.id).first<SharedOrder>();
       if (!row) return json({ error: "購入情報が見つかりません．" }, 404);
       if (request.method === "POST" && checkoutPath[2] === "/cancel") {

@@ -123,7 +123,7 @@ test("共通Square在庫の会員決済を，実際の認証とD1で検証する
     const conflicting = { ...body, rows: [{ ...body.rows[0], workspaceEmail: "changed@hacksick.com" }] };
     assert.equal((await call("/api/admin/imports/hsap", operator.cookie, conflicting)).status, 409);
   });
-  await t.test("一般ショップは非会員を通常価格で受け付け，会員用の受付と管理APIは分ける", async () => {
+  await t.test("一般ショップは非会員を通常価格で受け付け，会員用の受付と管理APIは分ける", async storefrontTest => {
     const shopOrigin = "http://localhost:8788";
     env.SHOP_BASE_URL = shopOrigin;
     env.COFFEE_RECURRING_ENABLED = "true";
@@ -164,6 +164,46 @@ test("共通Square在庫の会員決済を，実際の認証とD1で検証する
     const paid = await shopCall(`/api/shop/checkouts/${order.id}/pay`, cookie, { sourceId: "cnon:synthetic-token", confirmedTotalJpy: 932 });
     assert.equal(paid.status, 200, await paid.clone().text());
     assert.equal((await paid.json() as any).state, "paid");
+    const profile = (await (await shopCall("/api/shop", cookie)).json() as any).shippingAddress;
+    assert.deepEqual(profile, { name: shipping.name, phone: "+819000000000", postalCode: "1000001", prefecture: shipping.prefecture,
+      city: shipping.city, addressLine1: shipping.addressLine1, addressLine2: "" });
+    await storefrontTest.test("ゲスト注文はブラウザ単位で管理し，入力したメールを会員資格や配送先の照合に使わない", async () => {
+      stock = 4;
+      const storefront = await shopCall("/api/shop");
+      assert.equal(storefront.status, 200);
+      const guestCookie = storefront.headers.getSetCookie()[0]!.split(";")[0];
+      const publicShop = await storefront.json() as any;
+      assert.equal(publicShop.buyerEmail, null);
+      assert.equal(publicShop.shippingAddress, undefined);
+      assert.equal(publicShop.eligible, false);
+      const quote = await shopCall("/api/shop/quote", guestCookie, { items: single });
+      assert.equal((await quote.json() as any).totalJpy, 932);
+      assert.equal((await shopCall("/api/shop/quote", guestCookie, { items: single, couponCode: "LT-TEST" })).status, 400);
+      assert.equal((await shopCall("/api/coffee/enrollments", guestCookie)).status, 401);
+      const body = { ...purchase(), contactEmail: email, shipping: { ...shipping, addressLine1: "ゲストのお届け先" } };
+      assert.equal((await shopCall("/api/shop/checkouts", guestCookie, body, origin)).status, 403);
+      assert.equal((await shopCall("/api/shop/checkouts", guestCookie, { ...body, contactEmail: "invalid" })).status, 400);
+      const prepared = await shopCall("/api/shop/checkouts", guestCookie, body);
+      assert.equal(prepared.status, 200, await prepared.clone().text());
+      const guestOrder = await prepared.json() as { id: string };
+      const route = `/api/shop/checkouts/${guestOrder.id}`;
+      const before = paymentCalls;
+      const payBody = { sourceId: "cnon:synthetic-token", confirmedTotalJpy: 932 };
+      const invalid = guestCookie.slice(0, -1) + (guestCookie.endsWith("0") ? "1" : "0");
+      assert.equal((await shopCall(route + "/pay", invalid, payBody)).status, 401);
+      assert.equal((await shopCall(route, cookie)).status, 404);
+      for (let attempt = 0; attempt < 2; attempt++) {
+        const paid = await shopCall(route + "/pay", guestCookie, payBody);
+        assert.equal(paid.status, 200, await paid.clone().text());
+        assert.equal((await paid.json() as any).state, "paid");
+      }
+      assert.equal(paymentCalls, before + 1);
+      assert.equal(stock, 3);
+      const recipient = await db.prepare("SELECT auth_user_id, recipient_json FROM member_orders WHERE id=?").bind(guestOrder.id).first<{auth_user_id:string;recipient_json:string}>();
+      assert.match(recipient!.auth_user_id, /^guest-/);
+      assert.equal(JSON.parse(recipient!.recipient_json).email_address, email);
+      assert.deepEqual((await (await shopCall("/api/shop", cookie)).json() as any).shippingAddress, profile);
+    });
   });
   await t.test("発送の登録は運営担当だけが行い，購入者本人だけが追跡番号を見られる", async () => {
     stock = 4;

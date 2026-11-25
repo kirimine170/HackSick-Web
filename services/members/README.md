@@ -8,7 +8,7 @@ Cloudflare WorkersとD1上で動く，Better Authを使った会員ポータル�
 
 ## 独自ショップの切り替え手順
 
-`shop.hacksick.com` は確認済みメールの購入者向け，`members.hacksick.com` は会員価格の購入と定期便の申込・運営向け．同じWorkerとD1を使用する．Cookieはホスト内のみで使い，SquareのWebhookとOAuthの戻り先は会員ホストに置く．公開済みの珈琲・書籍は同じSquare SKUを使用し，店舗・EC間で在庫を移さない．
+`shop.hacksick.com` の単発購入はゲストでも利用できる．会員価格・限定商品・クーポン・定期便にはメール確認が必要．ゲストの連絡先メールは取引メールに使い，注文履歴は購入したブラウザに紐付ける．ログイン済みの購入者には，同じアカウントの支払済み注文から配送先を補完する．`members.hacksick.com` は会員価格の購入と定期便の申込・運営向け．両サイトは同じWorkerとD1を使用する．Cookieはホスト内のみで使い，SquareのWebhookとOAuthの戻り先は会員ホストに置く．公開済みの珈琲・書籍は同じSquare SKUを使用し，店舗・EC間で在庫を移さない．
 
 1. `wrangler.production.example.jsonc` を `wrangler.production.jsonc` にコピーし，既存Workerと同じD1・Squareアプリ・拠点を設定する．実設定とSecrets，運用記録，注文データはGit管理外．本番DBのバックアップと既存マイグレーション履歴を確認してから0016を適用する．
 2. HTTPSのSandboxでカード・Apple Pay・Google Pay，お試しからの定期便，注文通知，発送を実機確認する．Apple Payの検証ファイルはSquare公式配布のものを `/.well-known/apple-developer-merchantid-domain-association` で配信する．Square Developer Consoleで両ホストの登録と必要な規約の確認を行う．実機確認後，`WALLET_ENABLED=true` にする．

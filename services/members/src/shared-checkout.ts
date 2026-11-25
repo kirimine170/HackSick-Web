@@ -4,6 +4,7 @@ import { BOOK_PRODUCT, SHOP_PRODUCTS, STOREFRONT_PRODUCTS, CheckoutConflict, ens
 import { checkoutAvailable, SquareRequestError, type SquareGateway, type SquareOrder, type SquarePayment } from "./square.ts";
 import { refreshBillingForUser } from "./billing.ts";
 import { locationFor, quoteShopOrder, reserveCoupon, shopProducts, type AppliedCoupon, type FulfillmentSource, type ShopProduct } from "./shop-operations.ts";
+import { ensureGuestActor } from "./guest-checkout.ts";
 import { queueOrderNotifications } from "./order-notifications.ts";
 
 export type OrderQuote = ReturnType<typeof memberQuote> & { coupon?: AppliedCoupon; fulfillmentSource?: FulfillmentSource; discountLabel?: string; fulfillmentHint?: string; planBaseExTaxJpy?: number; memberDiscountExTaxJpy?: number; taxJpy?: number; taxPercent?: number; goodsTotalJpy?: number };
@@ -158,16 +159,16 @@ async function update(env: Env, row: SharedOrder, state: SharedOrder["state"], r
   return latest;
 }
 
-export async function prepareSharedOrder(env: Env, user: { id: string; email: string; name?: string }, body: Record<string, unknown>, gateway: SquareGateway, storefront = false) {
+export async function prepareSharedOrder(env: Env, user: { id: string; email: string; name?: string }, body: Record<string, unknown>, gateway: SquareGateway, storefront = false, guestEmail?: string) {
   if (!checkoutChannelEnabled(env, storefront) || !await checkoutAvailable(env)) return json({ error: "現在，購入の受付を停止しています．" }, 503);
-  await refreshBillingForUser(env,user.id,gateway);
-  const access = await memberAccess(env.DB, user.id);
-  if (access.member?.status === "blocked" || (!storefront && !access.benefit.eligible)) return json({ error: "現在の購入条件を確認してください．" }, 403);
+  if (!guestEmail) await refreshBillingForUser(env,user.id,gateway);
+  const access = guestEmail ? undefined : await memberAccess(env.DB, user.id);
+  if (access?.member?.status === "blocked" || (!storefront && !access?.benefit.eligible)) return json({ error: "現在の購入条件を確認してください．" }, 403);
   if (body.acceptedTerms !== true) throw new InputError("送料・出荷目安・返品条件を確認してください．");
   const key = requiredText(body.requestId, "購入受付ID", 36);
   if (!/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(key)) throw new InputError("購入受付IDを確認してください．");
-  const quote = await quoteShopOrder(env, user.id, body.items, storefront, body.couponCode ? { code: body.couponCode } : undefined);
-  const recipient = shippingRecipient(body.shipping, user.email);
+  const quote = await quoteShopOrder(env, guestEmail ? null : user.id, body.items, storefront, body.couponCode ? { code: body.couponCode } : undefined);
+  const recipient = shippingRecipient(body.shipping, guestEmail ?? user.email);
   const fingerprint = Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(JSON.stringify({ quote, recipient })))), b => b.toString(16).padStart(2, "0")).join("");
   const previous = await env.DB.prepare("SELECT * FROM member_orders WHERE id=?").bind(key).first<SharedOrder>();
   if (previous) {
@@ -176,10 +177,11 @@ export async function prepareSharedOrder(env: Env, user: { id: string; email: st
   }
   if (await env.DB.prepare("SELECT id FROM member_orders WHERE auth_user_id=? AND state IN ('paying','review')").bind(user.id).first()) throw new CheckoutConflict("確認中のお支払いがあります．再度支払わず，購入状況を確認してください．");
   const location = locationFor(env, quote.fulfillmentSource);
-  const extras = (await shopProducts(env, user.id, access)).filter(product => quote.lines.some(line => line.sku === product.sku));
+  const extras = (await shopProducts(env, guestEmail ? undefined : user.id, access)).filter(product => quote.lines.some(line => line.sku === product.sku));
   const inventory = await sharedInventory(env, gateway, "", includesBook(quote), extras, location);
   sufficient(quote, inventory);
-  const memberId = access.member?.id ?? await ensureBuyer(env.DB, user);
+  if (guestEmail) await ensureGuestActor(env.DB, user);
+  const memberId = access?.member?.id ?? await ensureBuyer(env.DB, user);
   const time = now(); const expires = new Date(Date.now() + 15 * 60000).toISOString();
   const inserted = await env.DB.prepare(`INSERT OR IGNORE INTO member_orders (id,auth_user_id,member_id,fingerprint,quote_json,recipient_json,catalog_json,state,created_at,expires_at,updated_at,fulfillment_source,square_location_id,order_channel)
     SELECT ?,?,?,?,?,?,?,'ready',?,?,?,?,?,? WHERE (SELECT COUNT(*) FROM member_orders WHERE auth_user_id=? AND created_at>=?) < 15`)
@@ -250,7 +252,7 @@ export interface TrustedCoffeePayment {
   customerInitiated: boolean;
   authorize: () => Promise<boolean>;
 }
-export async function paySharedOrder(env: Env, userId: string, orderId: string, body: Record<string, unknown>, gateway: SquareGateway, coffee?: TrustedCoffeePayment, storefront = false) {
+export async function paySharedOrder(env: Env, userId: string, orderId: string, body: Record<string, unknown>, gateway: SquareGateway, coffee?: TrustedCoffeePayment, storefront = false, guest = false) {
   if (!checkoutChannelEnabled(env, storefront) || !await checkoutAvailable(env)) return json({ error: "現在，購入の受付を停止しています．" }, 503);
   let row = await env.DB.prepare("SELECT * FROM member_orders WHERE id=? AND auth_user_id=?").bind(orderId, userId).first<SharedOrder>();
   if (!row) return json({ error: "購入情報が見つかりません．" }, 404);
@@ -258,14 +260,14 @@ export async function paySharedOrder(env: Env, userId: string, orderId: string, 
   if (coffee ? row.purchase_kind !== coffee.kind || row.square_customer_id !== coffee.customerId : row.purchase_kind && row.purchase_kind !== "one-time") throw new InputError("この購入に対応する決済画面をご利用ください．");
   if (row.state !== "ready") return json(visibleSharedOrder(await reconcileSharedOrder(env, row, gateway)));
   if (Date.parse(row.expires_at) <= Date.now()) return json(visibleSharedOrder(await update(env, row, "canceled")));
-  if (!coffee) await refreshBillingForUser(env,userId,gateway);
+  if (!coffee && !guest) await refreshBillingForUser(env,userId,gateway);
   const quote = JSON.parse(row.quote_json) as Quote;
   const authorized = async () => {
     if (coffee) return coffee.authorize();
-    const access = await memberAccess(env.DB, userId);
-    if (access.member?.status === "blocked" || (!storefront && (!access.benefit.eligible || includesBook(quote)))) return false;
+    const access = guest ? undefined : await memberAccess(env.DB, userId);
+    if (access?.member?.status === "blocked" || (!storefront && (!access?.benefit.eligible || includesBook(quote)))) return false;
     try {
-      const checked = await quoteShopOrder(env, userId, quote.lines, storefront, quote.coupon ? { id: quote.coupon.id } : undefined, row!.id);
+      const checked = await quoteShopOrder(env, guest ? null : userId, quote.lines, storefront, quote.coupon ? { id: quote.coupon.id } : undefined, row!.id);
       return checked.totalJpy === quote.totalJpy && checked.discountJpy === quote.discountJpy &&
         checked.coupon?.id === quote.coupon?.id && checked.fulfillmentSource === (row!.fulfillment_source ?? "hacksick") &&
         checked.lines.every((line, i) => line.sku === quote.lines[i].sku && line.unitPriceJpy === quote.lines[i].unitPriceJpy);

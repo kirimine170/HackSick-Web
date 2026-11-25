@@ -7,9 +7,10 @@ async function api<T>(path: string, body?: unknown): Promise<T> {
   const data = await res.json() as T & { error?: string }; if (!res.ok) throw new Error(data.error ?? "処理を完了できませんでした．"); return data;
 }
 interface ProductImage { src: string; alt: string; width?: number; height?: number }
+type ShippingAddress = Record<"name" | "phone" | "postalCode" | "prefecture" | "city" | "addressLine1" | "addressLine2", string>;
 type Source = "hacksick" | "essen";
 interface Product { fulfillmentSource?: Source; sku: string; name: string; unitPriceJpy: number; bags: number; category: string; description: string; workUrl?: string; images?: ProductImage[] }
-interface Shop { wallets?: boolean; essenLocationId?: string; products: (Product & { available: number })[]; policy: { discountPercent: number; recurringDiscountPercent: number; recurringCheckoutEnabled: boolean }; stock: { shared: boolean; available: boolean }; eligible: boolean; canPurchase: boolean; storefront: boolean; enabled: boolean; paymentFormPreview?:boolean; environment: string; applicationId: string; locationId: string; buyerEmail: string }
+interface Shop { wallets?: boolean; essenLocationId?: string; products: (Product & { available: number })[]; policy: { discountPercent: number; recurringDiscountPercent: number; recurringCheckoutEnabled: boolean }; stock: { shared: boolean; available: boolean }; eligible: boolean; canPurchase: boolean; storefront: boolean; enabled: boolean; paymentFormPreview?:boolean; environment: string; applicationId: string; locationId: string; buyerEmail: string | null; shippingAddress?: ShippingAddress | null }
 interface Quote { discountLabel?: string; fulfillmentSource?: Source; subtotalJpy: number; discountPercent: number; discountJpy: number; shippingJpy: number; totalJpy: number; fulfillmentHint?:string; lines?: { name: string; quantity: number }[] }
 interface Shipment { label?: string; trackingNumbers: string[]; shippedAt: string; trackingUrl: string }
 interface Checkout { dispatch?: {plannedDate:string|null;held:boolean} | null; id: string; state: string; quote: Quote; expiresAt: string; shipment?: Shipment | null }
@@ -136,6 +137,17 @@ async function refreshShopState() {
   el("shop-status").textContent = !shop.canPurchase ? "購入資格については運営へお問い合わせください．" : !shop.enabled ? "現在，購入受付を確認中です．" : !shop.products.some(p => p.available > 0) ? "現在在庫切れです．" : shop.environment === "sandbox" ? "テスト環境です．実際のカードでは購入しないでください．" : shop.eligible ? `珈琲の単発購入に会員特典${shop.policy.discountPercent}％を適用できます．` : "通常価格でご購入いただけます．";
   el("shop-benefit-description").textContent = `有効なHSAP・月額会員は，珈琲の単品と5袋セットが${shop.policy.discountPercent}％引きです．`;
 }
+export function prefillShippingAddress(formId: string) {
+  if (!shop?.shippingAddress) return false;
+  const form = el<HTMLFormElement>(formId);
+  const fields = Object.entries(shop.shippingAddress).map(([name, value]) => ({
+    field: form.elements.namedItem(name) as HTMLInputElement | HTMLSelectElement,
+    value,
+  }));
+  if (fields.some(({ field }) => !field || field.value)) return false;
+  fields.forEach(({ field, value }) => { field.value = value; });
+  return true;
+}
 function freezeForm(busy: boolean) {
   for (const field of el("checkout-form").querySelectorAll<HTMLInputElement | HTMLSelectElement>("input,select")) field.disabled = busy;
 }
@@ -144,9 +156,64 @@ function productPhoto(photo: ProductImage) {
   const image = document.createElement("img"); image.src = photo.src; image.alt = photo.alt; if (photo.width) image.width = photo.width; if (photo.height) image.height = photo.height; image.loading = "lazy"; image.decoding = "async"; image.className = "product-photo"; link.append(image);
   return link;
 }
-function productCard(product: Product) {
+function productGallery(product: Product, photos: ProductImage[]) {
+  const gallery = text("div", "", "product-gallery");
+  gallery.setAttribute("role", "group");
+  gallery.setAttribute("aria-roledescription", "カルーセル");
+  gallery.setAttribute("aria-label", `${product.name}の写真`);
+  const slides = text("div", "", "product-gallery-slides");
+  slides.tabIndex = 0;
+  slides.setAttribute("aria-label", "左右キーまたはスワイプで写真を切り替え");
+  slides.append(...photos.map(productPhoto));
+  const previous = text("button", "‹", "product-gallery-arrow") as HTMLButtonElement;
+  const next = text("button", "›", "product-gallery-arrow") as HTMLButtonElement;
+  previous.type = next.type = "button";
+  previous.setAttribute("aria-label", "前の写真");
+  next.setAttribute("aria-label", "次の写真");
+  const thumbnails = text("div", "", "product-gallery-thumbnails");
+  const buttons = photos.map((photo, index) => {
+    const button = text("button", "", "product-gallery-thumbnail") as HTMLButtonElement;
+    button.type = "button";
+    button.setAttribute("aria-label", `${index + 1}枚目を表示．${photo.alt}`);
+    const image = document.createElement("img");
+    image.src = photo.src;
+    image.alt = "";
+    image.loading = "lazy";
+    button.append(image);
+    button.addEventListener("click", () => select(index));
+    return button;
+  });
+  let current = 0;
+  function update(index: number) {
+    current = index;
+    buttons.forEach((button, position) => button.setAttribute("aria-current", String(position === current)));
+  }
+  function select(index: number) {
+    update((index + photos.length) % photos.length);
+    slides.scrollTo({ left: slides.clientWidth * current, behavior: "instant" });
+  }
+  slides.addEventListener("scroll", () => {
+    const index = Math.round(slides.scrollLeft / slides.clientWidth);
+    if (index >= 0 && index < photos.length && index !== current) update(index);
+  }, { passive: true });
+  slides.addEventListener("keydown", event => {
+    if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
+    event.preventDefault();
+    select(current + (event.key === "ArrowRight" ? 1 : -1));
+  });
+  previous.addEventListener("click", () => select(current - 1));
+  next.addEventListener("click", () => select(current + 1));
+  update(0);
+  thumbnails.append(...buttons);
+  const controls = text("div", "", "product-gallery-controls");
+  controls.append(previous, thumbnails, next);
+  gallery.append(slides, controls);
+  return gallery;
+}
+function productCard(product: Product, gallery = false) {
   const node = text("article", "", "card product-card");
-  if (product.images?.[0]) node.append(productPhoto(product.images[0]));
+  if (product.images?.length) node.append(gallery && product.images.length > 1
+    ? productGallery(product, product.images) : productPhoto(product.images[0]));
   node.append(text("p", product.category, "small"), text("h3", product.name), text("p", product.description));
   node.append(text("p", `${money(product.unitPriceJpy)}（税込）`));
   if (product.workUrl) {
@@ -159,33 +226,26 @@ function productCard(product: Product) {
 
 export async function loadStorefrontCatalog() {
   const data = await api<{ products: Product[] }>("/api/storefront");
-  const sku = selectedProduct();
-  el("catalog-all").hidden = !sku;
-  const products = sku ? data.products.filter(product => product.sku === sku) : data.products;
-  el("storefront-products").replaceChildren(...products.map(product => {
+  el("storefront-products").replaceChildren(...data.products.map(product => {
     const node = productCard(product);
-    const link = text("a", sku ? "ログインして購入する" : "商品を見る") as HTMLAnchorElement;
-    link.href = sku ? "#login" : `/products/${product.sku}`;
+    const link = text("a", "商品を見る") as HTMLAnchorElement;
+    link.href = `/products/${product.sku}`;
     node.append(link);
     return node;
   }));
-  if (!products.length) el("storefront-products").append(text("p","公開中の商品が見つかりません．限定商品はログインしてご確認ください．"));
+  if (!data.products.length) el("storefront-products").append(text("p","公開中の商品が見つかりません．限定商品はログインしてご確認ください．"));
 }
 
 function renderCartProducts() {
   const products = el("shop-products");
   products.replaceChildren();
   const sku = selectedProduct();
-  for (const product of shop.products.filter(product => (product.fulfillmentSource ?? "hacksick") === source())) {
-    const node = productCard(product);
+  const available = shop.products.filter(product => (product.fulfillmentSource ?? "hacksick") === source());
+  const featured = available.find(product => product.sku === sku);
+  for (const product of featured ? [featured, ...available.filter(product => product !== featured)] : available) {
+    const node = productCard(product, !sku || product === featured);
+    node.classList.toggle("product-detail", product === featured);
     node.append(text("p", shop.stock.available ? `在庫 ${product.available}${product.category === "書籍" ? "冊" : product.bags === 0 ? "点" : product.bags === 1 ? "袋" : "セット"}` : "在庫を確認中", "small"));
-    if (product.images?.[1]) { const labelPhoto = document.createElement("details"); labelPhoto.className = "product-label-photo"; labelPhoto.append(text("summary", "裏面ラベルを見る"), productPhoto(product.images[1])); node.append(labelPhoto); }
-    for (const photo of product.images?.slice(2) ?? []) {
-      const scene = document.createElement("details");
-      scene.className = "product-label-photo";
-      scene.append(text("summary", "淹れている様子を見る"), productPhoto(photo));
-      node.append(scene);
-    }
     const label = document.createElement("label"); label.textContent = "数量"; const input = document.createElement("input"); input.type = "number"; input.min = "0"; input.max = String(Math.min(100, product.available)); input.step = "1"; input.value = String(Math.min(product.available, cartQuantities.get(product.sku) ?? (sku === product.sku && shop.canPurchase ? 1 : 0))); input.dataset.sku = product.sku;
     input.disabled = !shop.canPurchase || !product.available; input.addEventListener("input", () => { cartQuantities.set(product.sku, Number(input.value)); resetAcceptance(); void quote().catch(e => message(e.message)); }); label.append(input); node.append(label); products.append(node);
   }
@@ -193,7 +253,16 @@ function renderCartProducts() {
 
 export async function loadShop(manager: boolean) {
   el("shop").hidden = false;
+  const previousEmail = shop?.buyerEmail;
   await refreshShopState();
+  if (previousEmail !== undefined && previousEmail !== shop.buyerEmail) resetAcceptance();
+  const guest = shop.storefront && !shop.buyerEmail;
+  const email = el<HTMLInputElement>("checkout-email");
+  email.required = guest;
+  email.disabled = !guest;
+  el("checkout-email-label").hidden = !guest;
+  el("guest-benefits").hidden = !guest;
+  el("checkout-coupon-label").hidden = guest;
   const hasEssen = shop.products.some(p => p.fulfillmentSource === "essen");
   el("checkout-source-label").hidden = !hasEssen;
   el("checkout-source-note").hidden = !hasEssen;
@@ -218,6 +287,7 @@ export async function loadShop(manager: boolean) {
     }
     el("orders-refresh").addEventListener("click", () => { void refreshOrders().catch(e => message(e.message)); });
   }
+  if (prefillShippingAddress("checkout-form")) el("shipping-address-note").hidden = false;
   await loadCard().catch(error=>message((error as Error).message)); await quote(); await refreshOrders(); if (manager) await loadShopAdmin();
 }
 function resetAcceptance() {
@@ -256,7 +326,8 @@ async function completePurchase(method: SquareCard | SquareWallet, kind: "card" 
   const fields = Object.fromEntries(new FormData(form).entries());
   const items = quantities(), coupon = couponCode(), key = requestId;
   const acceptedTerms = el<HTMLInputElement>("checkout-terms").checked;
-  const billingContact = { givenName: String(fields.name), email: shop.buyerEmail, phone: String(fields.phone),
+  const contactEmail = shop.buyerEmail ?? String(fields.contactEmail).trim();
+  const billingContact = { givenName: String(fields.name), email: contactEmail, phone: String(fields.phone),
     countryCode: "JP", postalCode: String(fields.postalCode).replaceAll("-", ""), state: String(fields.prefecture), city: String(fields.city),
     addressLines: [String(fields.addressLine1), ...(fields.addressLine2 ? [String(fields.addressLine2)] : [])] };
   const verification = { amount: String(total), currencyCode: "JPY", intent: "CHARGE", billingContact };
@@ -269,7 +340,7 @@ async function completePurchase(method: SquareCard | SquareWallet, kind: "card" 
     const token = await tokenizing;
     if (token.status !== "OK" || !token.token) throw new Error("お支払い方法を確認できませんでした．");
     const walletVerification = kind !== "card" ? await payments?.verifyBuyer(token.token, verification) : undefined;
-    let result = await api<Checkout>("/api/shop/checkouts", { requestId: key, items, couponCode: coupon, shipping: { ...fields, country: "JP" }, acceptedTerms });
+    let result = await api<Checkout>("/api/shop/checkouts", { requestId: key, items, couponCode: coupon, contactEmail, shipping: { ...fields, country: "JP" }, acceptedTerms });
     if (result.state === "ready") {
       if (result.quote.totalJpy !== total) {
         await api(`/api/shop/checkouts/${result.id}/cancel`, {}).catch(() => {});
@@ -293,6 +364,7 @@ async function completePurchase(method: SquareCard | SquareWallet, kind: "card" 
   } catch (error) { message((error as Error).message); await refreshOrders().catch(() => {}); }
   finally {
     checkoutBusy = false; freezeForm(false);
+    el<HTMLInputElement>("checkout-email").disabled = Boolean(shop.buyerEmail);
     for (const input of el("shop-products").querySelectorAll<HTMLInputElement>("input")) {
       input.disabled = !shop.canPurchase || !shop.products.find(p => p.sku === input.dataset.sku)?.available;
     }

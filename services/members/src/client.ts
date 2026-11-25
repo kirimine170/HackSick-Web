@@ -1,6 +1,6 @@
 import { createAuthClient } from "better-auth/client";
 import { emailOTPClient } from "better-auth/client/plugins";
-import { loadShop, loadShopAdmin, loadStorefrontCatalog } from "./shop-client.ts";
+import { loadShop, loadShopAdmin, loadStorefrontCatalog, prefillShippingAddress } from "./shop-client.ts";
 import { MEMBER_PRICING } from "./member-pricing.ts";
 import { loadCoffee } from "./coffee-client.ts";
 import { initLtCheckIn, initMemberPass } from "./member-pass-client.ts";
@@ -18,6 +18,7 @@ let coffeePublicEnabled = false;
 let storefront = false;
 let storefrontUrl: string | undefined;
 let coffeeIntent = location.hash === "#coffee" || location.hash === "#storefront-coffee";
+const productPage = /^\/products\/[A-Z0-9_-]{1,64}$/.test(location.pathname);
 
 function configureStorefront() {
   document.title = "HackSickショップ";
@@ -25,14 +26,16 @@ function configureStorefront() {
   el<HTMLAnchorElement>("brand-link").href = "/";
   el("page-title").textContent = "HackSickショップ";
   el("login-eyebrow").textContent = "SHOP SIGN IN";
-  el("login-title").textContent = "メールアドレスで購入へ進む";
-  el("login-description").textContent = "はじめての方も，メールに届く確認コードで購入できます．会員特典をご利用の方は，登録済みのメールアドレスをお使いください．";
+  el("login-title").textContent = "メールアドレスでログイン";
+  el("login-description").textContent = "単発購入はログインなしでご利用いただけます．会員価格・クーポン・定期便をご利用の場合は，確認コードでログインしてください．";
   el("email-label").textContent = "メールアドレス";
   el("login-note").textContent = "コードの有効期限は5分です．同じメールアドレスで，注文状況や定期便を確認できます．";
   el("shop-title").textContent = "単発購入";
   el("checkout-returns").textContent = "食品のお客様都合による返品・交換はお受けできません．不良品・誤配送はHackSick負担で対応します．到着後7日以内を目安にshop@hacksick.comへご連絡ください．発送前のキャンセルはメールでご相談ください．";
   show("member-eyebrow", false);
   show("members-nav", true);
+  show("cart-nav", true);
+  el("storefront-catalog").after(el("shop"));
 }
 
 interface Grant { id: string; kind: string; valid_from: string; valid_until: string | null; revoked_at: string | null; evidence_id?: string; active?: boolean }
@@ -72,12 +75,13 @@ async function refresh() {
   const session = await auth.getSession();
   if (session.error) throw new Error("ログイン状態を確認できませんでした．接続を確認して再読み込みしてください．");
   const signedIn = Boolean(session.data);
+  const guestCheckout = storefront && (productPage || location.hash === "#shop" || new URLSearchParams(location.search).get("view") === "cart");
   show("login", !signedIn);
   show("shop-preview", !signedIn && !storefront);
-  show("storefront-catalog", !signedIn && storefront);
+  show("storefront-catalog", !signedIn && storefront && !productPage);
   show("logout", signedIn);
   show("account", signedIn && !storefront);
-  show("shop", signedIn);
+  show("shop", signedIn || guestCheckout);
   el("public-member-offer").textContent = coffeePublicEnabled
     ? `珈琲の定期便は，初めての方もメールアドレスでお申し込みいただけます．対象会員は通常便の基本料金から${MEMBER_PRICING.recurringDiscountPercent}％引きです．`
     : `対象会員は珈琲の単発購入が${MEMBER_PRICING.oneTimeDiscountPercent}％引きです．`;
@@ -94,6 +98,8 @@ async function refresh() {
     showMemberPass(false);
     showLtCheckIn(false);
     notice(storefront ? "珈琲の単発購入・定期便と書籍をご用意しています．" : "会員情報を確認するには，ログインしてください．");
+    if (guestCheckout) await loadShop(false);
+    if (location.hash === "#shop" && guestCheckout) el("shop").scrollIntoView();
     if (coffeeIntent && !el("coffee").hidden) el("coffee").scrollIntoView();
     return;
   }
@@ -101,6 +107,7 @@ async function refresh() {
   if (storefront) {
     notice("メールアドレスを確認しました．");
     await Promise.all([loadShop(false), loadCoffeeSection()]);
+    prefillShippingAddress("coffee-form");
     if (location.hash === "#shop") el("shop").scrollIntoView();
     return;
   }
@@ -129,6 +136,7 @@ async function refresh() {
   }
   notice("ログインしました．");
   await Promise.all([loadShop(manager), loadCoffeeSection()]);
+  prefillShippingAddress("coffee-form");
   if (location.hash === "#shop") el("shop").scrollIntoView();
 }
 
@@ -238,7 +246,7 @@ void (async () => {
 
   if (storefront) {
     configureStorefront();
-    void loadStorefrontCatalog().catch(() => {
+    if (!productPage) void loadStorefrontCatalog().catch(() => {
       el("storefront-products").textContent = "商品を読み込めませんでした．ページを再読み込みしてください．";
     });
   } else if (coffeePublicEnabled) {
