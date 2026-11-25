@@ -1,0 +1,20 @@
+# ローカル用．値はチャットやGitへ貼り付けない．
+BETTER_AUTH_SECRET=
+GOOGLE_CLIENT_ID=
+GOOGLE_CLIENT_SECRET=
+RESEND_API_KEY=
+# 決済は初期状態で無効．sandbox検証後にproduction用の認証情報とWebhookを設定する．
+CHECKOUT_ENABLED=false
+COFFEE_RECURRING_ENABLED=false
+SQUARE_ENVIRONMENT=sandbox
+SQUARE_ACCESS_TOKEN=
+SQUARE_LOCATION_ID=
+SQUARE_WEBHOOK_SIGNATURE_KEY=
+SQUARE_WEBHOOK_URL=http://localhost:8787/api/square/webhook
+# 独自ショップの別ホストとウォレットを検証するときに設定する．
+SHOP_BASE_URL=
+STOREFRONT_CHECKOUT_ENABLED=false
+WALLET_ENABLED=false
+# ESSEN公開前は空欄．発送専用ホストとHackSick加盟店内のESSEN拠点を使用する．
+ESSEN_BASE_URL=
+ESSEN_LOCATION_ID=

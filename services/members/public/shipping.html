@@ -1,0 +1,18 @@
+<!doctype html>
+<html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex"><title>ESSEN 発送管理</title><link rel="stylesheet" href="/style.css"><script type="module" src="/shipping.js"></script></head>
+<body>
+<header><a class="brand" href="https://byessen.com/">ESSEN<span>発送管理</span></a></header>
+<main id="main">
+<h1>発送する注文</h1>
+<p id="shipping-message" role="status"></p>
+<section id="shipping-login" class="panel">
+  <p>HackSickから登録されたESSENのメールアドレスをご利用ください．</p>
+  <form id="shipping-email"><label>メールアドレス<input name="email" type="email" autocomplete="email" required></label><button>確認コードを送信する</button></form>
+  <form id="shipping-otp" hidden><label>メールに届いた6桁の確認コード<input name="otp" required inputmode="numeric" pattern="[0-9]{6}" autocomplete="one-time-code"></label><button>ログインする</button></form>
+</section>
+<section id="shipping-panel" hidden>
+  <div class="row"><button id="shipping-refresh" type="button">一覧を更新</button><button id="shipping-logout" type="button">ログアウト</button></div>
+  <div id="shipping-orders"></div>
+</section>
+</main>
+</body></html>
