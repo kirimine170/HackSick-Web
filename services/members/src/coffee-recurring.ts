@@ -12,6 +12,7 @@ export const COFFEE_TERMS_VERSION = "coffee-recurring-2026-11-07";
 type User = { id: string; email: string; name?: string };
 export interface CoffeeEnrollment {
   id: string; auth_user_id: string; member_id: string; plan_id: string; fingerprint: string; recipient_json: string; pricing_consent_json: string;
+  order_channel: "members" | "shop";
   state: "ready" | "activating" | "card_required" | "active" | "action_required" | "review" | "canceled";
   square_card_id: string | null; card_brand: string | null; card_last4: string | null; card_attempt_key: string;
   next_billing_date: string; terms_version: string; consented_at: string; created_at: string; updated_at: string;
@@ -64,7 +65,7 @@ export async function coffeeShop(env: Env, user: User, gateway: SquareGateway) {
     trial: trialPricing(), nextBillingDate: nextCoffeeBillingDate(), billingDay: 1, shippingAroundDay: 10,
     applicationId: env.SQUARE_CLIENT_ID, locationId: env.SQUARE_LOCATION_ID, environment: env.SQUARE_ENVIRONMENT, buyerEmail: user.email };
 }
-export async function prepareCoffeeEnrollment(env: Env, user: User, body: Record<string, unknown>, gateway: SquareGateway) {
+export async function prepareCoffeeEnrollment(env: Env, user: User, body: Record<string, unknown>, gateway: SquareGateway, storefront = false) {
   await requireEnabled(env); const eligibility = await access(env, user.id, gateway);
   if (body.acceptedTerms !== true || body.acceptedCardStorage !== true || body.termsVersion !== COFFEE_TERMS_VERSION) throw new InputError("定期購入・カード保管・料金・出荷日・解約条件を確認してください．");
   const key = uuid(body.requestId); const planId = requiredText(body.planId, "プラン", 60); const pricing = consentPolicy(planId);
@@ -75,8 +76,8 @@ export async function prepareCoffeeEnrollment(env: Env, user: User, body: Record
   if (await env.DB.prepare("SELECT id FROM coffee_enrollments WHERE auth_user_id=? AND state<>'canceled'").bind(user.id).first()) throw new CheckoutConflict("申込済みの定期便があります．定期便の管理欄をご確認ください．");
   const stock = await sharedInventory(env, gateway); allocateCoffeeStock(trialPricing().bags, stock);
   const memberId = eligibility.member?.id ?? await ensureBuyer(env.DB, user); const now = time();
-  await env.DB.prepare("INSERT INTO coffee_enrollments (id,auth_user_id,member_id,plan_id,fingerprint,recipient_json,pricing_consent_json,state,card_attempt_key,next_billing_date,terms_version,consented_at,created_at,updated_at) VALUES (?,?,?,?,?,?,?,'ready',?,?,?,?,?,?)")
-    .bind(key, user.id, memberId, planId, fingerprint, JSON.stringify(recipient), JSON.stringify(pricing), crypto.randomUUID(), nextDate, COFFEE_TERMS_VERSION, now, now, now).run();
+  await env.DB.prepare("INSERT INTO coffee_enrollments (id,auth_user_id,member_id,plan_id,fingerprint,recipient_json,pricing_consent_json,state,card_attempt_key,next_billing_date,terms_version,consented_at,created_at,updated_at,order_channel) VALUES (?,?,?,?,?,?,?,'ready',?,?,?,?,?,?,?)")
+    .bind(key, user.id, memberId, planId, fingerprint, JSON.stringify(recipient), JSON.stringify(pricing), crypto.randomUUID(), nextDate, COFFEE_TERMS_VERSION, now, now, now, storefront ? "shop" : "members").run();
   const enrollment = (await getCoffeeEnrollment(env, user.id, key))!;
   await audit(env, enrollment, "coffee.prepare"); return visibleCoffeeEnrollment(env, enrollment, gateway);
 }
@@ -104,7 +105,7 @@ async function customerFor(env: Env, enrollment: CoffeeEnrollment, gateway: Squa
   if (entry.square_customer_id) return entry.square_customer_id;
   const recipient = JSON.parse(enrollment.recipient_json) as ReturnType<typeof shippingRecipient>;
   // HSAPの既存顧客や保存カードをメール検索で流用しない．専用アプリの確認済み購入者だけを作る．
-  const result = await squareRequest<{ customer: { id: string; reference_id?: string } }>(gateway, "/customers", "POST", { idempotency_key: entry.creation_key, reference_id: `coffee:${enrollment.auth_user_id}`, given_name: recipient.display_name, email_address: recipient.email_address, address: recipient.address, phone_number: recipient.phone_number });
+  const result = await squareRequest<{ customer: { id: string; reference_id?: string } }>(gateway, "/customers", "POST", { idempotency_key: entry.creation_key, reference_id: `coffee:${enrollment.auth_user_id}`, given_name: recipient.display_name, email_address: recipient.email_address });
   if (!result.customer?.id || result.customer.reference_id !== `coffee:${enrollment.auth_user_id}`) throw new Error("COFFEE_CUSTOMER_MISMATCH");
   await env.DB.prepare("UPDATE coffee_customers SET square_customer_id=? WHERE auth_user_id=? AND square_customer_id IS NULL").bind(result.customer.id, enrollment.auth_user_id).run();
   return result.customer.id;
@@ -127,8 +128,8 @@ async function prepareCycle(env: Env, enrollment: CoffeeEnrollment, cycle: strin
     discountLabel: cycle === "trial" ? "お試し便専用料金" : price.discountPercent ? "定期便専用料金・会員特典5％" : "定期便専用料金",
     fulfillmentHint: cycle === "trial" ? "決済後5日以内を目安に出荷" : `${cycle.slice(0,7)}の10日ごろ一斉発送` };
   const now = time();
-  await env.DB.prepare("INSERT OR IGNORE INTO member_orders (id,auth_user_id,member_id,fingerprint,quote_json,recipient_json,catalog_json,state,created_at,expires_at,updated_at,purchase_kind,coffee_enrollment_id,coffee_cycle,square_customer_id) VALUES (?,?,?,?,?,?,?,'ready',?,?,?,?,?,?,?)")
-    .bind(requestId, enrollment.auth_user_id, enrollment.member_id, JSON.stringify({ enrollmentId: enrollment.id, cycle, quote }), JSON.stringify(quote), enrollment.recipient_json, JSON.stringify(stock), now, new Date(Date.now()+900000).toISOString(), now, cycle === "trial" ? "coffee-trial" : "coffee-cycle", enrollment.id, cycle, customerId).run();
+  await env.DB.prepare("INSERT OR IGNORE INTO member_orders (id,auth_user_id,member_id,fingerprint,quote_json,recipient_json,catalog_json,state,created_at,expires_at,updated_at,purchase_kind,coffee_enrollment_id,coffee_cycle,square_customer_id,order_channel) VALUES (?,?,?,?,?,?,?,'ready',?,?,?,?,?,?,?,?)")
+    .bind(requestId, enrollment.auth_user_id, enrollment.member_id, JSON.stringify({ enrollmentId: enrollment.id, cycle, quote }), JSON.stringify(quote), enrollment.recipient_json, JSON.stringify(stock), now, new Date(Date.now()+900000).toISOString(), now, cycle === "trial" ? "coffee-trial" : "coffee-cycle", enrollment.id, cycle, customerId, enrollment.order_channel).run();
   const order = await env.DB.prepare("SELECT * FROM member_orders WHERE coffee_enrollment_id=? AND coffee_cycle=?").bind(enrollment.id,cycle).first<SharedOrder>();
   if (!order || order.auth_user_id !== enrollment.auth_user_id) throw new CheckoutConflict("購入受付を確認してください．");
   return order;
@@ -292,7 +293,7 @@ export async function deliverCoffeeNotices(env:Env,transport:typeof fetch=fetch)
     const detail=notice.kind==="enrolled"?`通常便の次回決済日は${enrollment!.next_billing_date}，出荷は10日ごろです．基本料金は税別${plan.basePriceExTaxJpy}円で，その回の会員資格・税率・送料条件から支払総額を計算します．`:
       notice.kind==="canceled"?"今後の自動請求を停止しました．お支払い済みの注文の取消・返金はshop@へご相談ください．":"在庫・お支払い・カード登録の確認が必要なため，次の自動請求を停止しています．支払結果が確認中の場合は，重ねて支払わず運営へお問い合わせください．";
     try{
-      const portal = env.SHOP_BASE_URL ?? env.AUTH_BASE_URL;
+      const portal = (enrollment!.order_channel === "shop" ? env.SHOP_BASE_URL : undefined) ?? env.AUTH_BASE_URL;
       const result=await transport("https://api.resend.com/emails",{method:"POST",headers:{Authorization:`Bearer ${env.RESEND_API_KEY}`,"Content-Type":"application/json","Idempotency-Key":`coffee-${notice.id}`},body:JSON.stringify({from:env.MAIL_FROM,to:[to],reply_to:"shop@hacksick.com",subject:`HackSick ${title}`,text:`${title}．\n${plan.name}\n受付番号：${enrollment!.id}\n\n${detail}\n\n申込・購入状況：${portal}\nお問い合わせ：shop@hacksick.com`}),signal:AbortSignal.timeout(10000)});
       if(!result.ok)throw Error("COFFEE_MAIL_FAILED");const value=await result.json() as {id?:string};if(!value.id)throw Error("COFFEE_MAIL_FAILED");
       await env.DB.prepare("UPDATE coffee_notices SET state='sent',provider_id=? WHERE id=?").bind(value.id,notice.id).run();

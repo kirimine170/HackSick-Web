@@ -53,12 +53,13 @@ test("Better Auth・D1・Square注文を使う定期便の申込，月次決済�
     async getOrder(id){const value=orders.get(id);assert.ok(value);return structuredClone(value);},
     async getPayment(id){const value=payments.get(id);assert.ok(value);return structuredClone(value);},
   };
-  const origin="http://localhost:8787";const codes=new Map<string,string>();
+  const origin="http://localhost:8787", shopOrigin="https://shop.example.invalid";const codes=new Map<string,string>();
   const worker=createWorker(async({email,otp})=>{codes.set(email,otp);},()=>gateway);
   const env={DB:db,ASSETS:{fetch:async()=>new Response("test")},AUTH_BASE_URL:origin,BETTER_AUTH_SECRET:"coffee-test-secret-not-for-real-environments",CHECKOUT_ENABLED:"true",COFFEE_RECURRING_ENABLED:"true",SQUARE_ENVIRONMENT:"sandbox",SQUARE_ACCESS_TOKEN:"synthetic-only",SQUARE_CLIENT_ID:"shop-app",SQUARE_LOCATION_ID:"location",SQUARE_SANDBOX_ITEM_IDS:"parent-single,parent-packs",SQUARE_WEBHOOK_SIGNATURE_KEY:"synthetic",SQUARE_WEBHOOK_URL:origin+"/api/square/webhook"} as unknown as Env;
+  env.SHOP_BASE_URL=shopOrigin;
   let ip=0;
-  const call=(path:string,cookie="",body?:unknown,source=origin)=>worker.fetch(new Request(origin+path,{method:body===undefined?"GET":"POST",headers:{Cookie:cookie,Origin:source,"Content-Type":"application/json","cf-connecting-ip":`192.0.2.${ip}`},...(body===undefined?{}:{body:JSON.stringify(body)})}),env);
-  async function login(email:string){ip++;assert.equal((await call("/api/auth/email-otp/send-verification-otp","",{email,type:"sign-in"})).status,200);const response=await call("/api/auth/sign-in/email-otp","",{email,otp:codes.get(email)});assert.equal(response.status,200);const data=await response.json() as any;return{cookie:response.headers.getSetCookie().map(c=>c.split(";")[0]).join("; "),id:data.user.id};}
+  const call=(path:string,cookie="",body?:unknown,source=origin,host=origin)=>worker.fetch(new Request(host+path,{method:body===undefined?"GET":"POST",headers:{Cookie:cookie,Origin:source,"Content-Type":"application/json","cf-connecting-ip":`192.0.2.${ip}`},...(body===undefined?{}:{body:JSON.stringify(body)})}),env);
+  async function login(email:string,host=origin){ip++;assert.equal((await call("/api/auth/email-otp/send-verification-otp","",{email,type:"sign-in"},host,host)).status,200);const response=await call("/api/auth/sign-in/email-otp","",{email,otp:codes.get(email)},host,host);assert.equal(response.status,200);const data=await response.json() as any;return{cookie:response.headers.getSetCookie().map(c=>c.split(";")[0]).join("; "),id:data.user.id};}
   const buyer=await login("coffee-buyer@example.invalid"),other=await login("other-buyer@example.invalid");
   const shipping={country:"JP",name:"試験購入者",phone:"09000000000",postalCode:"1000001",prefecture:"東京都",city:"試験市",addressLine1:"試験住所"};
   const rootId=crypto.randomUUID();const input={requestId:rootId,planId:"coffee-weekend-8",shipping,termsVersion:COFFEE_TERMS_VERSION,acceptedTerms:true,acceptedCardStorage:true,basePriceExTaxJpy:1,discountPercent:100};
@@ -109,11 +110,15 @@ test("Better Auth・D1・Square注文を使う定期便の申込，月次決済�
     assert.equal((await call(`/api/coffee/enrollments/${id}/card`,other.cookie,{requestId:crypto.randomUUID(),acceptedCardStorage:true,sourceId:"ccof:existing-hsap-card"})).status,400);assert.equal(paymentCreates,4);
   });
   await t.test("明示的なカード否承認の後は，新しい支払操作だけを受け付け，二重請求しない",async()=>{
-    const third=await login("declined-coffee@example.invalid");const id=crypto.randomUUID();assert.equal((await call("/api/coffee/enrollments",third.cookie,{...input,requestId:id})).status,200);
+    const third=await login("declined-coffee@example.invalid",shopOrigin);const id=crypto.randomUUID();
+    const shopCall=(path:string,body:unknown)=>call(path,third.cookie,body,shopOrigin,shopOrigin);
+    assert.equal((await shopCall("/api/coffee/enrollments",{...input,requestId:id})).status,200);
     declineNext=true;const request={requestId:crypto.randomUUID(),sourceId:"cnon:card-nonce-ok",confirmedTotalJpy:1558};
-    const failure=await call(`/api/coffee/enrollments/${id}/pay`,third.cookie,request);assert.equal(failure.status,200);assert.equal((await failure.json() as any).state,"action_required");assert.equal(paymentCreates,4);
-    const retry=await call(`/api/coffee/enrollments/${id}/pay`,third.cookie,{...request,requestId:crypto.randomUUID()});assert.equal(retry.status,200,await retry.clone().text());assert.equal((await retry.json() as any).state,"active");assert.equal(paymentCreates,5);
-    assert.equal((await db.prepare("SELECT COUNT(*) AS n FROM member_orders WHERE coffee_enrollment_id=? AND state='paid'").bind(id).first<any>()).n,1);
+    const failure=await shopCall(`/api/coffee/enrollments/${id}/pay`,request);assert.equal(failure.status,200);assert.equal((await failure.json() as any).state,"action_required");assert.equal(paymentCreates,4);
+    const retry=await shopCall(`/api/coffee/enrollments/${id}/pay`,{...request,requestId:crypto.randomUUID()});assert.equal(retry.status,200,await retry.clone().text());assert.equal((await retry.json() as any).state,"active");assert.equal(paymentCreates,5);
+    assert.equal((await db.prepare("SELECT order_channel FROM coffee_enrollments WHERE id=?").bind(id).first<any>()).order_channel,"shop");
+    const paid=(await db.prepare("SELECT order_channel FROM member_orders WHERE coffee_enrollment_id=? AND state='paid'").bind(id).all()).results;
+    assert.deepEqual(paid,[{order_channel:"shop"}]);
   });
   await t.test("支払後のカード保存失敗は，お試しを再請求せずカードだけ登録し直せる",async()=>{
     const buyer=await login("card-store-coffee@example.invalid"),id=crypto.randomUUID();

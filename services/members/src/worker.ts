@@ -283,7 +283,7 @@ export function createWorker(deliverOTP?: DeliverOTP, gatewayFactory: (env: Env)
     }
     if (storefront && url.pathname.startsWith("/api/coffee/") && request.method === "POST" && !url.pathname.endsWith("/cancel") &&
         !checkoutChannelEnabled(env, true)) return json({ error: "現在，購入の受付を停止しています．" },503);
-    if(url.pathname==="/api/coffee/enrollments"&&request.method==="POST")return json(await prepareCoffeeEnrollment(env,user,await readBody(request),gatewayFactory(env)));
+    if(url.pathname==="/api/coffee/enrollments"&&request.method==="POST")return json(await prepareCoffeeEnrollment(env,user,await readBody(request),gatewayFactory(env),storefront));
     if(url.pathname==="/api/coffee/enrollments"&&request.method==="GET"){
       const rows=(await db.prepare("SELECT * FROM coffee_enrollments WHERE auth_user_id=? ORDER BY created_at DESC LIMIT 20").bind(user.id).all<CoffeeEnrollment>()).results;
       return json({enrollments:await Promise.all(rows.map(row=>visibleCoffeeEnrollment(env,row,gatewayFactory(env))))});
