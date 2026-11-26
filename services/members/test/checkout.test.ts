@@ -344,9 +344,9 @@ test("共通Square在庫の会員決済を，実際の認証とD1で検証する
     const body = {items:single,couponCode:"PHOTO-5"};
     assert.equal((await call("/api/shop/quote",other.cookie,body)).status,400);
     const shown = await (await call("/api/shop/quote",monthly.cookie,body)).json() as {totalJpy:number};
-    assert.equal(shown.totalJpy,716);
+    assert.equal(shown.totalJpy,781);
     const start = () => prepare(monthly.cookie,{...purchase(),couponCode:"PHOTO-5"});
-    const submit = (id:string) => call(`/api/shop/checkouts/${id}/pay`,monthly.cookie,{sourceId:"cnon:synthetic-token",confirmedTotalJpy:716});
+    const submit = (id:string) => call(`/api/shop/checkouts/${id}/pay`,monthly.cookie,{sourceId:"cnon:synthetic-token",confirmedTotalJpy:781});
     decline = true;
     try {
       const failed = await start();

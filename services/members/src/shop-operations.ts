@@ -1,5 +1,6 @@
 import { allocateDiscount, BOOK_PRODUCT, memberAccess, memberQuote, STOREFRONT_PRODUCTS, type CheckoutProduct } from "./checkout.ts";
 import { InputError, normalizeEmail, requiredText } from "./eligibility.ts";
+import { COUPON_TEMPLATES, isPromotionKind } from "./coupon-templates.ts";
 import type { Env } from "./types.ts";
 
 export type FulfillmentSource = "hacksick" | "essen";
@@ -239,7 +240,7 @@ export async function issueShopCoupon(db: D1Database, actor: string, body: Recor
   const template = body.template;
   const mode = body.memberDiscountMode ?? "best";
   if (mode !== "best" && mode !== "stack") throw new InputError("会員割引との併用条件を確認してください．");
-  if (!["lt","photographer","supporter","custom"].includes(String(template))) throw new InputError("クーポンの種類を確認してください．");
+  if (template !== "custom" && !isPromotionKind(template)) throw new InputError("クーポンの種類を確認してください．");
   const code = body.code ? validKey(String(body.code).toUpperCase(), "クーポンコード", codePattern) : crypto.randomUUID().replaceAll("-", "").slice(0, 16).toUpperCase();
   if (!Array.isArray(body.skus) || !body.skus.length || body.skus.length > 100) throw new InputError("対象SKUを指定してください．");
   const skus = [...new Set(body.skus.map(sku => validKey(sku, "SKU", skuPattern)))];
@@ -248,9 +249,9 @@ export async function issueShopCoupon(db: D1Database, actor: string, body: Recor
   }
   const personal = body.email ? normalizeEmail(body.email) : null;
   if ((template === "photographer" || template === "supporter") && !personal) throw new InputError("利用する方のメールを指定してください．");
-  const percent = template === "lt" ? 10 : template === "photographer" ? 50 : template === "supporter" ? 20 : whole(body.percent, 1, 99, "割引率");
-  const budget = template === "photographer" ? 3000 * whole(body.photos, 1, 1000, "撮影枚数")
-    : template === "supporter" ? 400 : body.budgetJpy == null ? null : whole(body.budgetJpy, 1, 10000000, "累計上限");
+  const percent = template === "custom" ? whole(body.percent, 1, 99, "割引率") : COUPON_TEMPLATES[template].percent;
+  const budget = template === "photographer" ? COUPON_TEMPLATES.photographer.creditPerPhotoJpy * whole(body.photos, 1, 1000, "撮影枚数")
+    : template === "supporter" ? COUPON_TEMPLATES.supporter.maxDiscountJpy : body.budgetJpy == null ? null : whole(body.budgetJpy, 1, 10000000, "累計上限");
   if (template === "photographer" && body.costConfirmed !== true) throw new InputError("原価と配送費を確認してください．");
   const id = crypto.randomUUID();
   if (await db.prepare("SELECT id FROM shop_coupons WHERE code=?").bind(code).first()) throw new InputError("このコードはすでに使われています．");

@@ -248,10 +248,10 @@ test("実際のBetter AuthとローカルD1で会員管理を検証する", asyn
     assert.equal(value.quote.shippingJpy,500);assert.equal(value.quote.totalJpy,2152);
     assert.equal(value.afterFeeBudgetJpy,334);assert.equal(value.couponIssued,false);
     assert.equal(value.contribution.coffeeCostAssumption.provisionalCashUnitCostJpy,260);
-    const photography = await call(path, manager.cookie, { ...body, kind: "photographer", photoCount: 5, items: [{ sku: "HS-COFFEE-MOCHA-5PACK", quantity: 15 }], maxDiscountJpy: 100000 });
+    const photography = await call(path, manager.cookie, { ...body, kind: "photographer", photoCount: 5, items: [{ sku: "HS-COFFEE-MOCHA-5PACK", quantity: 22 }], maxDiscountJpy: 100000 });
     assert.equal(photography.status, 200);
     const simulated = await photography.json() as any;
-    assert.equal(simulated.quote.couponPercent, 50);
+    assert.equal(simulated.quote.couponPercent, 35);
     assert.equal(simulated.quote.couponMaxDiscountJpy, 15000);
     assert.equal(simulated.quote.discountJpy, 15000);
     assert.equal(simulated.couponIssued, false);
