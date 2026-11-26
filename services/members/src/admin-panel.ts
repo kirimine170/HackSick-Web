@@ -56,24 +56,75 @@ export const adminPanel = String.raw`
           </section>
           <section class="ops-view" data-ops-view="coupons" hidden aria-labelledby="ops-coupons-title">
             <h2 id="ops-coupons-title">クーポン</h2>
-            <div id="shop-coupon-list"></div>
-            <form id="shop-coupon-form" class="panel ops-editor">
+            <form id="shop-coupon-form" class="panel ops-editor coupon-editor">
+              <h3>クーポンを発行する</h3>
               <div class="address-grid">
-                <label>種類<select name="template"><option value="lt">LT参加者・10％</option><option value="supporter">イベント協力者・20％</option><option value="photographer">撮影協力者・50％</option><option value="custom">指定した割引率</option></select></label>
-                <label>名称<input name="label" required maxlength="80"></label>
-                <label>コード（空欄は自動生成）<input name="code" maxlength="64"></label>
-                <label>対象SKU（改行区切り）<textarea name="skus" required></textarea></label>
-                <label>利用者のメール（個別コードの場合）<input name="email" type="email"></label>
-                <label>有効期限（初期値は発行から30日）<input name="expiresAt" type="datetime-local"></label>
-                <label>割引率（％，指定する場合）<input name="percent" type="number" min="1" max="99"></label>
-                <label>全体の利用回数上限（任意）<input name="useLimit" type="number" min="1"></label>
-                <label>1人あたり利用回数（任意）<input name="accountLimit" type="number" min="1"></label>
-                <label>累計値引き上限（円，任意）<input name="budgetJpy" type="number" min="1"></label>
-                <label>撮影枚数<input name="photos" type="number" min="1"></label>
-                <label class="check"><input type="checkbox" name="costConfirmed">対象商品の原価・送料を確認済み（撮影協力者用）</label>
+                <label>種類
+                  <select name="template">
+                    <option value="lt">LT参加者・10％</option>
+                    <option value="supporter">イベント協力者・20％</option>
+                    <option value="photographer">撮影協力者・50％</option>
+                    <option value="custom">割引率を指定</option>
+                  </select>
+                </label>
+                <label>クーポン名<input name="label" required maxlength="80" placeholder="例　LT会参加特典"></label>
               </div>
-              <button>コードを発行する</button>
+              <div class="address-grid">
+                <label data-coupon-templates="custom" hidden>割引率（％）<input name="percent" type="number" min="1" max="99" required disabled></label>
+                <label data-coupon-templates="photographer" hidden>撮影枚数<input name="photos" type="number" min="1" max="1000" required disabled></label>
+              </div>
+              <label class="check" data-coupon-templates="photographer" hidden>
+                <input type="checkbox" name="costConfirmed" required disabled>対象商品の原価・送料を確認済み
+              </label>
+              <fieldset class="coupon-section">
+                <legend>使える人</legend>
+                <div class="coupon-audience">
+                  <label class="check"><input type="radio" name="audience" value="shared" checked>共通コード</label>
+                  <label class="check"><input type="radio" name="audience" value="personal">1人に限定</label>
+                </div>
+                <p class="small" id="coupon-audience-help">共通コードは，条件を満たすログイン済みの購入者が使えます．</p>
+                <div id="coupon-personal" hidden>
+                  <label for="coupon-recipient-search">利用者を検索</label>
+                  <div class="row">
+                    <input id="coupon-recipient-search" type="search" maxlength="100" placeholder="名前・メールアドレス・HSAP ID">
+                    <button id="coupon-search-recipient" class="ops-secondary" type="button">検索</button>
+                  </div>
+                  <p id="coupon-recipient-status" class="small" role="status"></p>
+                  <div id="coupon-recipient-results" class="coupon-options"></div>
+                  <label>利用者のログイン用メールアドレス<input name="email" type="email" maxlength="254" disabled></label>
+                  <p class="small">検索結果から選ぶか，直接入力できます．このアドレスで本人確認したアカウントで使えます．</p>
+                </div>
+              </fieldset>
+              <fieldset class="coupon-section">
+                <legend>対象商品</legend>
+                <p class="small">選んだ商品の単発購入に適用します．数量の下限はありません．カテゴリは商品を探すための絞り込みです．</p>
+                <div class="address-grid">
+                  <label>商品を検索<input id="coupon-product-query" type="search" maxlength="100" placeholder="商品名・SKU"></label>
+                  <label>表示するカテゴリ<select id="coupon-product-category"><option value="">すべて</option></select></label>
+                </div>
+                <div id="coupon-product-options" class="coupon-options">対象商品の一覧を読み込んでいます．</div>
+                <p id="coupon-products-selected" class="small" role="status"></p>
+              </fieldset>
+              <details class="coupon-more">
+                <summary>コード・期限・利用上限を指定する</summary>
+                <div class="address-grid">
+                  <label>コード（空欄は自動生成）<input name="code" maxlength="64"></label>
+                  <label>有効期限（日本時間）<input name="expiresAt" type="datetime-local"></label>
+                  <label>全体の利用回数上限<input name="useLimit" type="number" min="1" max="100000"></label>
+                  <label data-coupon-templates="custom photographer">1人あたりの利用回数上限<input name="accountLimit" type="number" min="1" max="10000000"></label>
+                  <label data-coupon-templates="lt custom">累計値引き上限（円）<input name="budgetJpy" type="number" min="1" max="10000000"></label>
+                </div>
+              </details>
+              <p id="coupon-preview" class="coupon-preview" role="status"></p>
+              <p id="coupon-issue-status" role="status"></p>
+              <button id="coupon-issue" type="submit" disabled>コードを発行する</button>
+              <div id="coupon-issued" class="coupon-preview" hidden>
+                <label>発行したコード<input id="coupon-issued-code" readonly></label>
+                <button id="coupon-copy-code" class="ops-secondary" type="button">コードをコピー</button>
+              </div>
             </form>
+            <h3>発行済みクーポン</h3>
+            <div id="shop-coupon-list"></div>
           </section>
           <section class="ops-view" data-ops-view="coffee" hidden aria-labelledby="ops-coffee-title">
             <div class="ops-heading"><h2 id="ops-coffee-title">珈琲の定期便</h2><button id="admin-coffee-refresh" class="ops-secondary" type="button">申込・支払いを照合する</button></div>

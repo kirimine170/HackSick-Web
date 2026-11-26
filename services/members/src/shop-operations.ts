@@ -119,7 +119,8 @@ export async function reserveCoupon(db: D1Database, orderId: string, userId: str
   return inserted.meta.changes === 1;
 }
 
-export async function shopSettings(db: D1Database) {
+export async function shopSettings(env: Env) {
+  const db = env.DB;
   const [products, coupons, statuses, staff] = await db.batch([
     db.prepare(`SELECT ${productSelect} FROM shop_products ORDER BY sku`),
     db.prepare(`SELECT c.*,COUNT(u.order_id) AS held_or_used,
@@ -128,7 +129,49 @@ export async function shopSettings(db: D1Database) {
     db.prepare("SELECT member_id,status_key,expires_at FROM shop_member_statuses ORDER BY member_id,status_key LIMIT 200"),
     db.prepare("SELECT email,enabled FROM shop_fulfillment_staff ORDER BY email"),
   ]);
-  return { products: products.results, coupons: coupons.results, statuses: statuses.results, staff: staff.results };
+  const rows = products.results as ShopProduct[];
+  const partnerActive = Boolean(env.ESSEN_BASE_URL && env.ESSEN_LOCATION_ID && env.ESSEN_LOCATION_ID !== env.SQUARE_LOCATION_ID);
+  const couponProducts = [
+    ...STOREFRONT_PRODUCTS.map(({ sku, name, bags, unitPriceJpy }) => ({
+      sku, name, unitPriceJpy, category: bags > 0 ? "珈琲" : "書籍", selectable: true,
+    })),
+    ...rows.map(row => {
+      const { sku, name, category, unitPriceJpy } = visibleShopProduct(row);
+      return { sku, name, category, unitPriceJpy, selectable: Boolean(row.enabled) && (row.fulfillment_source === "hacksick" || partnerActive) };
+    }),
+  ];
+  return { products: rows, coupons: coupons.results, statuses: statuses.results, staff: staff.results, couponProducts };
+}
+
+export async function searchCouponRecipients(db: D1Database, query: string) {
+  const keyword = query.trim().slice(0, 100);
+  if (!keyword) return { recipients: [], more: false };
+  const pattern = `%${keyword.replace(/[~%_]/g, "~$&")}%`;
+  const { results } = await db.prepare(`
+    WITH recipients AS (
+      SELECT u.email, COALESCE(m.display_name, NULLIF(u.name,''), u.email) AS name,
+        m.id AS member_id, m.hsap_id AS hsapId, 1 AS hasAccount
+      FROM user u
+      LEFT JOIN members m ON m.id=COALESCE(
+        (SELECT id FROM members WHERE auth_user_id=u.id),
+        (SELECT member_id FROM member_emails WHERE email=u.email COLLATE NOCASE),
+        (SELECT id FROM members WHERE claim_email=u.email COLLATE NOCASE)
+      )
+      WHERE u.emailVerified=1 AND (m.status IS NULL OR m.status='active')
+      UNION ALL
+      SELECT m.claim_email, m.display_name, m.id, m.hsap_id, 0
+      FROM members m
+      WHERE m.status='active' AND m.auth_user_id IS NULL AND NOT EXISTS (
+        SELECT 1 FROM user u WHERE u.email=m.claim_email COLLATE NOCASE AND u.emailVerified=1
+      )
+    )
+    SELECT email,name,hsapId,hasAccount FROM recipients r
+    WHERE r.name LIKE ? ESCAPE '~' OR r.email LIKE ? ESCAPE '~' OR r.hsapId LIKE ? ESCAPE '~' OR EXISTS (
+      SELECT 1 FROM member_emails a WHERE a.member_id=r.member_id AND a.email LIKE ? ESCAPE '~'
+    )
+    ORDER BY hasAccount DESC,name,email LIMIT 21
+  `).bind(pattern,pattern,pattern,pattern).all<{ email: string; name: string; hsapId: string | null; hasAccount: number }>();
+  return { recipients: results.slice(0, 20), more: results.length > 20 };
 }
 
 export function shopAudit(db: D1Database, actor: string, action: string, subject: string) {

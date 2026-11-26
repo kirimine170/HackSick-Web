@@ -1,7 +1,9 @@
+import { initializeCouponForm, type CouponProduct } from "./coupon-admin-client.ts";
+
 const byId = <T extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id) as T;
 interface ProductRow { sku:string; square_item_id:string; name:string; description:string; unitPriceJpy:number; bags:number; required_status:string|null; fulfillment_source:string; enabled:number }
-interface CouponRow { id:string; code:string; label:string; percent:number; expires_at:string; held_or_used:number; spent_jpy:number; revoked_at:string|null }
-interface Roles { products:ProductRow[]; coupons:CouponRow[]; statuses:{member_id:string;status_key:string;expires_at:string|null}[];staff:{email:string;enabled:number}[] }
+interface CouponRow { id:string; code:string; label:string; percent:number; expires_at:string; held_or_used:number; spent_jpy:number; revoked_at:string|null; allowed_skus_json:string; recipient_email:string|null; account_limit:number; use_limit:number|null; budget_jpy:number|null }
+interface Roles { products:ProductRow[]; couponProducts:CouponProduct[]; coupons:CouponRow[]; statuses:{member_id:string;status_key:string;expires_at:string|null}[];staff:{email:string;enabled:number}[] }
 async function request<T>(path: string, body?: unknown) {
   const response = await fetch(`/api/admin/shop/${path}`, body ? { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(body) } : {cache:"no-store"});
   const data = await response.json() as T & {error?:string};
@@ -28,6 +30,8 @@ function loadProduct(row: ProductRow) {
   for (const [key, value] of Object.entries(values)) (form.elements.namedItem(key) as HTMLInputElement).value = String(value);
   form.scrollIntoView({ behavior: "smooth", block: "start" });
 }
+let showCouponProducts: ReturnType<typeof initializeCouponForm>;
+
 export async function loadShopRules() {
   const data = await request<Roles>("settings");
   byId("shop-status-list").replaceChildren(...data.statuses.map(row => line(`${row.member_id} ／ ${row.status_key}${row.expires_at ? ` ／ ${new Date(row.expires_at).toLocaleString("ja-JP", {timeZone:"Asia/Tokyo"})}まで` : ""}`, {
@@ -44,8 +48,30 @@ export async function loadShopRules() {
     }
     return result;
   }));
-  byId("shop-coupon-list").replaceChildren(...data.coupons.map(row => line(`${row.code} ／ ${row.label} ${row.percent}％ ／ ${row.held_or_used}件確保・利用 ／ 累計${row.spent_jpy}円 ／ ${row.revoked_at ? "停止済み" : new Date(row.expires_at).toLocaleString("ja-JP", {timeZone:"Asia/Tokyo"}) + "まで"}`,
-    row.revoked_at ? undefined : {label:"停止",run:()=>void save("coupon",{revokeId:row.id})})));
+  if (!byId("shop-coupon-form").closest<HTMLElement>("[data-ops-view]")!.hidden) {
+    showCouponProducts(data.couponProducts);
+    const names = new Map(data.couponProducts.map(product => [product.sku, product.name]));
+    byId("shop-coupon-list").replaceChildren(...data.coupons.map(row => {
+      const state = row.revoked_at ? "停止済み" : Date.parse(row.expires_at) <= Date.now() ? "期限切れ" : "有効";
+      const applied = (JSON.parse(row.allowed_skus_json) as string[]).map(sku => names.get(sku) ?? sku);
+      const uses = row.use_limit ? `${row.held_or_used} / ${row.use_limit}回確保・利用` : `${row.held_or_used}回確保・利用`;
+      const budget = `累計${row.spent_jpy.toLocaleString("ja-JP")}円${row.budget_jpy ? ` / 上限${row.budget_jpy.toLocaleString("ja-JP")}円` : ""}`;
+      // 各利用で少なくとも1円を消費するため，累計枠で決まる回数は表示上省略する．
+      const perAccount = !row.budget_jpy || row.account_limit < row.budget_jpy ? `1人${row.account_limit.toLocaleString("ja-JP")}回まで` : "";
+      const record = line(`${row.code} ／ ${row.label} ${row.percent}％引き ／ ${state}`,
+        state === "有効" ? { label:"停止", run:()=>void save("coupon",{revokeId:row.id}) } : undefined);
+      const details = document.createElement("small");
+      details.textContent = [
+        row.recipient_email || "共通コード",
+        `対象商品　${applied.join("，")}`,
+        `${new Date(row.expires_at).toLocaleString("ja-JP", { timeZone: "Asia/Tokyo" })}まで`,
+        [uses, perAccount, budget].filter(Boolean).join(" ／ "),
+      ].join("\n");
+      details.className = "coupon-record-details";
+      record.append(details);
+      return record;
+    }));
+  }
   byId("shop-staff-list").replaceChildren(...data.staff.map(row => line(`${row.email} ／ ${row.enabled ? "有効" : "停止中"}`)));
   for (const [id, label] of [["shop-product-list", "追加した商品"], ["shop-coupon-list", "発行済みのクーポン"],
     ["shop-status-list", "販売ステータスの付与"], ["shop-staff-list", "ESSEN発送担当者"]]) {
@@ -55,16 +81,21 @@ export async function loadShopRules() {
 }
 async function save(path: string, body: Record<string, unknown>) {
   try {
-    const result = await request<{code?:string}>(path,body);
+    await request(path,body);
     await loadShopRules();
-    tell(result.code ? `発行したコード：${result.code}` : "保存しました．");
+    tell("保存しました．");
   } catch (error) { tell((error as Error).message); }
 }
 let configured = false;
 export function initializeShopRules() {
   if (configured) return;
   configured = true;
-  for (const [name,path] of [["status","status"],["product","product"],["coupon","coupon"],["staff","fulfillment-staff"]]) {
+  showCouponProducts = initializeCouponForm(
+    query => request(`coupon-recipients?q=${encodeURIComponent(query)}`),
+    body => request("coupon", body),
+    loadShopRules,
+  );
+  for (const [name,path] of [["status","status"],["product","product"],["staff","fulfillment-staff"]]) {
     const form = byId<HTMLFormElement>(`shop-${name}-form`);
     form.addEventListener("submit", async event => {
       event.preventDefault();
@@ -84,11 +115,7 @@ export function initializeShopRules() {
               reader.onload = () => resolve(String(reader.result)); reader.onerror = reject; reader.readAsDataURL(file); });
           }
         }
-        if (name === "coupon") {
-          body.skus = String(values.skus).trim().split(/\s+/);
-          body.costConfirmed = values.costConfirmed === "on";
-        }
-        for (const field of ["unitPriceJpy","bags","percent","useLimit","accountLimit","budgetJpy","photos"]) {
+        for (const field of ["unitPriceJpy","bags"]) {
           if (field in values) body[field] = values[field] === "" ? undefined : Number(values[field]);
         }
         await save(path,body);
