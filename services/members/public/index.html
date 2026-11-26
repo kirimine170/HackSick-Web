@@ -6,6 +6,7 @@
   <meta name="robots" content="noindex,nofollow">
   <title>メンバーシップ｜HackSick</title>
   <link rel="stylesheet" href="/style.css">
+  <link rel="stylesheet" href="/operations.css">
   <script type="module" src="/app.js"></script>
 </head>
 <body>
@@ -17,8 +18,9 @@
       <button type="submit">検索</button>
     </form>
     <nav aria-label="メニュー">
-      <button id="admin-toggle" hidden>運営画面</button>
-      <a id="shop-nav" href="https://shop.hacksick.com/">通常ストア ↗</a>
+      <a id="admin-toggle" href="/operations" hidden>運営画面</a>
+      <a id="account-nav" href="/" hidden>会員ページ</a>
+      <a id="shop-nav" href="/shop">会員ショップ</a>
       <a id="coffee-nav" href="#coffee" hidden>珈琲定期便</a>
       <a id="orders-nav" href="/orders" hidden>購入状況</a>
       <a id="store-sign-in" href="/login" hidden>ログイン</a>
@@ -30,12 +32,39 @@
     <p id="member-eyebrow" class="eyebrow">CREATE TOGETHER，KEEP GOING．</p>
     <h1 id="page-title">創りたいを，<br><span>続けていく．</span></h1>
     <p id="notice" role="status" aria-live="polite">ログイン状態を確認しています．</p>
+    <section id="login" class="panel auth-card" hidden aria-labelledby="login-title">
+      <div class="auth-heading">
+        <h2 id="login-title">HackSickにログイン</h2>
+        <p id="login-description">HSAPの方はHackSickのGoogleアカウントを，月額会員の方は登録済みのメールアドレスをご利用ください．</p>
+      </div>
+      <div id="login-methods">
+        <button id="google" class="auth-provider" type="button" hidden>Googleで続ける</button>
+        <p id="login-divider" class="auth-divider" hidden>またはメールで続ける</p>
+        <form id="email-form">
+          <label id="email-label" for="email">メールアドレス</label>
+          <input id="email" type="email" autocomplete="email" required maxlength="254" placeholder="name@example.com">
+          <button type="submit">確認コードを送信</button>
+        </form>
+      </div>
+      <form id="otp-form" hidden>
+        <p class="small"><strong id="login-code-email"></strong> に確認コードを送信しました．</p>
+        <label for="otp">6桁の確認コード</label>
+        <input id="otp" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" maxlength="6" placeholder="000000" required>
+        <button type="submit">ログイン</button>
+        <button id="login-change-email" class="auth-provider" type="button">メールアドレスを変更する</button>
+      </form>
+      <p id="login-message" role="status" aria-live="polite"></p>
+      <p id="login-note" class="small">確認コードの有効期限は5分です．</p>
+    </section>
+    <aside id="member-shop-benefits" hidden>
+      <p id="member-shop-pricing"></p><a id="member-shop-public" href="https://shop.hacksick.com/">一般ショップへ</a>
+    </aside>
     <section id="storefront-hero" hidden aria-labelledby="storefront-hero-title">
       <div class="store-hero-copy">
         <p>Burn the midnight oil</p>
         <h2 id="storefront-hero-title">夜更けのHackに，<br>Sickな一杯を．</h2>
         <p>イエメン・モカマタリのドリップバッグ．カップに掛けて，お湯を注ぐだけ．</p>
-        <a class="store-action" href="/?category=coffee">珈琲を見る</a>
+        <a id="storefront-coffee-link" class="store-action" href="/?category=coffee">珈琲を見る</a>
       </div>
       <img src="/images/burn-the-midnight-oil-brewing.jpg" width="1800" height="1201" alt="カップにドリップバッグを掛けて珈琲を淹れる様子" loading="lazy" decoding="async">
     </section>
@@ -47,7 +76,7 @@
     <section id="storefront-product" hidden aria-label="商品詳細"></section>
     <section id="shop-preview" class="panel shop-preview" hidden aria-labelledby="shop-preview-title">
       <a class="product-photo-link" href="/images/burn-the-midnight-oil-brewing.jpg" target="_blank" rel="noopener" aria-label="珈琲を淹れている様子の写真を拡大する"><img class="product-photo" src="/images/burn-the-midnight-oil-brewing.jpg" alt="カップに掛けたドリップバッグにお湯を注いで珈琲を淹れている様子" width="1800" height="1201" decoding="async"></a>
-      <div><p class="eyebrow">HACKSICK MEMBER SHOP</p><h2 id="shop-preview-title">夜更けのHackに，Sickな一杯を．</h2><p>Burn the midnight oil．イエメン・モカマタリのフィルター付きドリップバッグ，1袋10g．単品と5袋セットをご用意しています．</p><p id="public-member-offer"></p><a class="shop-preview-cta" href="#login">ログインして購入へ進む</a></div>
+      <div><p class="eyebrow">HACKSICK MEMBER SHOP</p><h2 id="shop-preview-title">夜更けのHackに，Sickな一杯を．</h2><p>Burn the midnight oil．イエメン・モカマタリのフィルター付きドリップバッグ，1袋10g．単品と5袋セットをご用意しています．</p><p id="public-member-offer"></p><a class="shop-preview-cta" href="/shop">会員ショップへ</a></div>
     </section>
     <section id="account" hidden aria-labelledby="account-title">
       <div class="section-label"><h2 id="account-title">あなたのメンバーシップ</h2><span id="signed-in-email"></span></div>
@@ -97,15 +126,9 @@
       <div class="section-label"><h3>定期便の管理</h3><button id="coffee-refresh" type="button">申込・支払状況を確認</button></div><div id="coffee-enrollments"></div>
       </div>
     </section>
-    <section id="login" class="panel login" hidden aria-labelledby="login-title">
-      <div><p id="login-eyebrow" class="eyebrow">MEMBER SIGN IN</p><h2 id="login-title">メンバーとしてログイン</h2><p id="login-description">HSAPの方はHackSickのGoogleアカウントを，月額会員の方は登録済みのメールアドレスをご利用ください．</p><button id="google" hidden>HackSickのGoogleアカウントで続ける</button></div>
-      <div><form id="email-form"><label id="email-label" for="email">登録済みメールアドレス</label><input id="email" type="email" autocomplete="email" required maxlength="254"><button type="submit">確認コードを送信</button></form><form id="otp-form" hidden><label for="otp">メールに届いた6桁のコード</label><input id="otp" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" maxlength="6" required><button type="submit">ログイン</button></form><p id="login-note" class="small">コードの有効期限は5分です．会員資格はログイン後に確認できます．</p></div>
-    </section>
     <section id="shop" hidden aria-labelledby="shop-title">
-      <div id="shop-heading" class="section-label"><h2 id="shop-title">会員ショップ</h2><span>夜更けのHackに，Sickな一杯を．</span></div>
+      <h2 id="shop-title" class="store-sr-only">ご購入手続き</h2>
       <p id="shop-status" role="status"></p>
-      <p id="shop-benefit-description">イエメン・モカマタリのフィルター付きドリップバッグ．有効なHSAP・月額会員は，単品・5袋セットとも単発購入の商品代金が10％引きになります．送料は割引対象外です．</p>
-      <p id="recurring-purchase-note" class="small" hidden><a href="#coffee">珈琲定期便（会員は基本料金5％引き）</a></p>
       <p id="shop-shipping-policy" class="small">国内送料500円．割引前の商品代金合計（税込・送料を除く）5,000円以上で送料無料．決済完了後5日以内を目安に出荷します．</p>
       <form id="checkout-form">
         <div id="checkout-items"><label id="checkout-source-label" hidden>発送元<select id="checkout-source"><option value="hacksick">HackSick発送</option><option value="essen">ESSEN直送</option></select></label>
@@ -137,7 +160,7 @@
         <div class="section-label"><h3 id="shop-orders-title">購入状況</h3><button id="orders-refresh" type="button">支払状況を確認</button></div><div id="shop-orders"></div>
       </section>
     </section>
-    <section id="admin" hidden aria-labelledby="admin-title"></section>
+    <section id="admin" hidden aria-labelledby="page-title"></section>
   </main>
   <footer><span>HackSick</span><a href="https://hacksick.com/privacy/">プライバシーポリシー ↗</a><a href="mailto:shop@hacksick.com">お問い合わせ ↗</a><a href="/commerce.html">特定商取引法に基づく表記</a></footer>
 </body>

@@ -1,0 +1,165 @@
+/* The member shop uses the storefront controls and HackSick brand colors. */
+#member-shop-benefits {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: .35rem 1rem;
+  margin-bottom: 1rem;
+  padding: .7rem 1rem;
+  border: 1px solid var(--line);
+  border-radius: .65rem;
+  background: white;
+  font-size: .85rem;
+}
+#member-shop-benefits p { margin: 0; font-weight: 600; }
+#member-shop-benefits a { color: var(--link); }
+.member-price {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: .15rem .55rem;
+}
+.member-price .store-category { width: 100%; color: var(--link); font-weight: 700; }
+.member-price del { color: var(--muted); font-size: .8rem; }
+
+/* Sign-in and verification are two states of the same form. */
+.auth-card {
+  width: min(100%, 470px);
+  margin: clamp(1.25rem, 4vw, 3.2rem) auto;
+  padding: clamp(1.3rem, 5vw, 2.5rem);
+  border-radius: .9rem;
+}
+.auth-heading h2 {
+  margin: 0 0 .75rem;
+  font-size: clamp(1.35rem, 4vw, 1.8rem);
+  letter-spacing: -.035em;
+}
+.auth-heading p { margin: 0 0 1.4rem; color: var(--muted); font-size: .9rem; }
+.auth-card button { width: 100%; min-height: 44px; border-radius: .45rem; }
+.auth-card input { border-radius: .45rem; min-height: 44px; }
+.auth-provider { background: white; color: var(--ink); border-color: var(--line); }
+.auth-provider:hover { background: var(--paper); border-color: var(--ink); }
+.auth-divider {
+  display: flex;
+  align-items: center;
+  gap: .7rem;
+  color: var(--muted);
+  font-size: .76rem;
+}
+.auth-divider::before, .auth-divider::after { content: ""; height: 1px; background: var(--line); flex: 1; }
+#login-note { margin: 1rem 0 0; }
+#login-message { color: #a4152b; font-size: .85rem; }
+#login-message:empty { display: none; }
+#otp { letter-spacing: .25em; font-variant-numeric: tabular-nums; }
+
+/* The operations workspace shares the storefront layout and responsive spacing. */
+.operations {
+  --ops-accent: #a80f64;
+  background-color: var(--paper);
+  background-image:
+    linear-gradient(to right, #1010140a 1px, transparent 1px),
+    linear-gradient(to bottom, #1010140a 1px, transparent 1px);
+  background-size: clamp(48px, 6vw, 88px) clamp(48px, 6vw, 88px);
+}
+.operations main { padding-top: clamp(1.5rem, 4vw, 3rem); }
+.operations #page-title { margin: 0 0 1.2rem; font-size: clamp(1.9rem, 4vw, 3rem); }
+#notice:empty, #shop-rules-message:empty, #admin-orders-status:empty { display: none; }
+.ops-layout { display: grid; grid-template-columns: minmax(9.5rem, .24fr) minmax(0, 1fr); gap: clamp(1rem, 3vw, 2rem); }
+.ops-nav {
+  display: flex;
+  align-items: stretch;
+  align-self: start;
+  flex-direction: column;
+  gap: .25rem;
+  padding: .55rem;
+  border: 1px solid var(--line);
+  border-radius: .75rem;
+  background: white;
+}
+.ops-nav a {
+  display: block;
+  border-radius: .4rem;
+  padding: .65rem .8rem;
+  font-weight: 600;
+  text-decoration: none;
+}
+.ops-nav a:hover { background: var(--paper); }
+.ops-nav a[aria-current="page"] { background: var(--ink); color: white; }
+.ops-view {
+  padding: clamp(1rem, 2.6vw, 1.7rem);
+  border: 1px solid var(--line);
+  border-radius: .75rem;
+  background: white;
+}
+.ops-view > h2, .ops-heading h2, .ops-heading h3 { margin: 0; }
+.ops-view > h3 { margin: 1.6rem 0 .65rem; font-size: 1.05rem; }
+.ops-heading { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: .7rem; }
+.ops-heading h3 { flex: 1 1 12rem; font-size: 1rem; overflow-wrap: anywhere; }
+.ops-summary, .ops-stock { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: .65rem; margin: 1rem 0; }
+.ops-stock { grid-template-columns: repeat(auto-fit, minmax(min(100%, 11rem), 1fr)); }
+.ops-metric {
+  min-width: 0;
+  min-height: 5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: .25rem;
+  padding: .7rem;
+  border: 1px solid var(--line);
+  border-radius: .55rem;
+  background: var(--paper);
+  color: var(--ink);
+  text-align: left;
+  font-size: .8rem;
+}
+.ops-metric strong { font-size: 1.5rem; font-variant-numeric: tabular-nums; }
+.ops-metric h3, .ops-metric p { margin: 0; }
+.ops-metric h3 { font-size: .9rem; }
+button.ops-metric:hover { background: white; color: var(--ops-accent); }
+button.ops-metric[aria-pressed="true"] { background: white; box-shadow: inset 0 -2px var(--ops-accent); border-color: var(--ops-accent); }
+.ops-filters { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 10rem); gap: .7rem; }
+.ops-filters label { margin-top: 0; }
+.ops-filters :is(input, select) { margin-top: .3rem; border-radius: .4rem; }
+.ops-order, .ops-setting { border: 1px solid var(--line); border-radius: .55rem; padding: .95rem; margin: .75rem 0; }
+.ops-order p { margin: .35rem 0; }
+.ops-order .ops-total { font-weight: 700; }
+.ops-state { padding: .25rem .55rem; border-radius: 99px; background: var(--paper); font-size: .74rem; font-weight: 700; }
+.ops-state[data-state="pending"] { background: #fce7f3; color: #89134e; }
+.ops-state[data-state="review"], .ops-state[data-state="held"] { background: #fef3c7; color: #733714; }
+.ops-state[data-state="shipped"] { background: #dcfce7; color: #166534; }
+.ops-empty { padding: 1.2rem .8rem; text-align: center; border: 1px dashed var(--line); border-radius: .5rem; color: var(--muted); }
+.ops-editor { margin-top: .75rem; }
+.ops-editor .address-grid { align-items: start; }
+.ops-record {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: .45rem .65rem;
+  padding: .65rem 0;
+  border-bottom: 1px solid var(--line);
+  font-size: .85rem;
+  overflow-wrap: anywhere;
+}
+.ops-record span { flex: 1 1 13rem; min-width: 0; }
+.ops-record button, .ops-secondary {
+  padding: .4rem .65rem;
+  border-color: var(--line);
+  border-radius: .4rem;
+  background: white;
+  color: var(--ink);
+  font-size: .8rem;
+}
+.ops-record button:hover, .ops-secondary:hover { background: var(--paper); color: var(--ops-accent); }
+@media (max-width: 920px) {
+  .ops-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .ops-view .admin-grid { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 700px) {
+  .ops-layout { grid-template-columns: minmax(0, 1fr); }
+  .ops-nav { flex-direction: row; flex-wrap: wrap; gap: .15rem; }
+  .ops-nav a { padding: .45rem .55rem; }
+  .ops-filters { grid-template-columns: minmax(0, 1fr); gap: 0; }
+  .ops-view .check-in-actions { flex-wrap: wrap; }
+}

@@ -10,8 +10,11 @@ async function request<T>(path: string, body?: unknown) {
 }
 const tell = (message: string) => { byId("shop-rules-message").textContent = message; };
 function line(value: string, button?: {label:string;run:()=>void}) {
-  const row = document.createElement("p");
-  row.textContent = value;
+  const row = document.createElement("div");
+  row.className = "ops-record";
+  const description = document.createElement("span");
+  description.textContent = value;
+  row.append(description);
   if (button) {
     const action = document.createElement("button");
     action.type = "button"; action.textContent = button.label; action.onclick = button.run; row.append(" ", action);
@@ -25,24 +28,35 @@ function loadProduct(row: ProductRow) {
   for (const [key, value] of Object.entries(values)) (form.elements.namedItem(key) as HTMLInputElement).value = String(value);
   form.scrollIntoView({ behavior: "smooth", block: "start" });
 }
-async function refresh() {
+export async function loadShopRules() {
   const data = await request<Roles>("settings");
   byId("shop-status-list").replaceChildren(...data.statuses.map(row => line(`${row.member_id} ／ ${row.status_key}${row.expires_at ? ` ／ ${new Date(row.expires_at).toLocaleString("ja-JP", {timeZone:"Asia/Tokyo"})}まで` : ""}`, {
     label:"解除", run:()=>void save("status",{memberId:row.member_id,status:row.status_key,enabled:false}),
   })));
   byId("shop-product-list").replaceChildren(...data.products.map(row => {
     const result = line(`${row.name} ／ ${row.sku} ／ ${row.enabled ? "有効" : "停止中"}`, {label:"設定を編集",run:()=>loadProduct(row)});
-    if (row.enabled) result.append(line("", {label:"販売停止",run:()=>void save("product",{sku:row.sku,enabled:false})}));
+    if (row.enabled) {
+      const stop = document.createElement("button");
+      stop.type = "button";
+      stop.textContent = "販売停止";
+      stop.onclick = () => void save("product", { sku: row.sku, enabled: false });
+      result.append(" ", stop);
+    }
     return result;
   }));
   byId("shop-coupon-list").replaceChildren(...data.coupons.map(row => line(`${row.code} ／ ${row.label} ${row.percent}％ ／ ${row.held_or_used}件確保・利用 ／ 累計${row.spent_jpy}円 ／ ${row.revoked_at ? "停止済み" : new Date(row.expires_at).toLocaleString("ja-JP", {timeZone:"Asia/Tokyo"}) + "まで"}`,
     row.revoked_at ? undefined : {label:"停止",run:()=>void save("coupon",{revokeId:row.id})})));
   byId("shop-staff-list").replaceChildren(...data.staff.map(row => line(`${row.email} ／ ${row.enabled ? "有効" : "停止中"}`)));
+  for (const [id, label] of [["shop-product-list", "追加した商品"], ["shop-coupon-list", "発行済みのクーポン"],
+    ["shop-status-list", "販売ステータスの付与"], ["shop-staff-list", "ESSEN発送担当者"]]) {
+    const list = byId(id);
+    if (!list.childElementCount) list.append(line(`${label}はまだありません．`));
+  }
 }
 async function save(path: string, body: Record<string, unknown>) {
   try {
     const result = await request<{code?:string}>(path,body);
-    await refresh();
+    await loadShopRules();
     tell(result.code ? `発行したコード：${result.code}` : "保存しました．");
   } catch (error) { tell((error as Error).message); }
 }
@@ -50,9 +64,6 @@ let configured = false;
 export function initializeShopRules() {
   if (configured) return;
   configured = true;
-  byId<HTMLDetailsElement>("shop-rules").addEventListener("toggle", () => {
-    if (byId<HTMLDetailsElement>("shop-rules").open) void refresh().catch(error => tell(error.message));
-  });
   for (const [name,path] of [["status","status"],["product","product"],["coupon","coupon"],["staff","fulfillment-staff"]]) {
     const form = byId<HTMLFormElement>(`shop-${name}-form`);
     form.addEventListener("submit", async event => {

@@ -129,8 +129,11 @@ export function createWorker(deliverOTP?: DeliverOTP, gatewayFactory: (env: Env)
     }
     if (!url.pathname.startsWith("/api/")) {
       if (url.pathname === "/shipping.html" || url.pathname === "/shipping.js") return json({ error: "ページが見つかりません．" }, 404);
+      if (["/operations", "/shop"].includes(url.pathname)) {
+        return storefront ? json({ error: "ページが見つかりません．" }, 404) : env.ASSETS.fetch(new Request(new URL("/", url), request));
+      }
       if (/^\/products\/[A-Z0-9_-]{1,64}$/.test(url.pathname) ||
-          (storefront && ["/cart", "/checkout", "/orders", "/coffee", "/login"].includes(url.pathname))) {
+          ["/cart", "/checkout", "/orders", "/coffee", "/login"].includes(url.pathname)) {
         const page = await env.ASSETS.fetch(new Request(new URL("/", url), request));
         return storefront ? storefrontMetadata(page, url) : page;
       }
@@ -142,7 +145,7 @@ export function createWorker(deliverOTP?: DeliverOTP, gatewayFactory: (env: Env)
     }
     if (url.pathname === "/api/square/oauth/callback" && request.method === "GET") {
       await finishSquareAuthorization(env, url);
-      return Response.redirect(`${origin}/?square=connected`, 303);
+      return Response.redirect(`${origin}/operations?view=connections&square=connected`, 303);
     }
     if (url.pathname === "/api/square/webhook" && request.method === "POST") {
       if (!env.SQUARE_WEBHOOK_SIGNATURE_KEY || env.SQUARE_WEBHOOK_URL !== `${origin}/api/square/webhook`) return json({ error: "未設定です．" }, 503);
@@ -204,7 +207,7 @@ export function createWorker(deliverOTP?: DeliverOTP, gatewayFactory: (env: Env)
         { headers: { "Content-Type": image.photo_type, "Cache-Control": "no-store" } });
     }
     const account = session?.user.emailVerified ? session.user : null;
-    if (storefront && url.pathname === "/api/shop/shipping-address" && request.method === "GET") {
+    if (url.pathname === "/api/shop/shipping-address" && !partner && request.method === "GET") {
       return account ? json({ shippingAddress: await lastShippingAddress(env.DB, account.id) }) : json({ error: "ログインしてください．" }, 401);
     }
     const guestRoute = storefront && (
