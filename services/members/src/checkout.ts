@@ -10,10 +10,16 @@ export const SHOP_PRODUCTS = [
   { sku: "HS-COFFEE-MOCHA-5PACK", name: "Burn the midnight oil｜ドリップバッグ 5袋セット", unitPriceJpy: 2052, bags: 5 },
 ] as const;
 export const BOOK_PRODUCT = { sku: "HS-BOOK-ANOKOTO-A5", name: "あのことの関係性について", unitPriceJpy: 1500, bags: 0 } as const;
+// 旧バージョンに戻した場合も，商品が一般公開されないよう販売ステータスを保存する．
+export const HSAP_BULK_COFFEE = { sku: "HS-COFFEE-HSAP-BULK-10PACK", requiredStatus: "hsap-bulk", maxPerOrder: 10 } as const;
 export const STOREFRONT_PRODUCTS = [...SHOP_PRODUCTS, BOOK_PRODUCT] as const;
 export class CheckoutConflict extends Error {}
 export interface CheckoutProduct { sku: string; name: string; unitPriceJpy: number; bags: number }
 export interface CartLine { sku: string; quantity: number }
+
+export function memberDiscountableSubtotal(line: { sku: string; bags: number; subtotalJpy: number }) {
+  return line.bags > 0 && line.sku !== HSAP_BULK_COFFEE.sku ? line.subtotalJpy : 0;
+}
 
 export function memberQuote(items: unknown, options: { eligible: boolean; storefront: boolean; extras?: CheckoutProduct[] } = { eligible: true, storefront: false }) {
   const products = [...(options.storefront ? STOREFRONT_PRODUCTS : SHOP_PRODUCTS), ...(options.extras ?? [])];
@@ -24,13 +30,16 @@ export function memberQuote(items: unknown, options: { eligible: boolean; storef
     const { sku, quantity } = item as CartLine;
     const product = products.find(p => p.sku === sku);
     if (!product || seen.has(sku) || !Number.isSafeInteger(quantity) || quantity < 1 || quantity > 100) throw new InputError("商品と数量を確認してください．");
+    if (sku === HSAP_BULK_COFFEE.sku && quantity > HSAP_BULK_COFFEE.maxPerOrder) {
+      throw new InputError(`この商品は1注文につき${HSAP_BULK_COFFEE.maxPerOrder}セットまで購入できます．`);
+    }
     seen.add(sku);
     const { name, unitPriceJpy, bags } = product;
     return { sku, name, unitPriceJpy, bags, quantity, subtotalJpy: unitPriceJpy * quantity };
   }).sort((a, b) => a.sku.localeCompare(b.sku));
   const subtotalJpy = lines.reduce((n, l) => n + l.subtotalJpy, 0);
   const discountPercent = options.eligible ? Number(CHECKOUT_POLICY.discountPercent) : 0;
-  const discountableJpy = lines.reduce((sum, line) => sum + (line.bags > 0 ? line.subtotalJpy : 0), 0);
+  const discountableJpy = lines.reduce((sum, line) => sum + memberDiscountableSubtotal(line), 0);
   const discountJpy = Math.round(discountableJpy * discountPercent / 100);
   const shippingJpy = subtotalJpy >= CHECKOUT_POLICY.freeShippingThresholdJpy ? 0 : CHECKOUT_POLICY.shippingFeeJpy;
   return { policyVersion: CHECKOUT_POLICY.version as string, lines, subtotalJpy, discountPercent, discountJpy, shippingJpy, totalJpy: subtotalJpy - discountJpy + shippingJpy, bags: lines.reduce((n, l) => n + l.bags * l.quantity, 0) };

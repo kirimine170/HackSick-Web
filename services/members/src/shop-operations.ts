@@ -1,4 +1,4 @@
-import { allocateDiscount, BOOK_PRODUCT, memberAccess, memberQuote, STOREFRONT_PRODUCTS, type CheckoutProduct } from "./checkout.ts";
+import { allocateDiscount, BOOK_PRODUCT, HSAP_BULK_COFFEE, memberAccess, memberDiscountableSubtotal, memberQuote, STOREFRONT_PRODUCTS, type CheckoutProduct } from "./checkout.ts";
 import { InputError, normalizeEmail, requiredText } from "./eligibility.ts";
 import { COUPON_TEMPLATES, isPromotionKind } from "./coupon-templates.ts";
 import type { Env } from "./types.ts";
@@ -58,20 +58,23 @@ function future(value: unknown) {
 
 export async function shopProducts(env: Env, userId?: string, access?: Awaited<ReturnType<typeof memberAccess>>) {
   const rows = (await env.DB.prepare(`SELECT ${productSelect} FROM shop_products WHERE enabled=1 ORDER BY sku`).all<ShopProduct>()).results;
-  if (!userId) return rows.filter(row => !row.required_status && (row.fulfillment_source === "hacksick" || (Boolean(env.ESSEN_BASE_URL) && Boolean(env.ESSEN_LOCATION_ID) && env.ESSEN_LOCATION_ID !== env.SQUARE_LOCATION_ID)));
-  const current = access ?? await memberAccess(env.DB, userId);
-  const statuses = current.benefit.eligible && current.member
+  const current = userId ? access ?? await memberAccess(env.DB, userId) : null;
+  const statuses = current?.benefit.eligible && current.member
     ? (await env.DB.prepare("SELECT status_key FROM shop_member_statuses WHERE member_id=? AND (expires_at IS NULL OR expires_at>?)")
       .bind(current.member.id, clock()).all<{ status_key: string }>()).results.map(s => s.status_key)
     : [];
-  return rows.filter(row => (!row.required_status || statuses.includes(row.required_status)) &&
+  return rows.filter(row => (row.sku === HSAP_BULK_COFFEE.sku
+    ? current?.benefit.reasons.includes("HSAP")
+    : !row.required_status || statuses.includes(row.required_status)) &&
     (row.fulfillment_source === "hacksick" || (Boolean(env.ESSEN_BASE_URL) && Boolean(env.ESSEN_LOCATION_ID) && env.ESSEN_LOCATION_ID !== env.SQUARE_LOCATION_ID)));
 }
 
 export function visibleShopProduct(row: ShopProduct) {
+  const hsapBulkCoffee = row.sku === HSAP_BULK_COFFEE.sku;
   return {
     sku: row.sku, name: row.name, unitPriceJpy: row.unitPriceJpy, bags: row.bags,
-    category: row.required_status ? "限定商品" : row.bags > 0 ? "珈琲" : "商品",
+    category: hsapBulkCoffee || row.required_status ? "限定商品" : row.bags > 0 ? "珈琲" : "商品",
+    ...(hsapBulkCoffee ? { maxPerOrder: HSAP_BULK_COFFEE.maxPerOrder, memberDiscountEligible: false } : {}),
     description: row.description, fulfillmentSource: row.fulfillment_source,
     images: row.has_photo ? [{ src: `/api/shop/media/${row.sku}`, alt: row.name }] : [],
   };
@@ -103,7 +106,7 @@ export async function quoteShopOrder(env: Env, userId: string | null, items: unk
   if (counts.personal >= coupon.account_limit || (coupon.use_limit !== null && counts.uses >= coupon.use_limit)) throw new InputError(info);
   const skus = JSON.parse(coupon.allowed_skus_json) as string[];
   const memberDiscountJpy = coupon.stack_member_discount ? quote.discountJpy : 0;
-  const memberAllocations = allocateDiscount(memberDiscountJpy, quote.lines.map(line => line.bags > 0 ? line.subtotalJpy : 0));
+  const memberAllocations = allocateDiscount(memberDiscountJpy, quote.lines.map(memberDiscountableSubtotal));
   const eligibleTotal = quote.lines.reduce((sum, line, i) => sum + (skus.includes(line.sku) ? line.subtotalJpy - memberAllocations[i] : 0), 0);
   const discount = Math.min(Math.round(eligibleTotal * coupon.percent / 100), coupon.budget_jpy === null ? Infinity : coupon.budget_jpy - counts.spent);
   if (discount <= 0) throw new InputError(info);
@@ -209,7 +212,8 @@ export async function saveShopProduct(env: Env, actor: string, body: Record<stri
   const squareId = validKey(body.squareItemId, "Square商品ID", /^[A-Za-z0-9_-]{5,64}$/);
   const old = await env.DB.prepare("SELECT fulfillment_source,square_item_id FROM shop_products WHERE sku=?").bind(sku).first<{fulfillment_source:string;square_item_id:string}>();
   if (old && (old.fulfillment_source !== source || old.square_item_id !== squareId)) throw new InputError("発送元・Square商品を変更する場合は別のSKUを使ってください．");
-  const required = body.requiredStatus ? validKey(body.requiredStatus, "対象ステータス", statusPattern) : null;
+  const required = sku === HSAP_BULK_COFFEE.sku ? HSAP_BULK_COFFEE.requiredStatus
+    : body.requiredStatus ? validKey(body.requiredStatus, "対象ステータス", statusPattern) : null;
   const photo = typeof body.photo === "string" && body.photo.length <= 700000 ? body.photo.match(/^data:(image\/jpeg|image\/png|image\/webp);base64,([A-Za-z0-9+/=]+)$/) : null;
   if (body.photo && !photo) throw new InputError("500KB以内のJPEG・PNG・WebP画像を指定してください．");
   let bytes: ArrayBuffer | null = null;

@@ -13,7 +13,8 @@ async function api<T>(path: string, body?: unknown): Promise<T> {
 interface ProductImage { src: string; alt: string; width?: number; height?: number }
 export type ShippingAddress = Record<"name" | "phone" | "postalCode" | "prefecture" | "city" | "addressLine1" | "addressLine2", string>;
 type Source = "hacksick" | "essen";
-export interface Product { fulfillmentSource?: Source; sku: string; name: string; unitPriceJpy: number; bags: number; category: string; description: string; workUrl?: string; images?: ProductImage[] }
+export interface Product { fulfillmentSource?: Source; sku: string; name: string; unitPriceJpy: number; bags: number; category: string; description: string; workUrl?: string; images?: ProductImage[]; maxPerOrder?: number; memberDiscountEligible?: boolean }
+export const maximumQuantity = (product: Product & { available: number }) => Math.min(product.maxPerOrder ?? 100, product.available);
 export interface Shop { wallets?: boolean; essenLocationId?: string; products: (Product & { available: number })[]; policy: { discountPercent: number; recurringDiscountPercent: number; recurringCheckoutEnabled: boolean }; stock: { shared: boolean; available: boolean }; eligible: boolean; canPurchase: boolean; storefront: boolean; enabled: boolean; paymentFormPreview?:boolean; environment: string; applicationId: string; locationId: string; buyerEmail: string | null; shippingAddress?: ShippingAddress | null }
 interface Quote { coupon?: { id: string }; discountLabel?: string; memberDiscountJpy?: number; fulfillmentSource?: Source; subtotalJpy: number; discountPercent: number; discountJpy: number; shippingJpy: number; totalJpy: number; fulfillmentHint?:string; lines?: { name: string; quantity: number }[] }
 interface Shipment { label?: string; trackingNumbers: string[]; shippedAt: string; trackingUrl: string }
@@ -324,7 +325,7 @@ function renderStorefrontCart() {
     const input = document.createElement("input");
     input.type = view === "cart" ? "number" : "hidden";
     input.min = "1";
-    input.max = String(Math.min(100, product.available));
+    input.max = String(maximumQuantity(product));
     input.value = String(cart.get(product.sku));
     input.dataset.sku = product.sku;
     if (view === "checkout") {
@@ -333,7 +334,7 @@ function renderStorefrontCart() {
     }
     input.addEventListener("change", () => {
       const amount = Number(input.value);
-      if (!Number.isInteger(amount) || amount < 1 || amount > 100) { input.value = String(cart.get(product.sku)); return; }
+      if (!Number.isInteger(amount) || amount < 1 || amount > (product.maxPerOrder ?? 100)) { input.value = String(cart.get(product.sku)); return; }
       cart.set(product.sku, amount);
       saveStorefrontCart(cart);
     });
@@ -344,6 +345,7 @@ function renderStorefrontCart() {
     const productLink = text("a", product.name) as HTMLAnchorElement;
     productLink.href = `/products/${product.sku}`;
     details.append(productLink, text("p", `${money(product.unitPriceJpy)}（税込）`, "small"));
+    if (product.maxPerOrder) details.append(text("p", `1注文 ${product.maxPerOrder}セットまで`, "small"));
     if (product.available < Number(input.value)) details.append(text("p", product.available ? `現在の在庫 ${product.available}点` : "在庫切れ", "small"));
     const controls = text("div", "", "store-cart-controls");
     const label = text("label", "数量", "small");
