@@ -84,6 +84,31 @@ test("共通Square在庫の会員決済を，実際の認証とD1で検証する
   });
   async function addMember(email:string,cookie:string,kind:string){const response=await call("/api/admin/members",operator.cookie,{email,displayName:"合成会員",...(kind==="HSAP"?{hsapId:"HSAP-000010"}:{})});assert.equal(response.status,201);const memberId=(await response.json() as any).id;assert.equal((await call(`/api/admin/members/${memberId}/grants`,operator.cookie,{kind,validFrom:new Date(Date.now()-86400000).toISOString(),validUntil:new Date(Date.now()+86400000).toISOString(),evidenceId:kind==="HSAP"?"HSAP-000010":"synthetic-paid-evidence",reason:"合成データで在籍・入金を確認"})).status,201);await call("/api/me",cookie);return memberId as string;}
   const hsapId=await addMember("hsap@example.invalid",hsap.cookie,"HSAP");await addMember("monthly@example.invalid",monthly.cookie,"MONTHLY");
+  await t.test("運営者だけが利用者を検索でき，台帳とログイン用メールを区別して返す", async () => {
+    const path = "/api/admin/shop/coupon-recipients";
+    const lookup = (keyword: string, cookie = operator.cookie) => call(`${path}?q=${encodeURIComponent(keyword)}`, cookie);
+    assert.equal((await lookup("monthly", "")).status, 401);
+    assert.equal((await lookup("monthly", outsider.cookie)).status, 403);
+    const viewer = await login("coupon-viewer@example.invalid");
+    await db.prepare("INSERT INTO operators VALUES (?,'viewer',?)").bind(viewer.id, new Date().toISOString()).run();
+    assert.equal((await lookup("monthly", viewer.cookie)).status, 403);
+
+    assert.equal((await call("/api/admin/members", operator.cookie, { email: "pending@example.invalid", displayName: "ログイン前の会員" })).status, 201);
+    await db.prepare("INSERT INTO member_emails VALUES (?,?,'test',?)").bind("alias@example.invalid", hsapId, new Date().toISOString()).run();
+    const recipients = async (query: string) => {
+      const response = await lookup(query);
+      assert.equal(response.status, 200, await response.clone().text());
+      assert.equal(response.headers.get("cache-control"), "no-store");
+      return (await response.json() as { recipients: { email: string; hasAccount: number }[] }).recipients;
+    };
+    assert.deepEqual(await recipients("alias@example"), [{ email: "hsap@example.invalid", name: "合成会員", hsapId: "HSAP-000010", hasAccount: 1 }]);
+    assert.deepEqual(await recipients("HSAP-000010"), await recipients("alias@example"));
+    assert.deepEqual(await recipients("ログイン前の会員"), [{ email: "pending@example.invalid", name: "ログイン前の会員", hsapId: null, hasAccount: 0 }]);
+    assert.equal((await recipients("outsider@hacksick.com"))[0]?.hasAccount, 1);
+    assert.deepEqual(await recipients(""), []);
+    assert.deepEqual(await recipients("%_"), []);
+  });
+
   const purchase=(requestId=crypto.randomUUID(),items=single)=>({requestId,items,shipping,acceptedTerms:true,discountPercent:100,totalJpy:1});
   const prepare=async(cookie=hsap.cookie,body: Record<string, unknown>=purchase())=>{const response=await call("/api/shop/checkouts",cookie,body);assert.equal(response.status,200,await response.clone().text());return await response.json() as any;};
   const pay=(id:string,cookie=hsap.cookie,sourceId="cnon:synthetic-token")=>call(`/api/shop/checkouts/${id}/pay`,cookie,{sourceId,confirmedTotalJpy:889});
@@ -293,6 +318,20 @@ test("共通Square在庫の会員決済を，実際の認証とD1で検証する
     assert.equal((await call(`/api/shop/checkouts/${order.id}/pay`,monthly.cookie,{sourceId:"cnon:synthetic-token",confirmedTotalJpy:1040})).status,403);
     assert.equal((await call(`/api/shop/media/${sku}`, monthly.cookie)).status, 404);
     assert.equal((await call("/api/shop/checkouts", monthly.cookie, purchase(crypto.randomUUID(), items))).status, 400);
+  });
+
+  await t.test("クーポン用の商品候補に通常商品と限定商品が入り，停止した商品は選べない", async () => {
+    const path = "/api/admin/shop/settings";
+    const getProducts = async () => (await (await call(path, operator.cookie)).json() as {
+      couponProducts: { sku: string; name: string; category: string; selectable: boolean }[];
+    }).couponProducts;
+    const products = await getProducts();
+    assert.deepEqual(products.filter(product => product.category === "珈琲").map(product => product.sku), skus.slice(0, 2));
+    assert.equal(products.find(product => product.category === "書籍")?.selectable, true);
+    const privateSku = products.find(product => product.category === "限定商品")!.sku;
+    assert.equal(products.find(product => product.sku === privateSku)?.selectable, true);
+    assert.equal((await call("/api/admin/shop/product", operator.cookie, { sku: privateSku, enabled: false })).status, 200);
+    assert.equal((await getProducts()).find(product => product.sku === privateSku)?.selectable, false);
   });
 
   await t.test("個人コードは照合済みアドレスに限り，決済否承認は利用枠を戻し，不明決済は照合まで保持する", async () => {

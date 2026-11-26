@@ -16,7 +16,7 @@ import { checkoutChannelEnabled, sharedInventory, prepareSharedOrder, paySharedO
 import { syncMonthlySubscriptions } from "./billing.ts";
 import { deliverOrderNotifications } from "./order-notifications.ts";
 import { readShipment, recordShipment, visibleShipment } from "./order-shipment.ts";
-import { issueShopCoupon, locationFor, quoteShopOrder, saveShopProduct, saveShopStatus, shopProducts, shopSettings, visibleShopProduct } from "./shop-operations.ts";
+import { issueShopCoupon, locationFor, quoteShopOrder, saveShopProduct, saveShopStatus, searchCouponRecipients, shopProducts, shopSettings, visibleShopProduct } from "./shop-operations.ts";
 import { essenStaff, fulfillmentOrders, saveDispatch, saveFulfillmentStaff } from "./fulfillment.ts";
 import { shopProductMedia } from "./product-media.ts";
 import { adminPanel } from "./admin-panel.ts";
@@ -390,9 +390,11 @@ export function createWorker(deliverOTP?: DeliverOTP, gatewayFactory: (env: Env)
       await sweepSharedOrders(env, gatewayFactory(env)); return json({ reconciled: true });
     }
     if (url.pathname === "/api/admin/shop/checkouts" && request.method === "GET") return json({ checkouts: await fulfillmentOrders(db, false) });
-    if (url.pathname === "/api/admin/shop/settings" && request.method === "GET") {
+    if (request.method === "GET" && ["/api/admin/shop/settings", "/api/admin/shop/coupon-recipients"].includes(url.pathname)) {
       if (operator.role !== "manager") return json({ error: "変更権限が必要です．" },403);
-      return json(await shopSettings(db));
+      return json(url.pathname.endsWith("/coupon-recipients")
+        ? await searchCouponRecipients(db, url.searchParams.get("q") ?? "")
+        : await shopSettings(env));
     }
     if (url.pathname === "/api/admin/shop/status" && request.method === "POST") {
       await saveShopStatus(db, user.id, await readBody(request)); return json({ saved: true });
