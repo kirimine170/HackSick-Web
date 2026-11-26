@@ -2,7 +2,7 @@ import { initializeCouponForm, type CouponProduct } from "./coupon-admin-client.
 
 const byId = <T extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id) as T;
 interface ProductRow { sku:string; square_item_id:string; name:string; description:string; unitPriceJpy:number; bags:number; required_status:string|null; fulfillment_source:string; enabled:number }
-interface CouponRow { id:string; code:string; label:string; percent:number; expires_at:string; held_or_used:number; spent_jpy:number; revoked_at:string|null; allowed_skus_json:string; recipient_email:string|null; account_limit:number; use_limit:number|null; budget_jpy:number|null }
+interface CouponRow { id:string; code:string; label:string; percent:number; expires_at:string; held_or_used:number; spent_jpy:number; revoked_at:string|null; allowed_skus_json:string; recipient_email:string|null; stack_member_discount:number; account_limit:number; use_limit:number|null; budget_jpy:number|null }
 interface Roles { products:ProductRow[]; couponProducts:CouponProduct[]; coupons:CouponRow[]; statuses:{member_id:string;status_key:string;expires_at:string|null}[];staff:{email:string;enabled:number}[] }
 async function request<T>(path: string, body?: unknown) {
   const response = await fetch(`/api/admin/shop/${path}`, body ? { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(body) } : {cache:"no-store"});
@@ -63,6 +63,7 @@ export async function loadShopRules() {
       const details = document.createElement("small");
       details.textContent = [
         row.recipient_email || "共通コード",
+        row.stack_member_discount ? "会員割引と併用" : "割引額が大きい方を適用",
         `対象商品　${applied.join("，")}`,
         `${new Date(row.expires_at).toLocaleString("ja-JP", { timeZone: "Asia/Tokyo" })}まで`,
         [uses, perAccount, budget].filter(Boolean).join(" ／ "),

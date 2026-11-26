@@ -15,7 +15,7 @@ export type ShippingAddress = Record<"name" | "phone" | "postalCode" | "prefectu
 type Source = "hacksick" | "essen";
 export interface Product { fulfillmentSource?: Source; sku: string; name: string; unitPriceJpy: number; bags: number; category: string; description: string; workUrl?: string; images?: ProductImage[] }
 export interface Shop { wallets?: boolean; essenLocationId?: string; products: (Product & { available: number })[]; policy: { discountPercent: number; recurringDiscountPercent: number; recurringCheckoutEnabled: boolean }; stock: { shared: boolean; available: boolean }; eligible: boolean; canPurchase: boolean; storefront: boolean; enabled: boolean; paymentFormPreview?:boolean; environment: string; applicationId: string; locationId: string; buyerEmail: string | null; shippingAddress?: ShippingAddress | null }
-interface Quote { coupon?: { id: string }; discountLabel?: string; fulfillmentSource?: Source; subtotalJpy: number; discountPercent: number; discountJpy: number; shippingJpy: number; totalJpy: number; fulfillmentHint?:string; lines?: { name: string; quantity: number }[] }
+interface Quote { coupon?: { id: string }; discountLabel?: string; memberDiscountJpy?: number; fulfillmentSource?: Source; subtotalJpy: number; discountPercent: number; discountJpy: number; shippingJpy: number; totalJpy: number; fulfillmentHint?:string; lines?: { name: string; quantity: number }[] }
 interface Shipment { label?: string; trackingNumbers: string[]; shippedAt: string; trackingUrl: string }
 interface Checkout { dispatch?: {plannedDate:string|null;held:boolean} | null; id: string; state: string; quote: Quote; expiresAt: string; shipment?: Shipment | null }
 interface AdminOrder {
@@ -161,9 +161,12 @@ async function quote() {
     return;
   }
   if (version !== revision) return;
+  const memberDiscount = data.memberDiscountJpy ?? 0;
+  const otherDiscount = data.discountJpy - memberDiscount;
   if (candidate && data.coupon) {
     rememberCoupon(candidate);
-    couponStatus(`クーポンを適用しました．${money(data.discountJpy)}引きです．`, "success");
+    const applied = `クーポンを適用しました．${money(otherDiscount)}引きです．`;
+    couponStatus(memberDiscount ? `${applied}会員割引と併用しています．` : applied, "success");
   } else if (candidate) {
     clearShopCoupon();
     if (rejected) couponStatus("この注文にはクーポンを適用できません．コードと対象商品をご確認ください．", "error");
@@ -174,7 +177,8 @@ async function quote() {
   if (view === "checkout") contents.append(...(data.lines ?? []).map(line => text("li", `${line.name} × ${line.quantity}`)));
   const dl = document.createElement("dl"); dl.className = "price-summary";
   dl.append(text("dt", "商品代金（税込）"), text("dd", money(data.subtotalJpy)));
-  if (data.discountJpy) dl.append(text("dt", data.discountLabel ?? `珈琲の会員特典${data.discountPercent}％`), text("dd", money(-data.discountJpy)));
+  if (memberDiscount) dl.append(text("dt", `珈琲の会員特典${shop.policy.discountPercent}％`), text("dd", money(-memberDiscount)));
+  if (otherDiscount) dl.append(text("dt", data.discountLabel ?? `珈琲の会員特典${data.discountPercent}％`), text("dd", money(-otherDiscount)));
   dl.append(text("dt", "送料"), text("dd", money(data.shippingJpy)), text("dt", "お支払い合計"), text("dd", money(data.totalJpy)));
   summary.replaceChildren(...(view === "checkout" ? [contents, dl] : [dl])); buttonState();
   if (view !== "cart") void prepareWallets(version, data);

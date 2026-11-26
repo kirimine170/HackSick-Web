@@ -1,4 +1,4 @@
-import { BOOK_PRODUCT, memberAccess, memberQuote, STOREFRONT_PRODUCTS, type CheckoutProduct } from "./checkout.ts";
+import { allocateDiscount, BOOK_PRODUCT, memberAccess, memberQuote, STOREFRONT_PRODUCTS, type CheckoutProduct } from "./checkout.ts";
 import { InputError, normalizeEmail, requiredText } from "./eligibility.ts";
 import type { Env } from "./types.ts";
 
@@ -18,6 +18,7 @@ interface Coupon {
   percent: number;
   allowed_skus_json: string;
   recipient_email: string | null;
+  stack_member_discount: number;
   expires_at: string;
   account_limit: number;
   use_limit: number | null;
@@ -28,6 +29,7 @@ export interface AppliedCoupon { id: string; skus: string[] }
 export type ShopQuote = ReturnType<typeof memberQuote> & {
   coupon?: AppliedCoupon;
   discountLabel?: string;
+  memberDiscountJpy?: number;
   fulfillmentSource: FulfillmentSource;
 };
 
@@ -37,6 +39,7 @@ const statusPattern = /^[a-z0-9][a-z0-9_-]{0,39}$/;
 const codePattern = /^[A-Z0-9][A-Z0-9_-]{3,63}$/;
 const productSelect = "sku,square_item_id,name,description,unit_price_jpy AS unitPriceJpy,bags,required_status,fulfillment_source,enabled,photo IS NOT NULL AS has_photo";
 const info = "現在の商品・クーポン条件を確認してください．";
+const couponFields = "c.*, EXISTS (SELECT 1 FROM shop_coupon_stacking s WHERE s.coupon_id=c.id) AS stack_member_discount";
 const validKey = (value: unknown, label: string, pattern: RegExp) => {
   const key = requiredText(value, label, 64);
   if (!pattern.test(key)) throw new InputError(`${label}を確認してください．`);
@@ -90,20 +93,26 @@ export async function quoteShopOrder(env: Env, userId: string | null, items: unk
   if (!couponSelector) return result;
   if (!userId) throw new InputError("クーポンをご利用の場合はログインしてください．");
   const coupon = "code" in couponSelector
-    ? await env.DB.prepare("SELECT * FROM shop_coupons WHERE code=?").bind(validKey(String(couponSelector.code ?? "").trim().toUpperCase(), "クーポンコード", codePattern)).first<Coupon>()
-    : await env.DB.prepare("SELECT * FROM shop_coupons WHERE id=?").bind(couponSelector.id).first<Coupon>();
+    ? await env.DB.prepare(`SELECT ${couponFields} FROM shop_coupons c WHERE c.code=?`).bind(validKey(String(couponSelector.code ?? "").trim().toUpperCase(), "クーポンコード", codePattern)).first<Coupon>()
+    : await env.DB.prepare(`SELECT ${couponFields} FROM shop_coupons c WHERE c.id=?`).bind(couponSelector.id).first<Coupon>();
   const buyer = await env.DB.prepare("SELECT email, emailVerified FROM user WHERE id=?").bind(userId).first<{ email: string; emailVerified: number }>();
   if (!coupon || coupon.revoked_at || coupon.expires_at <= clock() || !buyer?.emailVerified ||
       (coupon.recipient_email && normalizeEmail(buyer.email) !== coupon.recipient_email)) throw new InputError(info);
   const counts = await usage(env.DB, coupon.id, userId, exclude);
   if (counts.personal >= coupon.account_limit || (coupon.use_limit !== null && counts.uses >= coupon.use_limit)) throw new InputError(info);
   const skus = JSON.parse(coupon.allowed_skus_json) as string[];
-  const eligibleTotal = quote.lines.reduce((sum, line) => sum + (skus.includes(line.sku) ? line.subtotalJpy : 0), 0);
+  const memberDiscountJpy = coupon.stack_member_discount ? quote.discountJpy : 0;
+  const memberAllocations = allocateDiscount(memberDiscountJpy, quote.lines.map(line => line.bags > 0 ? line.subtotalJpy : 0));
+  const eligibleTotal = quote.lines.reduce((sum, line, i) => sum + (skus.includes(line.sku) ? line.subtotalJpy - memberAllocations[i] : 0), 0);
   const discount = Math.min(Math.round(eligibleTotal * coupon.percent / 100), coupon.budget_jpy === null ? Infinity : coupon.budget_jpy - counts.spent);
   if (discount <= 0) throw new InputError(info);
-  if (discount <= quote.discountJpy) return result;
-  return { ...result, discountPercent: coupon.percent, discountJpy: discount, discountLabel: coupon.label,
-    totalJpy: quote.subtotalJpy - discount + quote.shippingJpy, coupon: { id: coupon.id, skus } };
+  if (!coupon.stack_member_discount && discount <= quote.discountJpy) return result;
+  const discountJpy = memberDiscountJpy + discount;
+  return {
+    ...result, discountPercent: coupon.percent, discountJpy, discountLabel: coupon.label,
+    ...(memberDiscountJpy ? { memberDiscountJpy } : {}),
+    totalJpy: quote.subtotalJpy - discountJpy + quote.shippingJpy, coupon: { id: coupon.id, skus },
+  };
 }
 
 export async function reserveCoupon(db: D1Database, orderId: string, userId: string, coupon: AppliedCoupon, discountJpy: number) {
@@ -123,7 +132,7 @@ export async function shopSettings(env: Env) {
   const db = env.DB;
   const [products, coupons, statuses, staff] = await db.batch([
     db.prepare(`SELECT ${productSelect} FROM shop_products ORDER BY sku`),
-    db.prepare(`SELECT c.*,COUNT(u.order_id) AS held_or_used,
+    db.prepare(`SELECT ${couponFields},COUNT(u.order_id) AS held_or_used,
       COALESCE(SUM(CASE WHEN u.state='consumed' THEN u.discount_jpy ELSE 0 END),0) AS spent_jpy
       FROM shop_coupons c LEFT JOIN shop_coupon_uses u ON u.coupon_id=c.id GROUP BY c.id ORDER BY c.expires_at DESC LIMIT 200`),
     db.prepare("SELECT member_id,status_key,expires_at FROM shop_member_statuses ORDER BY member_id,status_key LIMIT 200"),
@@ -228,6 +237,8 @@ export async function issueShopCoupon(db: D1Database, actor: string, body: Recor
     return {};
   }
   const template = body.template;
+  const mode = body.memberDiscountMode ?? "best";
+  if (mode !== "best" && mode !== "stack") throw new InputError("会員割引との併用条件を確認してください．");
   if (!["lt","photographer","supporter","custom"].includes(String(template))) throw new InputError("クーポンの種類を確認してください．");
   const code = body.code ? validKey(String(body.code).toUpperCase(), "クーポンコード", codePattern) : crypto.randomUUID().replaceAll("-", "").slice(0, 16).toUpperCase();
   if (!Array.isArray(body.skus) || !body.skus.length || body.skus.length > 100) throw new InputError("対象SKUを指定してください．");
@@ -248,6 +259,7 @@ export async function issueShopCoupon(db: D1Database, actor: string, body: Recor
       JSON.stringify(skus), personal, body.expiresAt ? future(body.expiresAt) : new Date(Date.now() + 30 * 86400000).toISOString(),
       template === "lt" || template === "supporter" ? 1 : whole(body.accountLimit ?? (template === "photographer" ? budget : 1), 1, 10000000, "1人あたりの利用回数"),
       body.useLimit == null ? null : whole(body.useLimit, 1, 100000, "利用上限"), budget),
+    ...(mode === "stack" ? [db.prepare("INSERT INTO shop_coupon_stacking (coupon_id) VALUES (?)").bind(id)] : []),
     shopAudit(db, actor, "coupon.issue", id),
   ]);
   return { id, code };

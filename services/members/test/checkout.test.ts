@@ -4,6 +4,7 @@ import { readFile, readdir } from "node:fs/promises";
 import { Miniflare, convertV4MiniflareOptions } from "miniflare";
 import { createWorker } from "../src/worker.ts";
 import { CHECKOUT_POLICY, memberQuote, shippingRecipient } from "../src/checkout.ts";
+import { sharedOrderPayload, type SharedOrder } from "../src/shared-checkout.ts";
 import { normalizeHsapRows, HSAP_SOURCE } from "../src/hsap.ts";
 import { validSquareSignature, SquareRequestError, type SquareGateway, type SquareOrder, type SquarePayment } from "../src/square.ts";
 import type { Env } from "../src/types.ts";
@@ -363,6 +364,47 @@ test("共通Square在庫の会員決済を，実際の認証とD1で検証する
     assert.equal((await (await submit(a.id)).json() as any).state,"paid");
     assert.equal(paymentCalls,count);
     assert.equal((await db.prepare("SELECT * FROM shop_coupon_uses WHERE order_id=?").bind(a.id).first<any>()).state,"consumed");
+  });
+
+  await t.test("併用クーポンは会員割引後の対象商品に適用し，クーポン分だけを利用枠に記録する", async () => {
+    stock = 8;
+    const path = "/api/admin/shop/coupon";
+    const coupon = { template: "custom", label: "併用確認", code: "STACK-TEST", percent: 5,
+      skus: [single[0].sku], budgetJpy: 19 };
+    assert.equal((await call(path, operator.cookie, { ...coupon, memberDiscountMode: "invalid" })).status, 400);
+    const exclusive = await call(path, operator.cookie, { ...coupon, code: "BEST-TEST" });
+    assert.equal(exclusive.status, 200, await exclusive.clone().text());
+    const stacked = await call(path, operator.cookie, { ...coupon, memberDiscountMode: "stack" });
+    assert.equal(stacked.status, 200, await stacked.clone().text());
+
+    const quote = async (code: string, items = single) => {
+      const response = await call("/api/shop/quote", monthly.cookie, { items, couponCode: code });
+      assert.equal(response.status, 200, await response.clone().text());
+      return await response.json() as { discountJpy: number; memberDiscountJpy?: number; totalJpy: number; coupon?: unknown };
+    };
+    const best = await quote("BEST-TEST");
+    assert.equal(best.totalJpy, 889);
+    assert.equal(best.coupon, undefined);
+    const both = await quote(coupon.code);
+    assert.equal(both.memberDiscountJpy, 43);
+    assert.equal(both.discountJpy, 62);
+    assert.equal(both.totalJpy, 870);
+
+    const mixed = await quote(coupon.code, [...single, { sku: "HS-COFFEE-MOCHA-5PACK", quantity: 1 }]);
+    assert.equal(mixed.memberDiscountJpy, 248);
+    assert.equal(mixed.discountJpy, 267);
+    assert.equal(mixed.totalJpy, 2717);
+
+    const checkout = await prepare(monthly.cookie, { ...purchase(), couponCode: coupon.code });
+    const row = await db.prepare("SELECT * FROM member_orders WHERE id=?").bind(checkout.id).first<SharedOrder>();
+    assert.ok(row);
+    const payload = sharedOrderPayload(env, row).order;
+    assert.deepEqual(payload.discounts.map(discount => discount.amount_money.amount), [43, 19]);
+    assert.deepEqual(payload.line_items[0].applied_discounts?.map(discount => discount.discount_uid), payload.discounts.map(discount => discount.uid));
+    const paid = await call(`/api/shop/checkouts/${checkout.id}/pay`, monthly.cookie, { sourceId: "cnon:synthetic-token", confirmedTotalJpy: 870 });
+    assert.equal(paid.status, 200, await paid.clone().text());
+    assert.equal((await paid.json() as { state: string }).state, "paid");
+    assert.deepEqual(await db.prepare("SELECT discount_jpy,state FROM shop_coupon_uses WHERE order_id=?").bind(checkout.id).first(), { discount_jpy: 19, state: "consumed" });
   });
 
   await t.test("発送保留中は追跡登録せず，ESSENは許可された別ホストから担当注文だけを扱う", async () => {

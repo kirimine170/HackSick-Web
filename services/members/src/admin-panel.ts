@@ -105,6 +105,12 @@ export const adminPanel = String.raw`
                 <div id="coupon-product-options" class="coupon-options">対象商品の一覧を読み込んでいます．</div>
                 <p id="coupon-products-selected" class="small" role="status"></p>
               </fieldset>
+              <label for="coupon-member-mode">会員割引との併用</label>
+              <select id="coupon-member-mode" name="memberDiscountMode">
+                <option value="best">割引額が大きい方を使う</option>
+                <option value="stack">会員割引と併用する</option>
+              </select>
+              <p class="small">併用する場合は，会員割引を引いた後の対象商品代金にクーポンを適用します．</p>
               <details class="coupon-more">
                 <summary>コード・期限・利用上限を指定する</summary>
                 <div class="address-grid">

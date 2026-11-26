@@ -27,14 +27,19 @@ export async function deliverOrderNotifications(env:Env,transport:typeof fetch=f
     const order=await env.DB.prepare("SELECT id,state,quote_json,recipient_json,square_order_id,order_channel FROM member_orders WHERE id=?").bind(notice.order_id).first<Order>();
     const expected=notice.kind==="operator-review"?"review":"paid";
     if(!order||order.state!==expected){await env.DB.prepare("UPDATE order_notifications SET state='canceled',updated_at=? WHERE id=?").bind(time,notice.id).run();continue;}
-    const quote=JSON.parse(order.quote_json) as {totalJpy:number;discountJpy:number;shippingJpy:number;discountLabel?:string;fulfillmentHint?:string;lines:{name:string;quantity:number;bags?:number}[]};
+    const quote=JSON.parse(order.quote_json) as {totalJpy:number;discountJpy:number;shippingJpy:number;discountLabel?:string;memberDiscountJpy?:number;fulfillmentHint?:string;lines:{name:string;quantity:number;bags?:number}[]};
     const recipient=JSON.parse(order.recipient_json) as {email_address:string};
     const shipped = notice.kind === "buyer-shipped";
     const buyer = notice.kind === "buyer-paid" || shipped;
     const to=buyer?recipient.email_address:env.ORDER_NOTIFICATION_EMAIL;
     if(!to){await env.DB.prepare("UPDATE order_notifications SET state='failed',updated_at=? WHERE id=?").bind(time,notice.id).run();continue;}
     const items=quote.lines.map(line=>`${line.name} × ${line.quantity}`).join("\n");
-    const discount = quote.discountJpy ? `${quote.discountLabel ?? "会員割引"}：${quote.discountJpy}円\n` : "";
+    const memberDiscount = quote.memberDiscountJpy ?? 0;
+    const otherDiscount = quote.discountJpy - memberDiscount;
+    const discount = [
+      memberDiscount ? `会員割引：${memberDiscount}円\n` : "",
+      otherDiscount ? `${quote.discountLabel ?? "会員割引"}：${otherDiscount}円\n` : "",
+    ].join("");
     const coffeeReturns = quote.lines.some(line => line.bags !== 0) ? "食品のお客様都合による返品・交換はお受けできません．" : "";
     const purchaseUrl = order.order_channel === "shop" && env.SHOP_BASE_URL
       ? new URL(`/orders?receipt=${encodeURIComponent(order.id)}`, env.SHOP_BASE_URL).href
