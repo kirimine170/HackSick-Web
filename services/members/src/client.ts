@@ -1,7 +1,7 @@
 import { createAuthClient } from "better-auth/client";
 import { emailOTPClient } from "better-auth/client/plugins";
-import { initializeAdminShopControls, loadShop, loadShopAdmin, prefillShippingAddress } from "./shop-client.ts";
-import { configureStorefront, loadStorefront } from "./storefront-client.ts";
+import { initializeAdminShopControls, loadShopAdmin, prefillShippingAddress } from "./shop-client.ts";
+import { configureStorefront, loadStorefront, memberShopPath } from "./storefront-client.ts";
 import { MEMBER_PRICING } from "./member-pricing.ts";
 import { loadCoffee } from "./coffee-client.ts";
 import { initLtCheckIn, initMemberPass } from "./member-pass-client.ts";
@@ -9,7 +9,11 @@ import { initLtCheckIn, initMemberPass } from "./member-pass-client.ts";
 const auth = createAuthClient({ plugins: [emailOTPClient()] });
 const el = <T extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id) as T;
 const show = (id: string, visible: boolean) => { el(id).hidden = !visible; };
-const notice = (message: string) => { el("notice").textContent = message; };
+const notice = (message: string) => {
+  const loginOpen = !el("login").hidden;
+  el("notice").textContent = loginOpen ? "" : message;
+  el("login-message").textContent = loginOpen ? message : "";
+};
 const date = (value: string | null) => value ? new Intl.DateTimeFormat("ja-JP", { dateStyle: "medium", timeStyle: "short", timeZone: "Asia/Tokyo" }).format(new Date(value)) : "期限の設定なし";
 let manager = false;
 let selected: string | null = null;
@@ -17,7 +21,7 @@ let next: string | null = null;
 let email = "";
 let coffeePublicEnabled = false;
 let storefront = false;
-let storefrontUrl: string | undefined;
+let storefrontLayout = false;
 let coffeeIntent = location.hash === "#coffee" || location.hash === "#storefront-coffee";
 
 interface Grant { id: string; kind: string; valid_from: string; valid_until: string | null; revoked_at: string | null; evidence_id?: string; active?: boolean }
@@ -33,7 +37,9 @@ async function api<T>(path: string, body?: unknown): Promise<T> {
 
 const showMemberPass = initMemberPass(api);
 let showLtCheckIn: ReturnType<typeof initLtCheckIn> | undefined;
-const shopAdminIntent = location.hash === "#shop-admin";
+const operations = location.pathname === "/operations";
+const operationViews = ["orders", "products", "coupons", "coffee", "members", "lt", "connections"];
+const requestedView = new URLSearchParams(location.search).get("view") ?? "";
 
 function text(tag: string, value: string, className?: string) {
   const node = document.createElement(tag);
@@ -58,31 +64,45 @@ async function refresh() {
   const session = await auth.getSession();
   if (session.error) throw new Error("ログイン状態を確認できませんでした．接続を確認して再読み込みしてください．");
   const signedIn = Boolean(session.data);
-  if (storefront) {
+  if (storefrontLayout) {
     if (signedIn) await api<Me>("/api/me");
     await loadStorefront(signedIn, coffeePublicEnabled);
+    return;
+  }
+  if (operations) {
+    show("login", !signedIn);
+    show("logout", signedIn);
+    if (!signedIn) {
+      notice("");
+      return;
+    }
+    const me = await api<Me>("/api/me");
+    manager = me.operator === "manager";
+    if (!me.operator) {
+      notice("運営画面を開くには，運営権限のあるアカウントでログインしてください．");
+      return;
+    }
+    notice("");
+    await openAdmin();
     return;
   }
   show("login", !signedIn);
   show("shop-preview", !signedIn);
   show("logout", signedIn);
   show("account", signedIn);
-  show("shop", signedIn);
   el("public-member-offer").textContent = coffeePublicEnabled
     ? `珈琲の定期便は，初めての方もメールアドレスでお申し込みいただけます．対象会員は通常便の基本料金から${MEMBER_PRICING.recurringDiscountPercent}％引きです．`
     : `対象会員は珈琲の単発購入が${MEMBER_PRICING.oneTimeDiscountPercent}％引きです．`;
-  const shopNav = el<HTMLAnchorElement>("shop-nav");
-  shopNav.href = storefrontUrl ?? "https://shop.hacksick.com/";
   const showLocalCoffee = signedIn || coffeePublicEnabled;
   show("coffee", showLocalCoffee);
-  show("coffee-nav", showLocalCoffee || Boolean(storefrontUrl));
+  show("coffee-nav", showLocalCoffee);
   show("coffee-guest", !signedIn);
   show("coffee-member", false);
   show("coffee-public-timeline", true);
   if (!signedIn) {
     showMemberPass(false);
     showLtCheckIn?.(false);
-    notice("会員情報を確認するには，ログインしてください．");
+    notice("");
     if (coffeeIntent && !el("coffee").hidden) el("coffee").scrollIntoView();
     return;
   }
@@ -98,8 +118,8 @@ async function refresh() {
   } else {
     box.append(text("p", me.member.display_name), text("p", me.member.hsap_id ?? me.member.id, "number"), text("h3", me.member.status === "blocked" ? "会員資格の利用を停止しています．" : me.benefit.eligible ? "有効な会員資格があります．" : "現在有効な会員資格はありません．"));
     if (me.benefit.eligible) {
-      box.append(text("p", `対象特典：単発購入の商品代金${me.benefit.discountPercent}％引き．下の会員ショップからご利用ください．`, "small"));
-      const buy=text("a","会員価格で購入する") as HTMLAnchorElement;buy.href="#shop";box.append(buy);
+      box.append(text("p", `対象特典：単発購入の商品代金${me.benefit.discountPercent}％引き．会員ショップでご利用ください．`, "small"));
+      const buy=text("a","会員価格で購入する") as HTMLAnchorElement;buy.href="/shop";box.append(buy);
     }
   }
   const cards = el("qualifications"); cards.replaceChildren();
@@ -109,10 +129,12 @@ async function refresh() {
     card.append(text("span", grant.kind === "HSAP" ? "HSAP" : "HACKSICK MEMBERSHIP", "badge"), text("p", `${date(grant.valid_from)} 〜 ${date(grant.valid_until)}`), text("p", state, "small"));
     cards.append(card);
   }
-  notice("ログインしました．");
-  await Promise.all([loadShop(), loadCoffeeSection(), me.operator && shopAdminIntent ? openAdmin() : Promise.resolve()]);
-  prefillShippingAddress("coffee-form");
-  if (location.hash === "#shop") el("shop").scrollIntoView();
+  notice("");
+  await loadCoffeeSection();
+  if (showLocalCoffee) {
+    const { shippingAddress } = await api<{ shippingAddress: Parameters<typeof prefillShippingAddress>[1] }>("/api/shop/shipping-address");
+    prefillShippingAddress("coffee-form", shippingAddress);
+  }
 }
 
 async function loadCoffeeSection() {
@@ -181,29 +203,40 @@ async function detail(memberId: string) {
 }
 
 el("google").addEventListener("click", async () => {
-  try { const result = await auth.signIn.social({ provider: "google", callbackURL: shopAdminIntent ? "/#shop-admin" : coffeeIntent ? "/#coffee" : "/" }); if (result.error) notice("Googleログインを開始できませんでした．"); }
-  catch { notice("Googleログインを開始できませんでした．"); }
+  const button = el<HTMLButtonElement>("google");
+  button.disabled = true;
+  try {
+    const callbackURL = storefrontLayout || operations ? location.pathname + location.search : coffeeIntent ? "/#coffee" : "/";
+    const result = await auth.signIn.social({ provider: "google", callbackURL });
+    if (result.error) throw Error("Googleログインを開始できませんでした．");
+  } catch {
+    notice("Googleログインを開始できませんでした．");
+    button.disabled = false;
+  }
 });
 bindForm("email-form", async () => {
   email = el<HTMLInputElement>("email").value.trim();
   const result = await auth.emailOtp.sendVerificationOtp({ email, type: "sign-in" });
   if (result.error) throw new Error("コードを送信できませんでした．時間をおいて再度お試しください．");
-  show("otp-form", true); notice("確認コードを送信しました．メールをご確認ください．"); el("otp").focus();
+  show("login-methods", false);
+  show("otp-form", true);
+  el("login-code-email").textContent = email;
+  notice("");
+  el("otp").focus();
 });
 bindForm("otp-form", async () => {
   const result = await auth.signIn.emailOtp({ email, otp: el<HTMLInputElement>("otp").value });
   if (result.error) throw new Error("コードが正しくないか，有効期限が切れています．");
   await refresh();
 });
-el("logout").addEventListener("click", async () => { await auth.signOut(); location.reload(); });
-el<HTMLButtonElement>("admin-toggle").addEventListener("click", async event => {
-  const toggle = event.currentTarget as HTMLButtonElement;
-  if (!el("admin").hidden) { show("admin", false); showLtCheckIn?.(false); return; }
-  toggle.disabled = true;
-  try { await openAdmin(); }
-  catch (error) { notice((error as Error).message); }
-  finally { toggle.disabled = false; }
+el("login-change-email").addEventListener("click", () => {
+  show("otp-form", false);
+  show("login-methods", true);
+  el<HTMLFormElement>("otp-form").reset();
+  notice("");
+  el("email").focus();
 });
+el("logout").addEventListener("click", async () => { await auth.signOut(); location.reload(); });
 
 async function openAdmin() {
   const panel = el("admin");
@@ -225,28 +258,51 @@ async function openAdmin() {
     bindForm("billing-form", async body => { if (selected) { await api(`/api/admin/members/${selected}/billing-links`, body); el<HTMLFormElement>("billing-form").reset(); await detail(selected); notice("照合済み契約を登録しました．"); } });
     bindForm("status-form", async body => { if (selected) { await api(`/api/admin/members/${selected}/status`, body); await detail(selected); notice("利用状態を変更しました．"); } });
   }
+  const view = manager && operationViews.includes(requestedView) ? requestedView : manager ? "orders" : "members";
+  for (const link of panel.querySelectorAll<HTMLAnchorElement>("[data-ops-link]")) {
+    link.hidden = !manager && link.dataset.opsLink !== "members";
+    if (link.dataset.opsLink === view) link.setAttribute("aria-current", "page");
+  }
+  for (const section of panel.querySelectorAll<HTMLElement>("[data-ops-view]")) {
+    section.hidden = section.dataset.opsView !== view;
+  }
   panel.hidden = false;
   show("create-section", manager);
   show("manager-actions", manager);
-  showLtCheckIn?.(manager);
-  const shopPanel = el<HTMLDetailsElement>("shop-admin");
-  if (shopAdminIntent && manager) shopPanel.open = true;
-  await Promise.all([list(), manager ? loadShopAdmin() : Promise.resolve()]);
-  if (shopAdminIntent && manager) shopPanel.scrollIntoView();
+  show("hsap-import-section", manager);
+  showLtCheckIn?.(manager && view === "lt");
+  if (view === "members") await list();
+  else if (manager) await loadShopAdmin(view);
 }
 
 void (async () => {
   const config = await api<{ google: boolean; email: boolean; coffee?: boolean; storefront?: boolean; shopUrl?: string }>("/api/config");
   coffeePublicEnabled = config.coffee === true;
   storefront = config.storefront === true;
-  storefrontUrl = config.shopUrl;
+  if (!storefront && location.pathname === "/") {
+    const legacy = location.hash === "#shop-admin" ? "/operations" : location.hash === "#shop" ? "/shop" : null;
+    if (legacy) { location.replace(legacy); return; }
+  }
+  storefrontLayout = storefront || memberShopPath;
+  if (storefrontLayout) configureStorefront(!storefront);
+  if (!storefront && config.shopUrl) el<HTMLAnchorElement>("member-shop-public").href = config.shopUrl;
 
-  if (storefront) configureStorefront();
-  else if (coffeePublicEnabled) {
+  if (operations) {
+    document.body.classList.add("operations");
+    document.title = "ショップ運営｜HackSick";
+    el("page-title").textContent = "ショップ運営";
+    el("brand-label").textContent = "OPERATIONS";
+    el<HTMLAnchorElement>("brand-link").href = "/";
+    el("account-nav").hidden = false;
+    el("member-eyebrow").hidden = true;
+    el("login-title").textContent = "運営アカウントでログイン";
+    el("login-description").textContent = "ショップの注文・発送や会員情報を管理できます．";
+  } else if (!storefrontLayout && coffeePublicEnabled) {
     el("login-description").textContent = "HSAPの方はHackSickのGoogleアカウントをご利用ください．月額会員の方は登録済みのメールアドレスで，定期便をご希望の方は普段お使いのメールアドレスでログインできます．";
     el("email-label").textContent = "メールアドレス";
   }
   show("google", config.google);
+  show("login-divider", config.google);
   el<HTMLFormElement>("email-form").querySelector<HTMLButtonElement>("button")!.disabled = !config.email;
   await refresh();
   if (!config.google && !config.email) notice("ログインの設定が完了していません．運営へお問い合わせください．");

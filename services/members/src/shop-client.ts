@@ -1,4 +1,4 @@
-import { initializeShopRules } from "./shop-admin-rules-client.ts";
+import { initializeShopRules, loadShopRules } from "./shop-admin-rules-client.ts";
 import { readCart, writeCart } from "./storefront-cart-client.ts";
 const el = <T extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id) as T;
 const money = (n: number) => `${n.toLocaleString("ja-JP")}円`;
@@ -19,10 +19,11 @@ interface AdminOrder {
   id: string;
   state: string;
   square_order_id: string | null;
+  created_at: string;
   review_reason: string | null;
   quote_json: string;
   purchase_kind: string;
-  order_channel?: string;
+  order_channel?: "members" | "shop";
   fulfillment_source?: Source;
   planned_date?: string | null;
   hold_reason?: string | null;
@@ -49,9 +50,8 @@ let requestId = crypto.randomUUID();
 let revision = 0;
 let checkoutBusy = false;
 let initialized = false;
-let view: "member" | "cart" | "checkout" = "member";
+let view: "cart" | "checkout" = "cart";
 let currentQuote: Quote | null = null;
-const cartQuantities = new Map<string, number>();
 let card: SquareCard | null = null;
 let payments: SquarePayments | null = null;
 let cardLocation = "";
@@ -63,7 +63,6 @@ let sdkLoading: Promise<void> | null = null;
 let importSnapshot: Record<string, unknown> | null = null;
 const source = () => el<HTMLSelectElement>("checkout-source").value as Source;
 const couponCode = () => el<HTMLInputElement>("checkout-coupon").value.trim();
-const selectedProduct = () => location.pathname.match(/^\/products\/([A-Z0-9_-]{1,64})$/)?.[1];
 const quantities = () => [...el("shop-products").querySelectorAll<HTMLInputElement>("input[data-sku]")].map(input => ({ sku: input.dataset.sku!, quantity: Number(input.value) })).filter(l => l.quantity !== 0);
 const message = (value: string) => { el("checkout-message").textContent = value; };
 function buttonState() {
@@ -107,7 +106,7 @@ async function quote() {
   if (!lines.length) { el("shop-quote").replaceChildren(text("p", "数量を選ぶと，送料を含む合計金額を確認できます．")); return; }
   if (!shop.canPurchase) return;
   const summary = el("shop-quote");
-  if (view !== "member" && lines.some(line => line.quantity > (shop.products.find(p => p.sku === line.sku)?.available ?? 0))) {
+  if (lines.some(line => line.quantity > (shop.products.find(p => p.sku === line.sku)?.available ?? 0))) {
     summary.replaceChildren(text("p", "在庫数に合わせて数量を調整してください．"));
     return;
   }
@@ -164,7 +163,6 @@ export async function loadStorefrontOrders() {
 async function refreshShopState() {
   shop = await api<Shop>("/api/shop");
   el("shop-status").textContent = !shop.canPurchase ? "購入資格については運営へお問い合わせください．" : !shop.enabled ? "現在，購入受付を確認中です．" : !shop.products.some(p => p.available > 0) ? "現在在庫切れです．" : shop.environment === "sandbox" ? "テスト環境です．実際のカードでは購入しないでください．" : shop.eligible ? `珈琲の単発購入に会員特典${shop.policy.discountPercent}％を適用できます．` : "通常価格でご購入いただけます．";
-  el("shop-benefit-description").textContent = `有効なHSAP・月額会員は，珈琲の単品と5袋セットが${shop.policy.discountPercent}％引きです．`;
 }
 export function prefillShippingAddress(formId: string, address = shop?.shippingAddress) {
   if (!address) return false;
@@ -239,35 +237,6 @@ export function productGallery(product: Product, photos: ProductImage[]) {
   gallery.append(slides, controls);
   return gallery;
 }
-function productCard(product: Product, gallery = false) {
-  const node = text("article", "", "card product-card");
-  if (product.images?.length) node.append(gallery && product.images.length > 1
-    ? productGallery(product, product.images) : productPhoto(product.images[0]));
-  node.append(text("p", product.category, "small"), text("h3", product.name), text("p", product.description));
-  node.append(text("p", `${money(product.unitPriceJpy)}（税込）`));
-  if (product.workUrl) {
-    const work = text("a", "作品紹介を見る ↗") as HTMLAnchorElement;
-    work.href = product.workUrl;
-    node.append(work);
-  }
-  return node;
-}
-
-function renderCartProducts() {
-  const products = el("shop-products");
-  products.replaceChildren();
-  const sku = selectedProduct();
-  const available = shop.products.filter(product => (product.fulfillmentSource ?? "hacksick") === source());
-  const featured = available.find(product => product.sku === sku);
-  for (const product of featured ? [featured, ...available.filter(product => product !== featured)] : available) {
-    const node = productCard(product, !sku || product === featured);
-    node.classList.toggle("product-detail", product === featured);
-    node.append(text("p", shop.stock.available ? `在庫 ${product.available}${product.category === "書籍" ? "冊" : product.bags === 0 ? "点" : product.bags === 1 ? "袋" : "セット"}` : "在庫を確認中", "small"));
-    const label = document.createElement("label"); label.textContent = "数量"; const input = document.createElement("input"); input.type = "number"; input.min = "0"; input.max = String(Math.min(100, product.available)); input.step = "1"; input.value = String(Math.min(product.available, cartQuantities.get(product.sku) ?? (sku === product.sku && shop.canPurchase ? 1 : 0))); input.dataset.sku = product.sku;
-    input.disabled = !shop.canPurchase || !product.available; input.addEventListener("input", () => { cartQuantities.set(product.sku, Number(input.value)); resetAcceptance(); void quote().catch(e => message(e.message)); }); label.append(input); node.append(label); products.append(node);
-  }
-}
-
 function renderStorefrontCart() {
   const cart = readCart();
   const products = el("shop-products");
@@ -349,7 +318,7 @@ function rememberCoupon() {
   try { sessionStorage.setItem(couponKey, couponCode()); } catch { /* 遷移後に入力し直せる． */ }
 }
 
-export async function loadShop(page: typeof view = "member") {
+export async function loadShop(page: typeof view) {
   view = page;
   el<HTMLFormElement>("checkout-form").noValidate = view === "cart";
   el("shop").hidden = false;
@@ -364,23 +333,16 @@ export async function loadShop(page: typeof view = "member") {
   el("guest-benefits").hidden = !guest;
   if (guest) el("guest-benefits").querySelector("a")!.href = `/login?return=${encodeURIComponent(`/${view}${location.search}`)}`;
   el("checkout-coupon-label").hidden = guest;
-  const hasEssen = shop.products.some(p => p.fulfillmentSource === "essen");
-  el("checkout-source-label").hidden = !hasEssen;
-  el("checkout-source-note").hidden = !hasEssen;
-  el<HTMLSelectElement>("checkout-source").value = shop.products.find(p => p.sku === selectedProduct())?.fulfillmentSource ?? "hacksick";
-  if (view === "member") renderCartProducts();
-  else {
-    const selected = new URLSearchParams(location.search).get("from");
-    el<HTMLSelectElement>("checkout-source").value = selected === "essen" ? "essen" : "hacksick";
-    const hasItems = renderStorefrontCart();
-    el("checkout-shipping").hidden = view === "cart" || !hasItems;
-    el("checkout-summary-title").hidden = false;
-    el("checkout-summary").hidden = view === "checkout" && !hasItems;
-    el("checkout-items").hidden = view === "checkout" && hasItems;
-    if (!guest) {
-      try { el<HTMLInputElement>("checkout-coupon").value = sessionStorage.getItem(couponKey) ?? ""; }
-      catch { /* 入力欄はそのまま使用できる． */ }
-    }
+  const selected = new URLSearchParams(location.search).get("from");
+  el<HTMLSelectElement>("checkout-source").value = selected === "essen" ? "essen" : "hacksick";
+  const hasItems = renderStorefrontCart();
+  el("checkout-shipping").hidden = view === "cart" || !hasItems;
+  el("checkout-summary-title").hidden = false;
+  el("checkout-summary").hidden = view === "checkout" && !hasItems;
+  el("checkout-items").hidden = view === "checkout" && hasItems;
+  if (!guest) {
+    try { el<HTMLInputElement>("checkout-coupon").value = sessionStorage.getItem(couponKey) ?? ""; }
+    catch { /* 入力欄はそのまま使用できる． */ }
   }
   if (!initialized) {
     initialized = true;
@@ -396,20 +358,18 @@ export async function loadShop(page: typeof view = "member") {
     el("checkout-source").addEventListener("change", () => {
       resetAcceptance();
       ++revision; currentQuote = null; buttonState();
-      if (view === "cart") { renderStorefrontCart(); void quote(); return; }
-      renderCartProducts();
-      void loadCard().then(quote).catch(error => message(error.message));
+      renderStorefrontCart();
+      void quote();
     });
-    el("checkout-coupon").addEventListener("change", () => { if (view !== "member") rememberCoupon(); resetAcceptance(); void quote().catch(error => message(error.message)); });
+    el("checkout-coupon").addEventListener("change", () => { rememberCoupon(); resetAcceptance(); void quote().catch(error => message(error.message)); });
     for (const input of el("checkout-form").querySelectorAll<HTMLInputElement | HTMLSelectElement>(".shipping-form input:not([name=terms]),.shipping-form select")) {
       input.addEventListener("change", resetAcceptance);
     }
     el("orders-refresh").addEventListener("click", () => { void refreshOrders().catch(e => message(e.message)); });
   }
   if (view !== "cart" && prefillShippingAddress("checkout-form")) el("shipping-address-note").hidden = false;
-  if (view === "member" || (view === "checkout" && quantities().length)) await loadCard().catch(error => message(error.message));
+  if (view === "checkout" && quantities().length && shop.canPurchase) await loadCard().catch(error => message(error.message));
   await quote();
-  if (view === "member") await refreshOrders();
 }
 function resetAcceptance() {
   requestId = crypto.randomUUID();
@@ -472,34 +432,26 @@ async function completePurchase(method: SquareCard | SquareWallet, kind: "card" 
       result = await api<Checkout>(`/api/shop/checkouts/${result.id}/pay`, { sourceId: token.token, verificationToken: walletVerification?.token, confirmedTotalJpy: total });
     }
     if (result.state === "paid") {
-      if (view === "checkout") {
-        const cart = readCart();
-        for (const line of items) {
-          const remaining = (cart.get(line.sku) ?? 0) - line.quantity;
-          if (remaining > 0) cart.set(line.sku, remaining);
-          else cart.delete(line.sku);
-        }
-        try { writeCart(cart); } catch { /* 注文は支払済みのため，先に購入状況を案内する． */ }
-        el<HTMLInputElement>("checkout-coupon").value = "";
-        rememberCoupon();
-        location.assign(`/orders?receipt=${result.id}`);
-        return;
+      const cart = readCart();
+      for (const line of items) {
+        const remaining = (cart.get(line.sku) ?? 0) - line.quantity;
+        if (remaining > 0) cart.set(line.sku, remaining);
+        else cart.delete(line.sku);
       }
-      message(`ご注文を受け付けました．お支払い ${money(result.quote.totalJpy)}．受付番号 ${result.id}`);
-      resetAcceptance(); el<HTMLInputElement>("checkout-coupon").value = "";
-      for (const input of el("shop-products").querySelectorAll<HTMLInputElement>("input")) {
-        if (input.dataset.sku) cartQuantities.set(input.dataset.sku, 0);
-        input.value = "0";
-      }
-    } else if (["failed","canceled"].includes(result.state)) {
-      resetAcceptance(); message("お支払いは完了していません．購入状況を確認してからお試しください．");
-    } else if (view === "checkout") {
+      try { writeCart(cart); } catch { /* 注文は支払済みのため，先に購入状況を案内する． */ }
+      el<HTMLInputElement>("checkout-coupon").value = "";
+      rememberCoupon();
       location.assign(`/orders?receipt=${result.id}`);
       return;
-    } else message("お支払い結果を確認中です．もう一度支払わず，購入状況をご確認ください．");
+    }
+    if (!["failed", "canceled"].includes(result.state)) {
+      location.assign(`/orders?receipt=${result.id}`);
+      return;
+    }
+    resetAcceptance();
+    message("お支払いは完了していません．購入状況を確認してからお試しください．");
     await refreshShopState();
-    if (view === "member") await refreshOrders();
-  } catch (error) { message((error as Error).message); if (view === "member") await refreshOrders().catch(() => {}); }
+  } catch (error) { message((error as Error).message); }
   finally {
     checkoutBusy = false; freezeForm(false);
     el<HTMLInputElement>("checkout-email").disabled = Boolean(shop.buyerEmail);
@@ -509,15 +461,32 @@ async function completePurchase(method: SquareCard | SquareWallet, kind: "card" 
     void quote().catch(error => message(error.message));
   }
 }
-export async function loadShopAdmin() {
-  el("shop-admin").hidden = false;
-  initializeShopRules();
-  await loadAdminOrders();
+export async function loadShopAdmin(view: string) {
+  if (view === "orders") return loadAdminOrders();
+  if (view === "coffee") return loadAdminCoffee();
+  if (view === "coupons") return loadShopRules();
+  if (view === "products") {
+    await Promise.all([loadShopRules(), loadAdminStock()]);
+  }
+  if (view === "connections") {
+    await Promise.all([loadShopRules(), loadSquareConnection()]);
+  }
+}
+
+async function loadSquareConnection() {
   const square = await api<{ connected: boolean; scopes: string[] }>("/api/admin/square");
   el("square-connection-status").textContent = square.connected ? `Squareと接続済み．許可した権限：${square.scopes.join("，")}` : "Squareは未接続，または認証の有効期限が切れています．";
-  const stock = await api<{ shared: boolean; connected: boolean; products: { sku: string; available: number }[] }>("/api/admin/shop/stock");
-  el("stock-status").textContent = stock.connected ? `一般ストア・POSと同じSquare在庫を使用します．${stock.products.map(p => `${p.sku}：${p.available}`).join(" ／ ")}` : "Square接続後に共通在庫を表示します．";
-  await loadAdminCoffee();
+}
+
+async function loadAdminStock() {
+  const stock = await api<{ connected: boolean; products: { sku: string; available: number }[] }>("/api/admin/shop/stock");
+  el("stock-status").textContent = stock.connected ? "Squareの在庫を一般ショップ・会員ショップ・POSで共用しています．" : "Square接続後に共通在庫を表示します．";
+  const names: Record<string, string> = { "HS-COFFEE-MOCHA-10G": "珈琲 1袋", "HS-COFFEE-MOCHA-5PACK": "珈琲 5袋セット", "HS-BOOK-ANOKOTO-A5": "あのことの関係性について" };
+  el("admin-stock").replaceChildren(...stock.products.map(product => {
+    const card = text("article", "", "ops-metric");
+    card.append(text("h3", names[product.sku] ?? product.sku), text("strong", String(product.available)), text("p", product.sku, "small number"));
+    return card;
+  }));
 }
 async function loadAdminCoffee() {
   const result = await api<{enabled:boolean;needsAuthorization:boolean;enrollments:{id:string;member_id:string;plan_id:string;state:string;next_billing_date:string}[]}>("/api/admin/coffee");
@@ -531,31 +500,83 @@ async function loadAdminCoffee() {
     row.append(text("h3",`${names[enrollment.plan_id]??enrollment.plan_id}／${states[enrollment.state]??enrollment.state}`),text("p",`会員 ${enrollment.member_id} ／ 申込 ${enrollment.id}`,"small"),text("p",`通常便の次回決済予定 ${enrollment.next_billing_date}`,"small")); list.append(row);
   }
 }
+const orderStates: Record<string, string> = { ready: "カード確認前", paying: "決済結果を確認中", paid: "支払済み", failed: "支払失敗", canceled: "受付終了", review: "運営確認が必要" };
+const noticeStates: Record<string, string> = { pending: "送信待ち", sending: "送信処理中", sent: "配信サービス受付済み", failed: "送信要確認", canceled: "送信取消" };
+const orderFilters: Record<string, string> = { pending: "発送待ち", held: "発送保留", review: "決済確認中", shipped: "発送済み" };
+const orderDate = new Intl.DateTimeFormat("ja-JP", { dateStyle: "medium", timeStyle: "short", timeZone: "Asia/Tokyo" });
+let adminOrders: AdminOrder[] = [];
+function orderGroup(order: AdminOrder) {
+  if (order.shipment) return "shipped";
+  if (order.state === "paid") return order.hold_reason ? "held" : "pending";
+  if (["paying", "review"].includes(order.state)) return "review";
+  return "";
+}
+
 async function loadAdminOrders() {
   const { checkouts } = await api<{ checkouts: AdminOrder[] }>("/api/admin/shop/checkouts");
+  adminOrders = checkouts;
+  renderAdminOrders();
+}
+
+function renderAdminOrders() {
+  const filter = el<HTMLSelectElement>("admin-order-filter");
+  const query = el<HTMLInputElement>("admin-order-query").value.trim().normalize("NFKC").toLowerCase();
+  el("ops-order-summary").replaceChildren(...Object.entries(orderFilters).map(([key, label]) => {
+    const button = text("button", "", "ops-metric") as HTMLButtonElement;
+    button.type = "button";
+    button.setAttribute("aria-pressed", String(key === filter.value));
+    button.append(text("span", label), text("strong", String(adminOrders.filter(order => orderGroup(order) === key).length)));
+    button.addEventListener("click", () => {
+      filter.value = filter.value === key ? "all" : key;
+      renderAdminOrders();
+      el("ops-order-summary").querySelectorAll<HTMLButtonElement>("button")[Object.keys(orderFilters).indexOf(key)]?.focus();
+    });
+    return button;
+  }));
   const list = el("admin-orders");
   list.replaceChildren();
-  if (!checkouts.length) list.append(text("p", "注文の受付はありません．", "small"));
-  const orderStates: Record<string, string> = { ready: "カード確認前", paying: "決済結果を確認中", paid: "支払済み", failed: "支払失敗", canceled: "受付終了", review: "運営確認が必要" };
-  const noticeStates: Record<string, string> = { pending: "送信待ち", sending: "送信処理中", sent: "配信サービス受付済み", failed: "送信要確認", canceled: "送信取消" };
-  for (const order of checkouts) {
-    const row = text("article", "", "entry");
+  for (const order of adminOrders) {
+    const group = orderGroup(order);
+    if (filter.value !== "all" && filter.value !== group) continue;
     const quote = JSON.parse(order.quote_json) as Quote;
+    const lines = quote.lines?.map(line => `${line.name} × ${line.quantity}`).join("，") ?? "";
+    if (query && ![order.id, order.square_order_id, lines].join(" ").normalize("NFKC").toLowerCase().includes(query)) continue;
+    const row = text("article", "", "ops-order");
     const kind = order.purchase_kind === "coffee-cycle" ? "定期便" : order.purchase_kind === "coffee-trial" ? "お試し便" : "単発購入";
-    row.append(text("h3", `${order.fulfillment_source === "essen" ? "ESSEN直送" : "HackSick発送"} ／ ${kind} ／ ${orderStates[order.state] ?? order.state} ／ ${money(quote.totalJpy)}`),
-      text("p", `受付 ${order.id} ／ Square注文 ${order.square_order_id ?? "未作成"}`, "small"));
-    if (quote.lines?.length) row.append(text("p", quote.lines.map(line => `${line.name} × ${line.quantity}`).join("，"), "small"));
+    const title = text("div", "", "ops-heading");
+    const badge = text("span", orderFilters[group] ?? orderStates[order.state] ?? order.state, "ops-state");
+    badge.dataset.state = group;
+    title.append(text("h3", lines || kind), badge);
+    row.append(title, text("p", `${orderDate.format(new Date(order.created_at))} ／ ${order.order_channel === "shop" ? "一般ショップ" : "会員ショップ"} ／ ${order.fulfillment_source === "essen" ? "ESSEN直送" : "HackSick発送"} ／ ${kind}`, "small"),
+      text("p", `${money(quote.totalJpy)} ／ ${orderStates[order.state] ?? order.state}`, "ops-total"),
+      text("p", `受付 ${order.id}`, "small number"));
+    if (order.square_order_id) {
+      const square = text("a", "Squareで注文を開く ↗", "small") as HTMLAnchorElement;
+      square.href = `https://app.squareup.com/dashboard/orders/overview/${encodeURIComponent(order.square_order_id)}`;
+      square.target = "_blank";
+      square.rel = "noopener noreferrer";
+      row.append(square);
+    }
+    if (order.planned_date && !order.shipment) row.append(text("p", `発送予定日 ${order.planned_date}`, "small"));
+    if (order.hold_reason && !order.shipment) row.append(text("p", `保留理由 ${order.hold_reason}`, "small"));
     if (order.review_reason) row.append(text("p", order.review_reason === "stock-conflict" ? "共通在庫の売却状況を確認してください．" : "決済記録の確認が必要です．", "small"));
     if (order.receipt_notice_state) row.append(text("p", `注文受付メール ／ ${noticeStates[order.receipt_notice_state]}`, "small"));
     if (order.shipment) {
-      row.append(text("p", `発送済み ／ ${order.shipment.trackingNumbers.join("，")}`, "small"));
+      row.append(text("p", `お問い合わせ番号 ${order.shipment.trackingNumbers.join("，")}`, "small"));
       if (order.shipping_notice_state) row.append(text("p", `発送メール ／ ${noticeStates[order.shipping_notice_state]}`, "small"));
     } else if (order.state === "paid" && order.square_order_id) {
-      row.append(dispatchForm(order));
-      if (!order.hold_reason) row.append(shipmentForm(order));
+      const actions = document.createElement("details");
+      actions.append(text("summary", "発送予定・保留を編集"), dispatchForm(order));
+      row.append(actions);
+      if (!order.hold_reason) {
+        const shipment = document.createElement("details");
+        shipment.append(text("summary", "発送を登録する"), shipmentForm(order));
+        row.append(shipment);
+      }
     }
     list.append(row);
   }
+  if (!list.childElementCount) list.append(text("p", adminOrders.length ? "条件に一致する注文がありません．" : "注文の受付はありません．", "ops-empty"));
 }
 
 function dispatchForm(order: AdminOrder) {
@@ -592,7 +613,8 @@ function shipmentForm(order: AdminOrder) {
   submit.type = "submit";
   const status = text("p", "", "small");
   status.setAttribute("role", "status");
-  form.append(label, confirmation, submit, status);
+  form.append(text("p", "発送登録と同時に，購入者への発送メールを処理します．", "small"),
+    label, confirmation, submit, status);
   form.addEventListener("submit", async event => {
     event.preventDefault();
     submit.disabled = true;
@@ -610,7 +632,10 @@ function shipmentForm(order: AdminOrder) {
 }
 
 export function initializeAdminShopControls() {
-  el("admin-coffee-refresh").addEventListener("click",async()=>{const button=el<HTMLButtonElement>("admin-coffee-refresh");button.disabled=true;try{await api("/api/admin/coffee/reconcile",{});await loadAdminCoffee();await loadAdminOrders();}catch(error){el("admin-coffee-status").textContent=(error as Error).message;}finally{button.disabled=false;}});
+  initializeShopRules();
+  el("admin-order-filter").addEventListener("change", renderAdminOrders);
+  el("admin-order-query").addEventListener("input", renderAdminOrders);
+  el("admin-coffee-refresh").addEventListener("click",async()=>{const button=el<HTMLButtonElement>("admin-coffee-refresh");button.disabled=true;try{await api("/api/admin/coffee/reconcile",{});await loadAdminCoffee();}catch(error){el("admin-coffee-status").textContent=(error as Error).message;}finally{button.disabled=false;}});
   el("admin-orders-refresh").addEventListener("click", async () => {
     const button = el<HTMLButtonElement>("admin-orders-refresh");
     button.disabled = true;
@@ -626,7 +651,7 @@ export function initializeAdminShopControls() {
   });
   el("billing-sync").addEventListener("click",async()=>{const button=el<HTMLButtonElement>("billing-sync");button.disabled=true;try{const result=await api<{synced:{paidUntil:string|null}[]}>("/api/admin/billing/sync",{});el("billing-sync-status").textContent=`${result.synced.length}件を照合しました．支払済みの対象期間がある資格は${result.synced.filter(s=>s.paidUntil).length}件です．`;}catch(error){el("billing-sync-status").textContent=(error as Error).message;}finally{button.disabled=false;}});
   el("square-connect").addEventListener("click", async () => {
-    try { const result = await api<{ url: string }>("/api/admin/square/authorize", {}); const url = new URL(result.url); if (!["connect.squareup.com", "connect.squareupsandbox.com"].includes(url.hostname) || url.protocol !== "https:") throw new Error("接続先を確認できません．"); window.location.assign(url.href); } catch (error) { message((error as Error).message); }
+    try { const result = await api<{ url: string }>("/api/admin/square/authorize", {}); const url = new URL(result.url); if (!["connect.squareup.com", "connect.squareupsandbox.com"].includes(url.hostname) || url.protocol !== "https:") throw new Error("接続先を確認できません．"); window.location.assign(url.href); } catch (error) { el("square-connection-status").textContent = (error as Error).message; }
   });
   el("hsap-import-form").addEventListener("submit", async event => {
     event.preventDefault(); importSnapshot = null; el("hsap-import-commit").hidden = true;

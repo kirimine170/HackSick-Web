@@ -74,6 +74,11 @@ test("共通Square在庫の会員決済を，実際の認証とD1で検証する
     assert.equal(panel.status, 200);
     assert.equal(panel.headers.get("cache-control"), "no-store");
     assert.match(await panel.text(), /id="shop-coupon-form"/);
+    assert.equal(await (await call("/operations")).text(), "asset");
+    assert.equal(await (await call("/shop")).text(), "asset");
+    assert.equal((await call("/api/shop")).status, 401);
+    assert.equal((await call("/api/shop/shipping-address")).status, 401);
+    assert.deepEqual(await (await call("/api/shop/shipping-address", outsider.cookie)).json(), { shippingAddress: null });
     const page = await readFile("public/index.html", "utf8");
     assert.doesNotMatch(page, /id="shop-coupon-form"|id="hsap-import-form"/);
   });
@@ -151,6 +156,8 @@ test("共通Square在庫の会員決済を，実際の認証とD1で検証する
       assert.equal(page.status, 200);
       assert.equal(await page.text(), "asset");
     }
+    assert.equal((await shopCall("/operations")).status, 404);
+    assert.equal((await shopCall("/shop")).status, 404);
     assert.equal((await shopCall("/api/shop/checkouts")).status, 401);
     assert.equal((await shopCall("/api/me", operator.cookie)).status, 401);
     const email = "customer@example.invalid";
