@@ -2,7 +2,7 @@
 
 Cloudflare WorkersとD1上で動く，Better Authを使った会員ポータルの初版です．Google Workspaceログイン，メールの確認コード，会員情報の初回紐付け，運営による資格・支払確認済み期間の登録，Square契約IDの紐付け，変更履歴に対応します．
 
-会員ポータルは `https://members.hacksick.com/`．HSAPの確認済み3名と，Squareの実際の月額会員1名を本番D1へ取り込み済み．本番Googleログインと10％の資格判定を確認した．Square Onlineは無料プラン，既存の一般ストアを維持する．
+会員ポータルは `https://members.hacksick.com/`．HSAPの確認済み3名と，Squareの実際の月額会員1名を本番D1へ取り込み済み．本番Googleログインと10％の資格判定を確認した．一般ショップは `https://shop.hacksick.com/`．Square Onlineは無料プランのまま，切替前に受け付けた注文の処理に使う．
 
 既存のSquare商品バリエーションを参照するWeb Payments SDKのカード決済を実装し，本番の購入受付を有効にした．在庫は一般ストア・POSと共通で，会員用在庫の分割・振替はしない．Sandboxで単品・5袋セットの決済，在庫減算，再試行の重複防止を検証し，Squareから本番Webhookへの模擬通知も200 OKで受信した．運用記録はGit管理外の `ROLLOUT.md` に保管する．
 
@@ -10,9 +10,9 @@ Cloudflare WorkersとD1上で動く，Better Authを使った会員ポータル�
 
 `shop.hacksick.com` の単発購入はゲストでも利用できる．会員価格・限定商品・クーポン・定期便にはメール確認が必要．ゲストの連絡先メールは取引メールに使い，注文履歴は購入したブラウザに紐付ける．ログイン済みの購入者には，同じアカウントの支払済み注文から配送先を補完する．`members.hacksick.com` は会員価格の購入と定期便の申込・運営向け．両サイトは同じWorkerとD1を使用する．Cookieはホスト内のみで使い，SquareのWebhookとOAuthの戻り先は会員ホストに置く．公開済みの珈琲・書籍は同じSquare SKUを使用し，店舗・EC間で在庫を移さない．
 
-1. `wrangler.production.example.jsonc` を `wrangler.production.jsonc` にコピーし，既存Workerと同じD1・Squareアプリ・拠点を設定する．実設定とSecrets，運用記録，注文データはGit管理外．本番DBのバックアップと既存マイグレーション履歴を確認してから0016を適用する．
-2. HTTPSのSandboxでカード・Apple Pay・Google Pay，お試しからの定期便，注文通知，発送を実機確認する．Apple Payの検証ファイルはSquare公式配布のものを `/.well-known/apple-developer-merchantid-domain-association` で配信する．Square Developer Consoleで両ホストの登録と必要な規約の確認を行う．実機確認後，`WALLET_ENABLED=true` にする．
-3. `SHOP_BASE_URL=https://shop.hacksick.com` とWorkerのCustom Domainを設定する．現行の302はまず保持し，Appleの検証ファイルなど確認に必要なURLを対象外にして証明書を検証する．`STOREFRONT_CHECKOUT_ENABLED=false` の間は一般ショップで新しい支払いを受け付けない．
+1. `wrangler.production.example.jsonc` を `wrangler.production.jsonc` にコピーし，既存Workerと同じD1・Squareアプリ・拠点を設定する．実設定とSecrets，運用記録，注文データはGit管理外．本番DBのバックアップと既存マイグレーション履歴を確認してから0017までの未適用分を適用する．
+2. HTTPSのSandboxでカード決済，お試しからの定期便，注文通知，発送を確認する．最初の公開はカード決済で行う．Apple PayはSquare公式の検証ファイルを `/.well-known/apple-developer-merchantid-domain-association` で配信し，Square Developer Consoleで対象ホストを登録する．Apple Pay・Google Payを対応端末で検証してから `WALLET_ENABLED=true` にする．
+3. `SHOP_BASE_URL=https://shop.hacksick.com` とWorker Route `shop.hacksick.com/*` を設定する．現行のDNSレコードを使用し，切替前は302ルールを有効にしておく．`STOREFRONT_CHECKOUT_ENABLED=false` の間は一般ショップで新しい支払いを受け付けない．
 4. 切替前のSquare Online注文を抽出し，受注済みの残件を照合する．Square Online新規受付停止，302解除，`STOREFRONT_CHECKOUT_ENABLED=true`，公式サイトの作品リンクの公開を同じ切替作業で行う．旧店の残件は旧手順で完了させる．障害時は一般ショップの新規受付だけ停止し，302とSquare Online受付を戻す．その間も購入済み注文・定期便は既存IDで処理する．
 
 限定商品は「ショップの注文・発送・在庫 → 限定商品・クーポン・ESSEN担当者」で設定する．Squareで商品とSKU・価格・在庫追跡を準備し，対象ステータスを付けた人だけに販売する．既存の商品とは別のSKUを使う．クーポンは対象SKUを必ず指定し，会員割引と比べて値引きの大きい方だけを採用する．決済否承認では利用枠が戻り，結果不明では照合まで残る．返金時に消費済みの利用枠が部門承認なく自動復活することはない．
@@ -112,7 +112,7 @@ WHERE id = '<本人確認済みのuser ID>' AND emailVerified = 1;
 - 支払いを確認した注文はResendで注文受付メールを送る．配送先はSquareの注文で確認し，クリックポストを実際に引き渡した後，「運営画面 → ショップの注文・発送・在庫 → 注文と発送メール」でお問い合わせ番号を登録する．購入者へ追跡番号と日本郵便の追跡ページを案内する．送信状況は同じ画面で確認できる．Squareの発送操作でも購入者に通知されるため，APIショップの発送記録はHackSick側に統一する．
 - Square OAuthトークンはD1で暗号化する．本番では専用アプリのOAuth接続だけを使い，既存HSAPアプリや本番の個人アクセストークンへフォールバックしない．
 - 月額資格は `SQUARE_MONTHLY_PLAN_IDS` の明示されたプランだけを対象に，JPYの支払済み請求・関連注文・未返金の完了決済を照合する．日本時間の請求日とプランの請求基準日から対象期間を確定する．`ACTIVE` や `charged_through_date` 単独では付与しない．5分間隔の照合と購入直前の再確認を行う．
-- `shop.hacksick.com` → Squareの転送は維持する．会員購入は `members.hacksick.com` へ案内する．独自ログインをSquare Online無料サイト内のログインへ置き換えるものではない．
+- `shop.hacksick.com` は独自ショップを表示する．発送・在庫・限定商品・クーポンの管理は `https://members.hacksick.com/#shop-admin` から運営アカウントで開く．
 
 購入確認と運営への受付通知はResendのoutboxから送信する．配信直前に注文状態を再確認し，結果不明・在庫競合では購入者へ支払完了と断定したメールを送らない．Sandboxでは実メールを送信しない．
 
@@ -178,9 +178,9 @@ WHERE id = '<本人確認済みのuser ID>' AND emailVerified = 1;
 
 ### 一般ショップと会員ページの分離
 
-`SHOP_BASE_URL` を設定すると，そのオリジンでは一般向けカタログと購入画面を表示する．`GET /api/storefront` はログインなしで商品と定期便の通常料金を返す．単発購入と定期便の申込・管理にはメール確認が必要で，会員資格は割引判定に使う．会員ログインと購入のセッションCookieは各ホストに限定する．会員QR，LT受付，Square OAuth・Webhook，運営APIは従来どおり `AUTH_BASE_URL` 側で受ける．
+`SHOP_BASE_URL` を設定すると，そのオリジンでは一般向けカタログと購入画面を表示する．`GET /api/storefront` はログインなしで商品と定期便の通常料金を返す．単発購入はゲストでも利用できる．会員価格・限定商品・クーポン・定期便にはメール確認が必要で，会員資格は割引判定に使う．会員ログインと購入のセッションCookieは各ホストに限定する．会員QR，LT受付，Square OAuth・Webhook，運営APIは従来どおり `AUTH_BASE_URL` 側で受ける．
 
-一般ショップを公開するときは，書籍の返品条件と特商法表記をショップ内に掲載し，Workerの `SHOP_BASE_URL` と `shop.hacksick.com` のカスタムドメインを設定する．現行302を切り替え，公式サイトの書籍購入リンクも新ショップへ移す．Square商品ライブラリの同じSKUを参照するので，Square Online・POSと在庫は共通． `node scripts/test-square-sandbox.mjs --storefront` で珈琲2商品と書籍の通常価格決済・在庫減算を検証できる．
+一般ショップを公開するときは，書籍の返品条件と特商法表記をショップ内に掲載し，Workerの `SHOP_BASE_URL` と `shop.hacksick.com/*` のルートを設定する．302ルールを無効化し，公式サイトの書籍購入リンクも新ショップへ移す．Square商品ライブラリの同じSKUを参照するので，Square Online・POSと在庫は共通． `node scripts/test-square-sandbox.mjs --storefront` で珈琲2商品と書籍の通常価格決済・在庫減算を検証できる．
 - `GET /api/admin/coffee`：運営の申込一覧．住所・カードIDは返さない．
 - `POST /api/admin/coffee/reconcile`：注文・契約状態の照合だけを行う．新規請求はしない．
 
@@ -188,7 +188,7 @@ WHERE id = '<本人確認済みのuser ID>' AND emailVerified = 1;
 
 #### 注文メールと定期便の例外対応
 
-会員サイト経由の注文は，支払確定後に購入者へ受付番号・商品・支払額・出荷目安を送り，運営にも受付を通知する．実際にクリックポストへ引き渡した後，運営画面でお問い合わせ番号を登録すると，購入者に発送メールを送る．返信は `shop@hacksick.com` が受ける．Square Online経由の注文はSquare側で通知する．
+独自ショップと会員サイト経由の注文は，支払確定後に購入者へ受付番号・商品・支払額・出荷目安を送り，運営にも受付を通知する．実際にクリックポストへ引き渡した後，運営画面でお問い合わせ番号を登録すると，購入者に発送メールを送る．返信は `shop@hacksick.com` が受ける．Square Online経由の注文はSquare側で通知する．
 
 運営画面の「配信サービス受付済み」はResendが送信依頼を受理した状態．到着しない場合や「送信要確認」の場合は同じ受付番号で注文・発送の記録とResendの配信履歴を照合する．通知の不達だけを理由に再注文・再請求・再発送はしない．必要な再案内は本人へ既存注文の内容を伝える．
 

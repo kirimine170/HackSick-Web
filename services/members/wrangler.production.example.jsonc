@@ -12,6 +12,10 @@
     {
       "pattern": "members.hacksick.com",
       "custom_domain": true
+    },
+    {
+      "pattern": "shop.hacksick.com/*",
+      "zone_name": "hacksick.com"
     }
   ],
   "assets": {
@@ -34,6 +38,7 @@
   },
   "vars": {
     "AUTH_BASE_URL": "https://members.hacksick.com",
+    "SHOP_BASE_URL": "https://shop.hacksick.com",
     "GOOGLE_WORKSPACE_DOMAIN": "hacksick.com",
     "MAIL_FROM": "HackSick <noreply@notify.hacksick.com>",
     "ORDER_NOTIFICATION_EMAIL": "shop@hacksick.com",

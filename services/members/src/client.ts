@@ -1,6 +1,6 @@
 import { createAuthClient } from "better-auth/client";
 import { emailOTPClient } from "better-auth/client/plugins";
-import { loadShop, loadShopAdmin, prefillShippingAddress } from "./shop-client.ts";
+import { initializeAdminShopControls, loadShop, loadShopAdmin, prefillShippingAddress } from "./shop-client.ts";
 import { configureStorefront, loadStorefront } from "./storefront-client.ts";
 import { MEMBER_PRICING } from "./member-pricing.ts";
 import { loadCoffee } from "./coffee-client.ts";
@@ -32,7 +32,8 @@ async function api<T>(path: string, body?: unknown): Promise<T> {
 }
 
 const showMemberPass = initMemberPass(api);
-const showLtCheckIn = initLtCheckIn(api);
+let showLtCheckIn: ReturnType<typeof initLtCheckIn> | undefined;
+const shopAdminIntent = location.hash === "#shop-admin";
 
 function text(tag: string, value: string, className?: string) {
   const node = document.createElement(tag);
@@ -80,7 +81,7 @@ async function refresh() {
   show("coffee-public-timeline", true);
   if (!signedIn) {
     showMemberPass(false);
-    showLtCheckIn(false);
+    showLtCheckIn?.(false);
     notice("会員情報を確認するには，ログインしてください．");
     if (coffeeIntent && !el("coffee").hidden) el("coffee").scrollIntoView();
     return;
@@ -88,9 +89,8 @@ async function refresh() {
   const me = await api<Me>("/api/me");
   manager = me.operator === "manager";
   showMemberPass(me.benefit.eligible);
-  showLtCheckIn(manager && !el("admin").hidden);
+  showLtCheckIn?.(manager && !el("admin").hidden);
   show("admin-toggle", Boolean(me.operator));
-  show("create-section", manager); show("manager-actions", manager);
   el("signed-in-email").textContent = me.user.email;
   const box = el("membership"); box.replaceChildren();
   if (!me.member) {
@@ -110,7 +110,7 @@ async function refresh() {
     cards.append(card);
   }
   notice("ログインしました．");
-  await Promise.all([loadShop(manager), loadCoffeeSection()]);
+  await Promise.all([loadShop(), loadCoffeeSection(), me.operator && shopAdminIntent ? openAdmin() : Promise.resolve()]);
   prefillShippingAddress("coffee-form");
   if (location.hash === "#shop") el("shop").scrollIntoView();
 }
@@ -181,7 +181,7 @@ async function detail(memberId: string) {
 }
 
 el("google").addEventListener("click", async () => {
-  try { const result = await auth.signIn.social({ provider: "google", callbackURL: coffeeIntent ? "/#coffee" : "/" }); if (result.error) notice("Googleログインを開始できませんでした．"); }
+  try { const result = await auth.signIn.social({ provider: "google", callbackURL: shopAdminIntent ? "/#shop-admin" : coffeeIntent ? "/#coffee" : "/" }); if (result.error) notice("Googleログインを開始できませんでした．"); }
   catch { notice("Googleログインを開始できませんでした．"); }
 });
 bindForm("email-form", async () => {
@@ -196,22 +196,44 @@ bindForm("otp-form", async () => {
   await refresh();
 });
 el("logout").addEventListener("click", async () => { await auth.signOut(); location.reload(); });
-el("admin-toggle").addEventListener("click", () => {
-  show("admin", Boolean(el("admin").hidden));
-  showLtCheckIn(manager && !el("admin").hidden);
-  if (!el("admin").hidden) void list().catch(error => notice(error.message));
+el<HTMLButtonElement>("admin-toggle").addEventListener("click", async event => {
+  const toggle = event.currentTarget as HTMLButtonElement;
+  if (!el("admin").hidden) { show("admin", false); showLtCheckIn?.(false); return; }
+  toggle.disabled = true;
+  try { await openAdmin(); }
+  catch (error) { notice((error as Error).message); }
+  finally { toggle.disabled = false; }
 });
-bindForm("search-form", async () => { await list(); });
-el("next").addEventListener("click", () => { if (next) void list(next).catch(error => notice(error.message)); });
-bindForm("create-form", async body => { const result = await api<{ id: string }>("/api/admin/members", body); el<HTMLFormElement>("create-form").reset(); await list(); await detail(result.id); notice("会員を登録しました．資格を確認して追加してください．"); });
-bindForm("grant-form", async body => {
-  if (!selected) return;
-  const tokyo = (value: string) => value ? new Date(`${value}:00+09:00`).toISOString() : null;
-  await api(`/api/admin/members/${selected}/grants`, { ...body, validFrom: tokyo(body.validFrom), validUntil: tokyo(body.validUntil) });
-  el<HTMLFormElement>("grant-form").reset(); await detail(selected); notice("会員資格を追加しました．");
-});
-bindForm("billing-form", async body => { if (selected) { await api(`/api/admin/members/${selected}/billing-links`, body); el<HTMLFormElement>("billing-form").reset(); await detail(selected); notice("照合済み契約を登録しました．"); } });
-bindForm("status-form", async body => { if (selected) { await api(`/api/admin/members/${selected}/status`, body); await detail(selected); notice("利用状態を変更しました．"); } });
+
+async function openAdmin() {
+  const panel = el("admin");
+  if (!panel.firstElementChild) {
+    const fragment = await fetch("/api/admin/panel", { cache: "no-store" });
+    if (!fragment.ok) throw Error("運営画面を開けませんでした．運営アカウントをご確認ください．");
+    panel.innerHTML = await fragment.text();
+    showLtCheckIn = initLtCheckIn(api);
+    initializeAdminShopControls();
+    bindForm("search-form", async () => { await list(); });
+    el("next").addEventListener("click", () => { if (next) void list(next).catch(error => notice(error.message)); });
+    bindForm("create-form", async body => { const result = await api<{ id: string }>("/api/admin/members", body); el<HTMLFormElement>("create-form").reset(); await list(); await detail(result.id); notice("会員を登録しました．資格を確認して追加してください．"); });
+    bindForm("grant-form", async body => {
+      if (!selected) return;
+      const tokyo = (value: string) => value ? new Date(`${value}:00+09:00`).toISOString() : null;
+      await api(`/api/admin/members/${selected}/grants`, { ...body, validFrom: tokyo(body.validFrom), validUntil: tokyo(body.validUntil) });
+      el<HTMLFormElement>("grant-form").reset(); await detail(selected); notice("会員資格を追加しました．");
+    });
+    bindForm("billing-form", async body => { if (selected) { await api(`/api/admin/members/${selected}/billing-links`, body); el<HTMLFormElement>("billing-form").reset(); await detail(selected); notice("照合済み契約を登録しました．"); } });
+    bindForm("status-form", async body => { if (selected) { await api(`/api/admin/members/${selected}/status`, body); await detail(selected); notice("利用状態を変更しました．"); } });
+  }
+  panel.hidden = false;
+  show("create-section", manager);
+  show("manager-actions", manager);
+  showLtCheckIn?.(manager);
+  const shopPanel = el<HTMLDetailsElement>("shop-admin");
+  if (shopAdminIntent && manager) shopPanel.open = true;
+  await Promise.all([list(), manager ? loadShopAdmin() : Promise.resolve()]);
+  if (shopAdminIntent && manager) shopPanel.scrollIntoView();
+}
 
 void (async () => {
   const config = await api<{ google: boolean; email: boolean; coffee?: boolean; storefront?: boolean; shopUrl?: string }>("/api/config");

@@ -35,4 +35,5 @@ await cp("public", "dist", { recursive: true });
 const html = await readFile("public/index.html", "utf8");
 await writeFile("dist/index.html", html.replace("<!-- coffee-plan-comparison -->", comparison));
 await cp("../../public/images/works/anokoto-no-kankeisei-ni-tsuite-640.webp", "dist/images/anokoto-cover.webp");
+await cp("../../public/og.png", "dist/og.png");
 await build({ entryPoints: { app: "src/client.ts", shipping: "src/shipping-client.ts" }, outdir: "dist", bundle: true, format: "esm", target: "es2022", minify: true });

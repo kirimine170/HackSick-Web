@@ -349,7 +349,7 @@ function rememberCoupon() {
   try { sessionStorage.setItem(couponKey, couponCode()); } catch { /* 遷移後に入力し直せる． */ }
 }
 
-export async function loadShop(manager: boolean, page: typeof view = "member") {
+export async function loadShop(page: typeof view = "member") {
   view = page;
   el<HTMLFormElement>("checkout-form").noValidate = view === "cart";
   el("shop").hidden = false;
@@ -410,7 +410,6 @@ export async function loadShop(manager: boolean, page: typeof view = "member") {
   if (view === "member" || (view === "checkout" && quantities().length)) await loadCard().catch(error => message(error.message));
   await quote();
   if (view === "member") await refreshOrders();
-  if (manager) await loadShopAdmin();
 }
 function resetAcceptance() {
   requestId = crypto.randomUUID();
@@ -532,7 +531,6 @@ async function loadAdminCoffee() {
     row.append(text("h3",`${names[enrollment.plan_id]??enrollment.plan_id}／${states[enrollment.state]??enrollment.state}`),text("p",`会員 ${enrollment.member_id} ／ 申込 ${enrollment.id}`,"small"),text("p",`通常便の次回決済予定 ${enrollment.next_billing_date}`,"small")); list.append(row);
   }
 }
-el("admin-coffee-refresh").addEventListener("click",async()=>{const button=el<HTMLButtonElement>("admin-coffee-refresh");button.disabled=true;try{await api("/api/admin/coffee/reconcile",{});await loadAdminCoffee();await loadAdminOrders();}catch(error){el("admin-coffee-status").textContent=(error as Error).message;}finally{button.disabled=false;}});
 async function loadAdminOrders() {
   const { checkouts } = await api<{ checkouts: AdminOrder[] }>("/api/admin/shop/checkouts");
   const list = el("admin-orders");
@@ -611,33 +609,36 @@ function shipmentForm(order: AdminOrder) {
   return form;
 }
 
-el("admin-orders-refresh").addEventListener("click", async () => {
-  const button = el<HTMLButtonElement>("admin-orders-refresh");
-  button.disabled = true;
-  try {
-    await api("/api/admin/shop/reconcile", {});
-    await loadAdminOrders();
-    el("admin-orders-status").textContent = "注文と通知の状況を更新しました．";
-  } catch (error) {
-    el("admin-orders-status").textContent = (error as Error).message;
-  } finally {
-    button.disabled = false;
-  }
-});
-el("billing-sync").addEventListener("click",async()=>{const button=el<HTMLButtonElement>("billing-sync");button.disabled=true;try{const result=await api<{synced:{paidUntil:string|null}[]}>("/api/admin/billing/sync",{});el("billing-sync-status").textContent=`${result.synced.length}件を照合しました．支払済みの対象期間がある資格は${result.synced.filter(s=>s.paidUntil).length}件です．`;}catch(error){el("billing-sync-status").textContent=(error as Error).message;}finally{button.disabled=false;}});
-el("square-connect").addEventListener("click", async () => {
-  try { const result = await api<{ url: string }>("/api/admin/square/authorize", {}); const url = new URL(result.url); if (!["connect.squareup.com", "connect.squareupsandbox.com"].includes(url.hostname) || url.protocol !== "https:") throw new Error("接続先を確認できません．"); window.location.assign(url.href); } catch (error) { message((error as Error).message); }
-});
-el("hsap-import-form").addEventListener("submit", async event => {
-  event.preventDefault(); importSnapshot = null; el("hsap-import-commit").hidden = true;
-  try { const form = event.currentTarget as HTMLFormElement; const parsed = JSON.parse(String(new FormData(form).get("snapshot"))) as Record<string, unknown>;
-    const snapshot = { rows: parsed.rows, source: "https://docs.google.com/spreadsheets/d/1K3RDvJEdyA11cEr6c9Arf4jXgDj6edDKuKADrOzgyf0/edit" };
-    const preview = await api("/api/admin/imports/hsap", snapshot); el("hsap-preview").textContent = JSON.stringify(preview, null, 2); importSnapshot = snapshot; el("hsap-import-commit").hidden = false;
-  } catch (error) { el("hsap-preview").textContent = (error as Error).message; }
-});
-el("hsap-import-commit").addEventListener("click", async () => {
-  const button = el<HTMLButtonElement>("hsap-import-commit");
-  if (!importSnapshot || !el<HTMLInputElement>("hsap-emails-verified").checked) { el("hsap-preview").textContent = "本人のメールであることを確認してください．"; return; }
-  button.disabled = true;
-  try { const result = await api("/api/admin/imports/hsap", { ...importSnapshot, confirmed: true, emailsVerified: true }); el("hsap-preview").textContent = JSON.stringify(result, null, 2); importSnapshot = null; button.hidden = true; } catch (error) { el("hsap-preview").textContent = (error as Error).message; } finally { button.disabled = false; }
-});
+export function initializeAdminShopControls() {
+  el("admin-coffee-refresh").addEventListener("click",async()=>{const button=el<HTMLButtonElement>("admin-coffee-refresh");button.disabled=true;try{await api("/api/admin/coffee/reconcile",{});await loadAdminCoffee();await loadAdminOrders();}catch(error){el("admin-coffee-status").textContent=(error as Error).message;}finally{button.disabled=false;}});
+  el("admin-orders-refresh").addEventListener("click", async () => {
+    const button = el<HTMLButtonElement>("admin-orders-refresh");
+    button.disabled = true;
+    try {
+      await api("/api/admin/shop/reconcile", {});
+      await loadAdminOrders();
+      el("admin-orders-status").textContent = "注文と通知の状況を更新しました．";
+    } catch (error) {
+      el("admin-orders-status").textContent = (error as Error).message;
+    } finally {
+      button.disabled = false;
+    }
+  });
+  el("billing-sync").addEventListener("click",async()=>{const button=el<HTMLButtonElement>("billing-sync");button.disabled=true;try{const result=await api<{synced:{paidUntil:string|null}[]}>("/api/admin/billing/sync",{});el("billing-sync-status").textContent=`${result.synced.length}件を照合しました．支払済みの対象期間がある資格は${result.synced.filter(s=>s.paidUntil).length}件です．`;}catch(error){el("billing-sync-status").textContent=(error as Error).message;}finally{button.disabled=false;}});
+  el("square-connect").addEventListener("click", async () => {
+    try { const result = await api<{ url: string }>("/api/admin/square/authorize", {}); const url = new URL(result.url); if (!["connect.squareup.com", "connect.squareupsandbox.com"].includes(url.hostname) || url.protocol !== "https:") throw new Error("接続先を確認できません．"); window.location.assign(url.href); } catch (error) { message((error as Error).message); }
+  });
+  el("hsap-import-form").addEventListener("submit", async event => {
+    event.preventDefault(); importSnapshot = null; el("hsap-import-commit").hidden = true;
+    try { const form = event.currentTarget as HTMLFormElement; const parsed = JSON.parse(String(new FormData(form).get("snapshot"))) as Record<string, unknown>;
+      const snapshot = { rows: parsed.rows, source: "https://docs.google.com/spreadsheets/d/1K3RDvJEdyA11cEr6c9Arf4jXgDj6edDKuKADrOzgyf0/edit" };
+      const preview = await api("/api/admin/imports/hsap", snapshot); el("hsap-preview").textContent = JSON.stringify(preview, null, 2); importSnapshot = snapshot; el("hsap-import-commit").hidden = false;
+    } catch (error) { el("hsap-preview").textContent = (error as Error).message; }
+  });
+  el("hsap-import-commit").addEventListener("click", async () => {
+    const button = el<HTMLButtonElement>("hsap-import-commit");
+    if (!importSnapshot || !el<HTMLInputElement>("hsap-emails-verified").checked) { el("hsap-preview").textContent = "本人のメールであることを確認してください．"; return; }
+    button.disabled = true;
+    try { const result = await api("/api/admin/imports/hsap", { ...importSnapshot, confirmed: true, emailsVerified: true }); el("hsap-preview").textContent = JSON.stringify(result, null, 2); importSnapshot = null; button.hidden = true; } catch (error) { el("hsap-preview").textContent = (error as Error).message; } finally { button.disabled = false; }
+  });
+}

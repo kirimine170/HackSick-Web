@@ -192,7 +192,7 @@ export async function loadStorefront(signedIn: boolean, coffeeAvailable: boolean
     el("shop").dataset.view = page;
     const back = link(page === "checkout" ? "/cart" : "/", page === "checkout" ? "カートに戻る" : "買い物を続ける", "store-back");
     el("shop").prepend(back);
-    await loadShop(false, page);
+    await loadShop(page);
     return;
   }
   if (page === "orders") {

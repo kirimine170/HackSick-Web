@@ -19,6 +19,8 @@ import { readShipment, recordShipment, visibleShipment } from "./order-shipment.
 import { issueShopCoupon, locationFor, quoteShopOrder, saveShopProduct, saveShopStatus, shopProducts, shopSettings, visibleShopProduct } from "./shop-operations.ts";
 import { essenStaff, fulfillmentOrders, saveDispatch, saveFulfillmentStaff } from "./fulfillment.ts";
 import { shopProductMedia } from "./product-media.ts";
+import { adminPanel } from "./admin-panel.ts";
+import { storefrontMetadata } from "./storefront-meta.ts";
 import { coffeeShop, trialPricing, prepareCoffeeEnrollment, getCoffeeEnrollment, visibleCoffeeEnrollment, payCoffeeEnrollment, updateCoffeeCard, cancelCoffeeEnrollment, reconcileCoffeeEnrollment, sweepCoffeeEnrollments, billCoffeeSubscriptions, deliverCoffeeNotices, coffeeCapability, type CoffeeEnrollment } from "./coffee-recurring.ts";
 import { COFFEE_SUBSCRIPTIONS, previewCoffeeSubscription } from "./coffee-subscriptions.ts";
 
@@ -129,8 +131,10 @@ export function createWorker(deliverOTP?: DeliverOTP, gatewayFactory: (env: Env)
       if (url.pathname === "/shipping.html" || url.pathname === "/shipping.js") return json({ error: "ページが見つかりません．" }, 404);
       if (/^\/products\/[A-Z0-9_-]{1,64}$/.test(url.pathname) ||
           (storefront && ["/cart", "/checkout", "/orders", "/coffee", "/login"].includes(url.pathname))) {
-        return env.ASSETS.fetch(new Request(new URL("/", url), request));
+        const page = await env.ASSETS.fetch(new Request(new URL("/", url), request));
+        return storefront ? storefrontMetadata(page, url) : page;
       }
+      if (storefront && url.pathname === "/") return storefrontMetadata(await env.ASSETS.fetch(request), url);
       return env.ASSETS.fetch(request);
     }
     if (storefront && !/^\/api\/(?:me$|storefront$|auth\/|shop(?:\/|$)|coffee(?:\/|$))/.test(url.pathname)) {
@@ -334,6 +338,9 @@ export function createWorker(deliverOTP?: DeliverOTP, gatewayFactory: (env: Env)
     if (!url.pathname.startsWith("/api/admin/")) return json({ error: "ページが見つかりません．" }, 404);
     if (!operator) return json({ error: "運営権限が必要です．" }, 403);
     if (request.method !== "GET" && operator.role !== "manager") return json({ error: "変更権限が必要です．" }, 403);
+    if (url.pathname === "/api/admin/panel" && request.method === "GET") {
+      return new Response(adminPanel, { headers: { "Content-Type": "text/html; charset=utf-8" } });
+    }
 
     if (url.pathname === "/api/admin/lt/check-in" && request.method === "POST") {
       const body = await readBody(request);
@@ -370,7 +377,7 @@ export function createWorker(deliverOTP?: DeliverOTP, gatewayFactory: (env: Env)
     if (url.pathname === "/api/admin/billing/sync" && request.method === "POST") return json({ synced: await syncMonthlySubscriptions(env,gatewayFactory(env),true) });
     if (url.pathname === "/api/admin/shop/stock" && request.method === "GET") {
       if (!(env.SQUARE_ACCESS_TOKEN || (await squareConnectionStatus(env)).connected)) return json({ shared: true, connected: false, products: [] });
-      return json({ shared: true, connected: true, products: await sharedInventory(env, gatewayFactory(env)) });
+      return json({ shared: true, connected: true, products: await sharedInventory(env, gatewayFactory(env), "", Boolean(env.SHOP_BASE_URL)) });
     }
     if (url.pathname === "/api/admin/shop/stock" && request.method === "POST") {
       return json({ error: "在庫はSquareの商品ライブラリで共通管理します．" }, 410);

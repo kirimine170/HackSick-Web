@@ -67,6 +67,16 @@ test("共通Square在庫の会員決済を，実際の認証とD1で検証する
   async function login(email:string){ip++;assert.equal((await call("/api/auth/email-otp/send-verification-otp","",{email,type:"sign-in"})).status,200);const res=await call("/api/auth/sign-in/email-otp","",{email,otp:codes.get(email)});assert.equal(res.status,200);const user=(await res.json() as any).user;return{id:user.id as string,cookie:res.headers.getSetCookie().map(v=>v.split(";")[0]).join("; ")};}
   const operator=await login("operator@example.invalid"); await db.prepare("INSERT INTO operators VALUES (?,'manager',?)").bind(operator.id,new Date().toISOString()).run();
   const hsap=await login("hsap@example.invalid"),monthly=await login("monthly@example.invalid"),outsider=await login("outsider@hacksick.com");
+  await t.test("運営画面のHTMLは公開ページから分離し，運営アカウントへだけ返す", async () => {
+    assert.equal((await call("/api/admin/panel")).status, 401);
+    assert.equal((await call("/api/admin/panel", outsider.cookie)).status, 403);
+    const panel = await call("/api/admin/panel", operator.cookie);
+    assert.equal(panel.status, 200);
+    assert.equal(panel.headers.get("cache-control"), "no-store");
+    assert.match(await panel.text(), /id="shop-coupon-form"/);
+    const page = await readFile("public/index.html", "utf8");
+    assert.doesNotMatch(page, /id="shop-coupon-form"|id="hsap-import-form"/);
+  });
   async function addMember(email:string,cookie:string,kind:string){const response=await call("/api/admin/members",operator.cookie,{email,displayName:"合成会員",...(kind==="HSAP"?{hsapId:"HSAP-000010"}:{})});assert.equal(response.status,201);const memberId=(await response.json() as any).id;assert.equal((await call(`/api/admin/members/${memberId}/grants`,operator.cookie,{kind,validFrom:new Date(Date.now()-86400000).toISOString(),validUntil:new Date(Date.now()+86400000).toISOString(),evidenceId:kind==="HSAP"?"HSAP-000010":"synthetic-paid-evidence",reason:"合成データで在籍・入金を確認"})).status,201);await call("/api/me",cookie);return memberId as string;}
   const hsapId=await addMember("hsap@example.invalid",hsap.cookie,"HSAP");await addMember("monthly@example.invalid",monthly.cookie,"MONTHLY");
   const purchase=(requestId=crypto.randomUUID(),items=single)=>({requestId,items,shipping,acceptedTerms:true,discountPercent:100,totalJpy:1});
