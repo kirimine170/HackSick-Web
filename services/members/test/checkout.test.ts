@@ -276,7 +276,7 @@ test("共通Square在庫の会員決済を，実際の認証とD1で検証する
   });
   const other = await login("second-monthly@example.invalid");
   await addMember("second-monthly@example.invalid",other.cookie,"MONTHLY");
-  await t.test("限定SKUは認可後だけ表示し，資格解除後の写真取得と既存受付の決済を拒否する", async () => {
+  await t.test("限定SKUは一覧・直リンク・写真で認可し，資格解除後の既存受付の決済を拒否する", async () => {
     const sku = "HS-PRIVATE-PACK";
     parents.push("square-private-item"); skus.push(sku);
     const product = { sku, squareItemId: "square-private-item", name: "限定品の合成商品", description: "限定表示テスト", unitPriceJpy: 600, bags: 1, requiredStatus: "special-sale",
@@ -298,6 +298,23 @@ test("共通Square在庫の会員決済を，実際の認証とD1で検証する
     const authenticated = await storefront("/api/auth/sign-in/email-otp", "", { email, otp: codes.get(email) });
     assert.equal(authenticated.status, 200);
     const shopCookie = authenticated.headers.getSetCookie().map(value => value.split(";")[0]).join("; ");
+    const detail = `/products/${sku}`;
+    for (const get of [call, storefront]) {
+      const guestDetail = await get(detail);
+      assert.equal(guestDetail.status, 404);
+      assert.equal(guestDetail.headers.get("cache-control"), "no-store");
+      assert.match(guestDetail.headers.get("content-type")!, /^text\/html/);
+      const notFound = await guestDetail.text();
+      assert.match(notFound, /商品が見つかりません/);
+      assert.doesNotMatch(notFound, /HS-PRIVATE-PACK|限定品の合成商品|限定表示テスト/);
+      const missing = await get("/products/NO-SUCH-PRODUCT");
+      assert.equal(missing.status, 404);
+      assert.equal(await missing.text(), notFound);
+      assert.equal((await get(`/products/${single[0].sku}`)).status, 200);
+    }
+    assert.equal((await call(detail, other.cookie)).status, 404);
+    assert.equal((await call(detail, monthly.cookie)).status, 200);
+    assert.equal((await storefront(detail, shopCookie)).status, 200);
     async function showsPrivate(cookie = "") {
       const response = await storefront("/api/storefront", cookie);
       assert.equal(response.headers.get("cache-control"), "no-store");
@@ -316,6 +333,8 @@ test("共通Square在庫の会員決済を，実際の認証とD1で検証する
     const order = await prepare(monthly.cookie,purchase(crypto.randomUUID(),items));
     assert.equal((await call("/api/admin/shop/status", operator.cookie, {...rule,enabled:false})).status, 200);
     assert.equal(await showsPrivate(shopCookie), false);
+    assert.equal((await call(detail, monthly.cookie)).status, 404);
+    assert.equal((await storefront(detail, shopCookie)).status, 404);
     assert.equal((await call(`/api/shop/checkouts/${order.id}/pay`,monthly.cookie,{sourceId:"cnon:synthetic-token",confirmedTotalJpy:1040})).status,403);
     assert.equal((await call(`/api/shop/media/${sku}`, monthly.cookie)).status, 404);
     assert.equal((await call("/api/shop/checkouts", monthly.cookie, purchase(crypto.randomUUID(), items))).status, 400);
@@ -460,6 +479,9 @@ test("共通Square在庫の会員決済を，実際の認証とD1で検証する
       products: { sku: string; available: number; maxPerOrder?: number; memberDiscountEligible?: boolean }[];
     }).products.find(item => item.sku === sku);
     assert.equal(await listed(monthly.cookie), undefined);
+    const detail = `/products/${sku}`;
+    assert.equal((await call(detail, monthly.cookie)).status, 404);
+    assert.equal((await call(detail, hsap.cookie)).status, 200);
     const guestCatalog = await worker.fetch(new Request(env.SHOP_BASE_URL! + "/api/storefront"), env);
     assert.doesNotMatch(await guestCatalog.text(), new RegExp(sku));
     const listing = await listed(hsap.cookie);
@@ -488,6 +510,7 @@ test("共通Square在庫の会員決済を，実際の認証とD1で検証する
     await db.prepare("UPDATE membership_grants SET revoked_at=? WHERE kind='HSAP' AND member_id=(SELECT id FROM members WHERE auth_user_id=?)")
       .bind(new Date().toISOString(), hsap.id).run();
     assert.equal(await listed(hsap.cookie), undefined);
+    assert.equal((await call(detail, hsap.cookie)).status, 404);
     const previouslyStarted = await call(`/api/shop/checkouts/${mixed.id}/pay`, hsap.cookie, { sourceId: "cnon:synthetic-token", confirmedTotalJpy: 3889 });
     assert.equal(previouslyStarted.status, 403);
   });

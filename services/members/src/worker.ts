@@ -20,7 +20,7 @@ import { issueShopCoupon, locationFor, quoteShopOrder, saveShopProduct, saveShop
 import { essenStaff, fulfillmentOrders, saveDispatch, saveFulfillmentStaff } from "./fulfillment.ts";
 import { shopProductMedia } from "./product-media.ts";
 import { adminPanel } from "./admin-panel.ts";
-import { storefrontMetadata } from "./storefront-meta.ts";
+import { productNotFound, storefrontMetadata } from "./storefront-meta.ts";
 import { coffeeShop, trialPricing, prepareCoffeeEnrollment, getCoffeeEnrollment, visibleCoffeeEnrollment, payCoffeeEnrollment, updateCoffeeCard, cancelCoffeeEnrollment, reconcileCoffeeEnrollment, sweepCoffeeEnrollments, billCoffeeSubscriptions, deliverCoffeeNotices, coffeeCapability, type CoffeeEnrollment } from "./coffee-recurring.ts";
 import { COFFEE_SUBSCRIPTIONS, previewCoffeeSubscription } from "./coffee-subscriptions.ts";
 
@@ -67,6 +67,20 @@ async function readBody(request: Request, maximum = 16384): Promise<Record<strin
 
 export function createWorker(deliverOTP?: DeliverOTP, gatewayFactory: (env: Env) => SquareGateway = squareGateway) {
   const authInstances = new WeakMap<D1Database, Map<string, ReturnType<typeof createAuth>>>();
+  function authFor(env: Env, origin: string, partner: boolean) {
+    let origins = authInstances.get(env.DB);
+    if (!origins) {
+      origins = new Map();
+      authInstances.set(env.DB, origins);
+    }
+    let auth = origins.get(origin);
+    if (!auth) {
+      auth = createAuth(env, deliverOTP, origin, partner);
+      origins.set(origin, auth);
+    }
+    return auth;
+  }
+
   return {
     async fetch(request: Request, env: Env): Promise<Response> {
       let response: Response;
@@ -132,8 +146,17 @@ export function createWorker(deliverOTP?: DeliverOTP, gatewayFactory: (env: Env)
       if (["/operations", "/shop"].includes(url.pathname)) {
         return storefront ? json({ error: "ページが見つかりません．" }, 404) : env.ASSETS.fetch(new Request(new URL("/", url), request));
       }
-      if (/^\/products\/[A-Z0-9_-]{1,64}$/.test(url.pathname) ||
-          ["/cart", "/checkout", "/orders", "/coffee", "/login"].includes(url.pathname)) {
+      const productPath = url.pathname.match(/^\/products\/([A-Z0-9_-]{1,64})$/);
+      if (productPath) {
+        const sku = productPath[1];
+        const publicProducts = storefront ? STOREFRONT_PRODUCTS : SHOP_PRODUCTS;
+        if (!publicProducts.some(product => product.sku === sku)) {
+          const session = await authFor(env, origin, partner).api.getSession({ headers: request.headers });
+          const userId = session?.user.emailVerified ? session.user.id : undefined;
+          if (!(await shopProducts(env, userId)).some(product => product.sku === sku)) return productNotFound(storefront);
+        }
+      }
+      if (productPath || ["/cart", "/checkout", "/orders", "/coffee", "/login"].includes(url.pathname)) {
         const page = await env.ASSETS.fetch(new Request(new URL("/", url), request));
         return storefront ? storefrontMetadata(page, url) : page;
       }
@@ -177,28 +200,20 @@ export function createWorker(deliverOTP?: DeliverOTP, gatewayFactory: (env: Env)
       await env.DB.prepare("INSERT OR IGNORE INTO checkout_webhook_events VALUES (?, ?)").bind(event.event_id, new Date().toISOString()).run();
       return json({ received: true });
     }
-    let origins = authInstances.get(env.DB);
-    if (!origins) {
-      origins = new Map();
-      authInstances.set(env.DB, origins);
-    }
-    let auth = origins.get(origin);
-    if (!auth) {
-      auth = createAuth(env, deliverOTP, origin, partner);
-      origins.set(origin, auth);
-    }
+    const auth = authFor(env, origin, partner);
     if (url.pathname.startsWith("/api/auth/")) return auth.handler(request);
     if (request.method !== "GET" && request.headers.get("Origin") !== origin) return json({ error: "送信元を確認できません．" }, 403);
     const session = await auth.api.getSession({ headers: request.headers });
+    const account = session?.user.emailVerified ? session.user : null;
     if (storefront && url.pathname === "/api/storefront" && request.method === "GET") return json({
       products: [...STOREFRONT_PRODUCTS.map(product => ({ ...product, ...shopProductMedia(product.bags) })),
-        ...(await shopProducts(env, session?.user.emailVerified ? session.user.id : undefined)).map(visibleShopProduct)],
+        ...(await shopProducts(env, account?.id)).map(visibleShopProduct)],
       plans: COFFEE_SUBSCRIPTIONS.plans.map(plan => ({ ...plan, quote: previewCoffeeSubscription(plan.id, false) })),
       trial: trialPricing(),
     });
     const shopMedia = url.pathname.match(/^\/api\/shop\/media\/([A-Z0-9_-]{1,64})$/);
     if (shopMedia && request.method === "GET") {
-      const product = (await shopProducts(env, session?.user.emailVerified ? session.user.id : undefined)).find(row => row.sku === shopMedia[1]);
+      const product = (await shopProducts(env, account?.id)).find(row => row.sku === shopMedia[1]);
       if (!product) return json({ error: "写真が見つかりません．" },404);
       const image = await env.DB.prepare("SELECT photo,photo_type FROM shop_products WHERE sku=? AND enabled=1 AND required_status IS ?")
         .bind(product.sku, product.required_status).first<{photo: number[] | ArrayBuffer | null; photo_type: string}>();
@@ -206,7 +221,6 @@ export function createWorker(deliverOTP?: DeliverOTP, gatewayFactory: (env: Env)
       return new Response(image.photo instanceof ArrayBuffer ? image.photo : Uint8Array.from(image.photo),
         { headers: { "Content-Type": image.photo_type, "Cache-Control": "no-store" } });
     }
-    const account = session?.user.emailVerified ? session.user : null;
     if (url.pathname === "/api/shop/shipping-address" && !partner && request.method === "GET") {
       return account ? json({ shippingAddress: await lastShippingAddress(env.DB, account.id) }) : json({ error: "ログインしてください．" }, 401);
     }
