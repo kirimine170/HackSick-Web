@@ -166,3 +166,11 @@
 .checkout-wallets { display: flex; flex-wrap: wrap; gap: .75rem; margin-top: .75rem; }
 .checkout-wallets[hidden] { display: none; }
 #checkout-apple { -webkit-appearance: -apple-pay-button; -apple-pay-button-type: buy; -apple-pay-button-style: black; min-width: 150px; min-height: 44px; }
+
+.coupon-entry-row { display: flex; align-items: stretch; gap: .5rem; }
+.coupon-entry-row input { min-width: 0; flex: 1; border-radius: .4rem; }
+.coupon-entry-row button { flex: none; margin: 0; white-space: nowrap; }
+#checkout-coupon-status { margin: .5rem 0 0; }
+#checkout-coupon-status:empty { display: none; }
+#checkout-coupon-status[data-state="success"] { color: #166534; font-weight: 700; }
+#checkout-coupon-status[data-state="error"] { color: #9f1239; }

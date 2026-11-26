@@ -1,6 +1,6 @@
 import { createAuthClient } from "better-auth/client";
 import { emailOTPClient } from "better-auth/client/plugins";
-import { initializeAdminShopControls, loadShopAdmin, prefillShippingAddress } from "./shop-client.ts";
+import { clearShopCoupon, initializeAdminShopControls, loadShopAdmin, prefillShippingAddress } from "./shop-client.ts";
 import { configureStorefront, loadStorefront, memberShopPath } from "./storefront-client.ts";
 import { MEMBER_PRICING } from "./member-pricing.ts";
 import { loadCoffee } from "./coffee-client.ts";
@@ -236,7 +236,11 @@ el("login-change-email").addEventListener("click", () => {
   notice("");
   el("email").focus();
 });
-el("logout").addEventListener("click", async () => { await auth.signOut(); location.reload(); });
+el("logout").addEventListener("click", async () => {
+  await auth.signOut();
+  clearShopCoupon();
+  location.reload();
+});
 
 async function openAdmin() {
   const panel = el("admin");
