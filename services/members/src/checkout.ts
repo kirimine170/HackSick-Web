@@ -1,6 +1,7 @@
 import { eligibility, InputError, normalizeEmail, requiredText } from "./eligibility.ts";
 import type { Grant, Member } from "./types.ts";
 import { MEMBER_PRICING } from "./member-pricing.ts";
+import { JAPAN_PREFECTURES } from "./prefectures.ts";
 import { SHIPPING_POLICY } from "./shipping-policy.ts";
 
 // 収益モデル案の4,000円とは分離し，現在公開中の送料条件を使う．
@@ -79,9 +80,8 @@ export function shippingRecipient(input: unknown, email: string) {
   if (body.country !== "JP") throw new InputError("配送先は日本国内に限ります．");
   const postalCode = requiredText(body.postalCode, "郵便番号", 8).replaceAll("-", "");
   if (!/^\d{7}$/.test(postalCode)) throw new InputError("郵便番号を確認してください．");
-  const prefectures = ["北海道","青森県","岩手県","宮城県","秋田県","山形県","福島県","茨城県","栃木県","群馬県","埼玉県","千葉県","東京都","神奈川県","新潟県","富山県","石川県","福井県","山梨県","長野県","岐阜県","静岡県","愛知県","三重県","滋賀県","京都府","大阪府","兵庫県","奈良県","和歌山県","鳥取県","島根県","岡山県","広島県","山口県","徳島県","香川県","愛媛県","高知県","福岡県","佐賀県","長崎県","熊本県","大分県","宮崎県","鹿児島県","沖縄県"];
   const prefecture = requiredText(body.prefecture, "都道府県", 4);
-  if (!prefectures.includes(prefecture)) throw new InputError("都道府県を確認してください．");
+  if (!JAPAN_PREFECTURES.includes(prefecture)) throw new InputError("都道府県を確認してください．");
   const phone = requiredText(body.phone, "電話番号", 25).replace(/[\s()-]/g, "");
   if (!/^(?:0\d{9,10}|\+81\d{9,10})$/.test(phone)) throw new InputError("国内の電話番号を確認してください．");
   return {

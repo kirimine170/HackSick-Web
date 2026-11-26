@@ -108,7 +108,7 @@
         <h3>定期便に申し込む</h3>
         <label>通常便のプラン<select id="coffee-plan" name="planId" required></select></label><div id="coffee-price" aria-live="polite"></div>
         <div class="address-grid"><label>お届け先の氏名<input name="name" autocomplete="shipping name" maxlength="100" required></label><label>電話番号<input name="phone" type="tel" autocomplete="shipping tel" maxlength="25" required></label>
-        <label>郵便番号<input name="postalCode" autocomplete="shipping postal-code" pattern="[0-9]{3}-?[0-9]{4}" maxlength="8" required></label><label>都道府県<select id="coffee-prefectures" name="prefecture" required><option value="">選択してください</option></select></label>
+        <label>郵便番号<input name="postalCode" autocomplete="shipping postal-code" pattern="[0-9]{3}-?[0-9]{4}" maxlength="8" required></label><label>都道府県<select id="coffee-prefectures" name="prefecture" autocomplete="shipping address-level1" required><option value="">選択してください</option><!-- shipping-prefecture-options --></select></label>
         <label>市区町村<input name="city" autocomplete="shipping address-level2" maxlength="100" required></label><label>町名・番地<input name="addressLine1" autocomplete="shipping address-line1" maxlength="200" required></label></div>
         <label>建物名・部屋番号<input name="addressLine2" autocomplete="shipping address-line2" maxlength="200"></label>
         <p class="small">通常便は翌月1日から毎月自動決済し，10日ごろに一斉発送します．日割りはありません．送料は商品代金と別に計算し，現行条件は500円，割引前・税込の商品代金5,000円以上で無料です．商品にかかる税の円未満は切り捨てます．</p>
@@ -154,7 +154,7 @@
           <label id="checkout-email-label" hidden>注文連絡用メールアドレス<input id="checkout-email" name="contactEmail" type="email" autocomplete="email" maxlength="254"><span class="small">受付・発送の連絡をお送りします．この端末で購入状況を確認できます．</span></label>
           <p id="shipping-address-note" class="small" hidden>前回の配送先を入力しました．今回のお届け先をご確認ください．</p>
           <div class="address-grid"><label>お届け先の氏名<input name="name" autocomplete="shipping name" maxlength="100" required></label><label>電話番号<input name="phone" type="tel" autocomplete="shipping tel" maxlength="25" required></label>
-          <label>郵便番号<input name="postalCode" autocomplete="shipping postal-code" pattern="[0-9]{3}-?[0-9]{4}" maxlength="8" required></label><label>都道府県<select name="prefecture" id="prefectures" autocomplete="shipping address-level1" required><option value="">選択してください</option></select></label>
+          <label>郵便番号<input name="postalCode" autocomplete="shipping postal-code" pattern="[0-9]{3}-?[0-9]{4}" maxlength="8" required></label><label>都道府県<select name="prefecture" id="prefectures" autocomplete="shipping address-level1" required><option value="">選択してください</option><!-- shipping-prefecture-options --></select></label>
           <label>市区町村<input name="city" autocomplete="shipping address-level2" maxlength="100" required></label><label>町名・番地<input name="addressLine1" autocomplete="shipping address-line1" maxlength="200" required></label></div>
           <label>建物名・部屋番号<input name="addressLine2" autocomplete="shipping address-line2" maxlength="200"></label>
           <p id="checkout-returns" class="small">食品のため，お客様都合の返品・交換はお受けできません．不良品・誤配送はHackSick負担で対応します．到着後7日以内を目安にshop@hacksick.comへご連絡ください．発送前のキャンセルはメールでご相談ください．</p>

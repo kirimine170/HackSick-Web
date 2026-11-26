@@ -90,14 +90,12 @@ export async function loadCoffee(){
   config=await api<CoffeeConfig>("/api/coffee");el("coffee-member").hidden=false;
   el("coffee-public-timeline").hidden = true;
   el("coffee-status").textContent=config.enabled?config.environment==="sandbox"?"テスト環境です．実際のカードではお支払いしないでください．":"定期便をお申し込みいただけます．":"定期便の受付は準備中です．料金と発送条件をご確認いただけます．";
-  el("recurring-purchase-note").hidden = !config.enabled;
   const select = el<HTMLSelectElement>("coffee-plan");
   const selected = select.value;
   select.replaceChildren(...config.plans.map(plan => new Option(`${plan.name}・${plan.bags}袋`, plan.id)));
   if(config.plans.some(plan=>plan.id===selected))select.value=selected;
   el<HTMLButtonElement>("coffee-prepare").disabled=!config.enabled;showPlan();
   if(!initialized){initialized=true;
-    const prefectures=el<HTMLSelectElement>("prefectures");for(const original of Array.from(prefectures.options).slice(1)){const option=document.createElement("option");option.value=original.value;option.textContent=original.textContent;el("coffee-prefectures").append(option);}
     select.addEventListener("change",()=>{rootRequestId=crypto.randomUUID();showPlan();});
     el("coffee-form").addEventListener("submit",async event=>{event.preventDefault();const button=el<HTMLButtonElement>("coffee-prepare");button.disabled=true;try{const fields=Object.fromEntries(new FormData(event.currentTarget as HTMLFormElement).entries());const enrollment=await api<Enrollment>("/api/coffee/enrollments",{requestId:rootRequestId,planId:fields.planId,shipping:{...fields,country:"JP"},termsVersion:config.termsVersion,acceptedTerms:el<HTMLInputElement>("coffee-terms").checked,acceptedCardStorage:el<HTMLInputElement>("coffee-storage").checked});await refreshEnrollments();await beginPayment(enrollment,"pay");message("内容を確認し，カード入力後にお支払いください．");}catch(error){message((error as Error).message);}finally{button.disabled=!config.enabled;}});
     el("coffee-pay-confirm").addEventListener("change",updatePayButton);
