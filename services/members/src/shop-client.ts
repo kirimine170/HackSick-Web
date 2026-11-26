@@ -314,7 +314,7 @@ function renderStorefrontCart() {
       for (const sku of unavailable) cart.delete(sku);
       saveStorefrontCart(cart);
     });
-    notice.append(text("p", "現在表示できない商品がカートにあります．限定商品は対象アカウントでログインすると確認できます．"), remove);
+    notice.append(text("p", "現在購入できない商品がカートに入っています．"), remove);
     products.append(notice);
   }
   if (!selected.length) {

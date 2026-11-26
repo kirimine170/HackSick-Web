@@ -4,6 +4,27 @@ import { shopProductMedia } from "./product-media.ts";
 const name = "HackSickショップ";
 const escape = (value: string) => value.replaceAll("&", "&amp;").replaceAll('"', "&quot;").replaceAll("<", "&lt;").replaceAll(">", "&gt;");
 
+export function productNotFound(storefront: boolean) {
+  const catalog = storefront ? "/" : "/shop";
+  return new Response(`<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="robots" content="noindex,nofollow">
+  <title>商品が見つかりません｜HackSick</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body class="storefront">
+  <header><a class="brand" href="${catalog}">HackSick</a></header>
+  <main>
+    <h1>商品が見つかりません</h1>
+    <a class="store-back" href="${catalog}">商品一覧へ戻る</a>
+  </main>
+</body>
+</html>`, { status: 404, headers: { "Content-Type": "text/html; charset=utf-8" } });
+}
+
 export async function storefrontMetadata(response: Response, url: URL) {
   if (!response.ok || !response.headers.get("Content-Type")?.includes("text/html") || !response.body) return response;
   const [sku] = /^\/products\/([A-Z0-9_-]{1,64})$/.exec(url.pathname)?.slice(1) ?? [];

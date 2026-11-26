@@ -65,8 +65,15 @@ export function configureStorefront(members: boolean) {
   el("login-note").textContent = "確認コードの有効期限は5分です．";
   updateCartCount();
   window.addEventListener("storage", updateCartCount);
+  window.addEventListener("pagehide", event => {
+    if (!event.persisted) return;
+    if (page === "product" || page === "catalog") {
+      el(`storefront-${page}`).hidden = true;
+      document.title = shopName();
+    }
+  });
   window.addEventListener("pageshow", event => {
-    if (event.persisted && ["cart", "checkout"].includes(page)) location.reload();
+    if (event.persisted && ["product", "catalog", "cart", "checkout"].includes(page)) location.reload();
     else updateCartCount();
   });
 }
