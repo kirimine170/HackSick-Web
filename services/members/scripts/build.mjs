@@ -3,6 +3,7 @@ import { build } from "esbuild";
 import { COFFEE_SUBSCRIPTIONS, previewCoffeeSubscription, trialPricing } from "../src/coffee-subscriptions.ts";
 import { memberQuote, SHOP_PRODUCTS } from "../src/checkout.ts";
 import { MEMBER_PRICING } from "../src/member-pricing.ts";
+import { JAPAN_PREFECTURES } from "../src/prefectures.ts";
 
 const yen = amount => `${amount.toLocaleString("ja-JP")}円`;
 const trial = trialPricing();
@@ -33,7 +34,10 @@ const comparison = `<table class="coffee-comparison">
 await mkdir("dist", { recursive: true });
 await cp("public", "dist", { recursive: true });
 const html = await readFile("public/index.html", "utf8");
-await writeFile("dist/index.html", html.replace("<!-- coffee-plan-comparison -->", comparison));
+const prefectureOptions = JAPAN_PREFECTURES.map(prefecture => `<option value="${prefecture}">${prefecture}</option>`).join("");
+await writeFile("dist/index.html", html
+  .replace("<!-- coffee-plan-comparison -->", comparison)
+  .replaceAll("<!-- shipping-prefecture-options -->", prefectureOptions));
 await cp("../../public/images/works/anokoto-no-kankeisei-ni-tsuite-640.webp", "dist/images/anokoto-cover.webp");
 await cp("../../public/og.png", "dist/og.png");
 await build({ entryPoints: { app: "src/client.ts", shipping: "src/shipping-client.ts" }, outdir: "dist", bundle: true, format: "esm", target: "es2022", minify: true });
