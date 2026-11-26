@@ -27,20 +27,20 @@ test("協力者20％案は値引き400円で止め，会員特典の方が大き
   assert.equal(member.couponConsumed,false);
   assert.throws(()=>quotePromotion(items(1,0),"__proto__" as never,false),/種類/);
 });
-test("撮影協力者は送料を除く商品代金を50％引きし，撮影枚数に応じた枠で止める", () => {
+test("撮影協力者は送料を除く商品代金を35％引きし，撮影枚数に応じた枠で止める", () => {
   const pack = quotePromotion(items(0, 1), "photographer", true);
   assert.equal(pack.discountSource, "coupon");
-  assert.equal(pack.discountJpy, 1026);
-  assert.equal(pack.totalJpy, 1526);
+  assert.equal(pack.discountJpy, 718);
+  assert.equal(pack.totalJpy, 1834);
 
-  const onePhoto = quotePromotion(items(0, 3), "photographer", false, 1);
+  const onePhoto = quotePromotion(items(0, 5), "photographer", false, 1);
   assert.equal(onePhoto.discountJpy, 3000);
-  assert.equal(onePhoto.totalJpy, 3156);
+  assert.equal(onePhoto.totalJpy, 7260);
 
-  const fivePhotos = quotePromotion(items(0, 15), "photographer", false, 5);
+  const fivePhotos = quotePromotion(items(0, 22), "photographer", false, 5);
   assert.equal(fivePhotos.photoCreditJpy, 15000);
   assert.equal(fivePhotos.discountJpy, 15000);
-  assert.equal(fivePhotos.totalJpy, 15780);
+  assert.equal(fivePhotos.totalJpy, 30144);
   assert.equal(fivePhotos.couponConsumed, false);
 
   assert.throws(() => quotePromotion(items(0, 1), "photographer", false, 0), /撮影枚数/);

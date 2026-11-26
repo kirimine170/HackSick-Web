@@ -1,3 +1,5 @@
+import { COUPON_TEMPLATES } from "./coupon-templates.ts";
+
 export const adminPanel = String.raw`
       <div class="ops-layout">
         <nav class="ops-nav" aria-label="運営メニュー">
@@ -61,9 +63,9 @@ export const adminPanel = String.raw`
               <div class="address-grid">
                 <label>種類
                   <select name="template">
-                    <option value="lt">LT参加者・10％</option>
-                    <option value="supporter">イベント協力者・20％</option>
-                    <option value="photographer">撮影協力者・50％</option>
+                    <option value="lt">LT参加者・${COUPON_TEMPLATES.lt.percent}％</option>
+                    <option value="supporter">イベント協力者・${COUPON_TEMPLATES.supporter.percent}％</option>
+                    <option value="photographer">撮影協力者・${COUPON_TEMPLATES.photographer.percent}％</option>
                     <option value="custom">割引率を指定</option>
                   </select>
                 </label>

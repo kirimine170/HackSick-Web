@@ -1,10 +1,13 @@
 import { InputError } from "./eligibility.ts";
 import { memberQuote } from "./checkout.ts";
 import { estimateCoffeeOrder, integer } from "./commerce.ts";
+import { COUPON_TEMPLATES, isPromotionKind, type PromotionKind } from "./coupon-templates.ts";
+
+export { isPromotionKind };
 
 /** 発行前の条件案．Square・会員サイトの有効なクーポンを作成するものではない． */
 export const PROMOTION_POLICY = {
-  version: "2026-11-07-photography-coupon-draft",
+  version: "2026-11-26-photography-coupon-draft",
   status: "draft",
   purchaseKind: "one-time",
   validityDaysFromIssue: 30,
@@ -13,18 +16,8 @@ export const PROMOTION_POLICY = {
   shippingDiscount: false,
   recurringEligible: false,
   trialEligible: false,
-  offers: {
-    lt: { label: "LT参加者向け", percent: 10, maxDiscountJpy: null },
-    supporter: { label: "イベント協力者向け", percent: 20, maxDiscountJpy: 400 },
-    photographer: { label: "撮影協力者向け", percent: 50, creditPerPhotoJpy: 3000, validityDaysFromIssue: null, perAccountLimit: null },
-  },
+  offers: COUPON_TEMPLATES,
 } as const;
-
-type PromotionKind = keyof typeof PROMOTION_POLICY.offers;
-
-export function isPromotionKind(kind: unknown): kind is PromotionKind {
-  return typeof kind === "string" && Object.hasOwn(PROMOTION_POLICY.offers, kind);
-}
 
 export function quotePromotion(items: unknown, kind: PromotionKind, memberEligible: boolean, photoCount?: number) {
   if (!isPromotionKind(kind)) throw new InputError("クーポンの種類を確認してください．");

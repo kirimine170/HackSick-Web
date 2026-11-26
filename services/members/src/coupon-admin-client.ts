@@ -1,3 +1,5 @@
+import { COUPON_TEMPLATES, isPromotionKind } from "./coupon-templates.ts";
+
 export interface CouponProduct {
   sku: string;
   name: string;
@@ -5,8 +7,6 @@ export interface CouponProduct {
   unitPriceJpy: number;
   selectable: boolean;
 }
-
-const templateDiscounts: Record<string, number> = { lt: 10, supporter: 20, photographer: 50 };
 
 interface Recipient { email: string; name: string; hsapId: string | null; hasAccount: number }
 
@@ -42,10 +42,12 @@ export function initializeCouponForm(
 
   function renderPreview() {
     const template = field("template").value;
-    const fraction = templateDiscounts[template] ?? field("percent").value;
+    const fraction = isPromotionKind(template) ? COUPON_TEMPLATES[template].percent : field("percent").value;
     const expires = field("expiresAt").value.replace("T", " ");
     const photos = Number(field("photos").value);
-    const budget = template === "supporter" ? 400 : template === "photographer" ? photos * 3000 : Number(field("budgetJpy").value);
+    const budget = template === "supporter" ? COUPON_TEMPLATES.supporter.maxDiscountJpy
+      : template === "photographer" ? photos * COUPON_TEMPLATES.photographer.creditPerPhotoJpy
+        : Number(field("budgetJpy").value);
     const audience = personal.checked ? field("email").value.trim() || "利用者を選択してください" : "共通コード";
     const perAccount = template === "lt" || template === "supporter" ? 1
       : Number(field("accountLimit").value) || (template === "custom" ? 1 : 0);
