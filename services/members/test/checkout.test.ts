@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { readFile, readdir } from "node:fs/promises";
 import { Miniflare, convertV4MiniflareOptions } from "miniflare";
 import { createWorker } from "../src/worker.ts";
-import { CHECKOUT_POLICY, memberQuote, shippingRecipient } from "../src/checkout.ts";
+import { CHECKOUT_POLICY, HSAP_BULK_COFFEE, memberQuote, shippingRecipient } from "../src/checkout.ts";
 import { sharedOrderPayload, type SharedOrder } from "../src/shared-checkout.ts";
 import { normalizeHsapRows, HSAP_SOURCE } from "../src/hsap.ts";
 import { validSquareSignature, SquareRequestError, type SquareGateway, type SquareOrder, type SquarePayment } from "../src/square.ts";
@@ -45,8 +45,8 @@ test("共通Square在庫の会員決済を，実際の認証とD1で検証する
   const gateway: SquareGateway = {
     async request<T>(path:string,_method?:string,body?:unknown):Promise<T> {
       const payload=body as any; let result:any;
-      if(path === "/catalog/batch-retrieve") result={objects:parents.map((parent,i)=>({id:parent,type:"ITEM",present_at_all_locations:true,item_data:{variations:[{id:`variation-${i}`,type:"ITEM_VARIATION",present_at_all_locations:true,item_variation_data:{item_id:parent,sku:skus[i],track_inventory:true,price_money:{amount:[432,2052,1500,600,800][i],currency:"JPY"}}}]}}))};
-      else if(path === "/inventory/counts/batch-retrieve") result={counts:skus.map((_,i)=>({catalog_object_id:`variation-${i}`,location_id:"test-location",state:"IN_STOCK",quantity:String(i === 2 ? bookStock : stock),calculated_at:new Date().toISOString()}))};
+      if(path === "/catalog/batch-retrieve") result={objects:parents.map((parent,i)=>({id:parent,type:"ITEM",present_at_all_locations:true,item_data:{variations:[{id:`variation-${i}`,type:"ITEM_VARIATION",present_at_all_locations:true,item_variation_data:{item_id:parent,sku:skus[i],track_inventory:true,price_money:{amount:[432,2052,1500,600,3000][i],currency:"JPY"}}}]}}))};
+      else if(path === "/inventory/counts/batch-retrieve") result={counts:skus.map((sku,i)=>({catalog_object_id:`variation-${i}`,location_id:"test-location",state:"IN_STOCK",quantity:String(sku === HSAP_BULK_COFFEE.sku ? 12 : i === 2 ? bookStock : stock),calculated_at:new Date().toISOString()}))};
       else if(path === "/inventory/changes/batch-retrieve") result={changes:inventorySales.map(adjustment=>({type:"ADJUSTMENT",adjustment}))};
       else if(path === "/orders") {
         let order=orders.get(payload.idempotency_key);
@@ -441,5 +441,54 @@ test("共通Square在庫の会員決済を，実際の認証とD1で検証する
     await call("/api/admin/shop/fulfillment-staff",operator.cookie,{email,enabled:false});
     assert.equal((await partner("/api/fulfillment/orders",cookie)).status,403);
     assert.equal((await partner("/api/admin/members",cookie)).status,404);
+  });
+
+  await t.test("バルク10袋セットは有効なHSAP資格に限り，税込3,000円で1注文10セットまで購入できる", async () => {
+    const { sku } = HSAP_BULK_COFFEE;
+    const squareItemId = "square-bulk-item";
+    parents.push(squareItemId);
+    skus.push(sku);
+    stock = 8;
+    const restored = await call(`/api/admin/members/${hsapId}/status`, operator.cookie, {
+      status: "active", reason: "停止の検証を終えた合成アカウントを再開",
+    });
+    assert.equal(restored.status, 200, await restored.clone().text());
+    const product = { sku, squareItemId, name: "バルク10袋セット", description: "スタンプなし", unitPriceJpy: 3000, bags: 10 };
+    assert.equal((await call("/api/admin/shop/product", operator.cookie, product)).status, 200);
+    assert.deepEqual(await db.prepare("SELECT required_status FROM shop_products WHERE sku=?").bind(sku).first(), { required_status: "hsap-bulk" });
+    const listed = async (cookie: string) => (await (await call("/api/shop", cookie)).json() as {
+      products: { sku: string; available: number; maxPerOrder?: number; memberDiscountEligible?: boolean }[];
+    }).products.find(item => item.sku === sku);
+    assert.equal(await listed(monthly.cookie), undefined);
+    const guestCatalog = await worker.fetch(new Request(env.SHOP_BASE_URL! + "/api/storefront"), env);
+    assert.doesNotMatch(await guestCatalog.text(), new RegExp(sku));
+    const listing = await listed(hsap.cookie);
+    assert.equal(listing?.available, 12);
+    assert.equal(listing?.maxPerOrder, 10);
+    assert.equal(listing?.memberDiscountEligible, false);
+    const items = [{ sku, quantity: 10 }];
+    const aboveLimit = purchase(crypto.randomUUID(), [{ sku, quantity: 11 }]);
+    const quote = await call("/api/shop/quote", hsap.cookie, { items });
+    assert.equal(quote.status, 200);
+    assert.equal((await quote.json() as { totalJpy: number }).totalJpy, 30000);
+    assert.equal((await call("/api/shop/quote", monthly.cookie, { items })).status, 400);
+    assert.equal((await call("/api/shop/checkouts", monthly.cookie, purchase(crypto.randomUUID(), items))).status, 400);
+    assert.equal((await call("/api/shop/quote", hsap.cookie, aboveLimit)).status, 400);
+    assert.equal((await call("/api/shop/checkouts", hsap.cookie, aboveLimit)).status, 400);
+
+    const mixed = await prepare(hsap.cookie, purchase(crypto.randomUUID(), [...single, { sku, quantity: 1 }]));
+    assert.equal(mixed.quote.totalJpy, 3889);
+    const row = await db.prepare("SELECT * FROM member_orders WHERE id=?").bind(mixed.id).first<SharedOrder>();
+    assert.ok(row);
+    const payload = sharedOrderPayload(env, row).order;
+    const bulk = payload.line_items.find(line => line.catalog_object_id === "variation-4");
+    assert.equal(bulk?.base_price_money.amount, 3000);
+    assert.equal(bulk?.applied_discounts, undefined);
+    assert.deepEqual(payload.discounts.map(discount => discount.amount_money.amount), [43]);
+    await db.prepare("UPDATE membership_grants SET revoked_at=? WHERE kind='HSAP' AND member_id=(SELECT id FROM members WHERE auth_user_id=?)")
+      .bind(new Date().toISOString(), hsap.id).run();
+    assert.equal(await listed(hsap.cookie), undefined);
+    const previouslyStarted = await call(`/api/shop/checkouts/${mixed.id}/pay`, hsap.cookie, { sourceId: "cnon:synthetic-token", confirmedTotalJpy: 3889 });
+    assert.equal(previouslyStarted.status, 403);
   });
 });

@@ -1,5 +1,5 @@
 import { loadCoffee } from "./coffee-client.ts";
-import { loadShop, loadStorefrontOrders, prefillShippingAddress, productGallery, productPhoto, type Product, type ShippingAddress, type Shop } from "./shop-client.ts";
+import { loadShop, loadStorefrontOrders, maximumQuantity, prefillShippingAddress, productGallery, productPhoto, type Product, type ShippingAddress, type Shop } from "./shop-client.ts";
 import { readCart, updateCartCount, writeCart } from "./storefront-cart-client.ts";
 
 const el = <T extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id) as T;
@@ -72,7 +72,7 @@ export function configureStorefront(members: boolean) {
 }
 
 function price(product: Product, discount: number) {
-  if (!discount || product.bags <= 0) return node("p", `${money(product.unitPriceJpy)}（税込）`, "store-price");
+  if (!discount || product.bags <= 0 || product.memberDiscountEligible === false) return node("p", `${money(product.unitPriceJpy)}（税込）`, "store-price");
   const amount = product.unitPriceJpy - Math.round(product.unitPriceJpy * discount / 100);
   const block = node("div", "", "member-price");
   block.append(node("span", `会員価格 ${discount}％OFF`, "store-category"),
@@ -157,11 +157,13 @@ async function productDetail(currentShop?: Shop) {
   info.append(node("p", product.category, "store-category"), node("h1", product.name),
     price(product, memberShop && shop.eligible ? shop.policy.discountPercent : 0), node("p", product.description));
   if (product.workUrl) info.append(link(product.workUrl, "作品紹介を見る ↗"));
+  if (product.maxPerOrder) info.append(node("p", `1注文につき${product.maxPerOrder}セットまで購入できます．`, "small"));
   const group = product.fulfillmentSource ?? "hacksick";
   if (group === "essen") info.append(node("p", "ESSEN直送", "small"));
   const form = node("form", "", "store-add");
   const add = readCart().get(product.sku) ?? 0;
-  const remaining = Math.min(100, product.available) - add;
+  const limit = maximumQuantity(product);
+  const remaining = limit - add;
   const label = node("label", "数量");
   const quantity = node("input");
   quantity.type = "number"; quantity.min = "1"; quantity.max = String(Math.max(1, remaining));
@@ -179,8 +181,8 @@ async function productDetail(currentShop?: Shop) {
     event.preventDefault();
     const cart = readCart();
     const amount = (cart.get(product.sku) ?? 0) + Number(quantity.value);
-    if (!Number.isInteger(amount) || amount < 1 || amount > Math.min(100, product.available)) {
-      status.textContent = "在庫数に合わせて数量を選び直してください．";
+    if (!Number.isInteger(amount) || amount < 1 || amount > limit) {
+      status.textContent = `数量はカート内の商品と合わせて${limit}点までです．`;
       return;
     }
     try { cart.set(product.sku, amount); writeCart(cart); }

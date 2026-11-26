@@ -1,6 +1,6 @@
 import type { Env } from "./types.ts";
 import { InputError, requiredText } from "./eligibility.ts";
-import { allocateDiscount, BOOK_PRODUCT, SHOP_PRODUCTS, STOREFRONT_PRODUCTS, CheckoutConflict, ensureBuyer, memberAccess, memberQuote, shippingRecipient } from "./checkout.ts";
+import { allocateDiscount, BOOK_PRODUCT, SHOP_PRODUCTS, STOREFRONT_PRODUCTS, CheckoutConflict, ensureBuyer, memberAccess, memberDiscountableSubtotal, memberQuote, shippingRecipient } from "./checkout.ts";
 import { checkoutAvailable, SquareRequestError, type SquareGateway, type SquareOrder, type SquarePayment } from "./square.ts";
 import { refreshBillingForUser } from "./billing.ts";
 import { locationFor, quoteShopOrder, reserveCoupon, shopProducts, type AppliedCoupon, type FulfillmentSource, type ShopProduct } from "./shop-operations.ts";
@@ -197,10 +197,10 @@ const includesBook = (quote: Quote) => quote.lines.some(line => line.sku === BOO
 export function sharedOrderPayload(env: Env, row: SharedOrder) {
   const quote = JSON.parse(row.quote_json) as Quote; const products = JSON.parse(row.catalog_json) as SharedProduct[];
   const memberDiscount = quote.memberDiscountJpy ?? 0;
-  const memberAllocations = allocateDiscount(memberDiscount, quote.lines.map(line => line.bags > 0 ? line.subtotalJpy : 0));
+  const memberAllocations = allocateDiscount(memberDiscount, quote.lines.map(memberDiscountableSubtotal));
   const allocations = allocateDiscount(quote.discountJpy - memberDiscount, quote.lines.map((line, i) => {
-    const eligible = quote.coupon ? quote.coupon.skus.includes(line.sku) : line.bags > 0;
-    return eligible ? line.subtotalJpy - memberAllocations[i] : 0;
+    if (!quote.coupon) return memberDiscountableSubtotal(line);
+    return quote.coupon.skus.includes(line.sku) ? line.subtotalJpy - memberAllocations[i] : 0;
   }));
   const discountsByLine = quote.lines.map((_, i) => [
     { uid: `stack-member-${i}`, name: "会員特典10％", amount: memberAllocations[i] },
