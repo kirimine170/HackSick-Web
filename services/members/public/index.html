@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="robots" content="noindex,nofollow">
+  <title>メンバーシップ｜HackSick</title>
+  <link rel="stylesheet" href="/style.css">
+  <script type="module" src="/app.js"></script>
+</head>
+<body>
+  <a class="skip" href="#main">本文へ</a>
+  <header>
+    <a id="brand-link" class="brand" href="https://hacksick.com">HackSick<span id="brand-label">MEMBERS</span></a>
+    <form id="store-search" role="search" method="get" action="/" hidden>
+      <input id="store-search-input" type="search" name="q" aria-label="商品を検索" placeholder="商品名，キーワードで検索" maxlength="100">
+      <button type="submit">検索</button>
+    </form>
+    <nav aria-label="メニュー">
+      <button id="admin-toggle" hidden>運営画面</button>
+      <a id="shop-nav" href="https://shop.hacksick.com/">通常ストア ↗</a>
+      <a id="coffee-nav" href="#coffee" hidden>珈琲定期便</a>
+      <a id="orders-nav" href="/orders" hidden>購入状況</a>
+      <a id="store-sign-in" href="/login" hidden>ログイン</a>
+      <a id="cart-nav" href="/cart" hidden>カート <span id="cart-count">0</span></a>
+      <button id="logout" hidden>ログアウト</button>
+    </nav>
+  </header>
+  <main id="main">
+    <p id="member-eyebrow" class="eyebrow">CREATE TOGETHER，KEEP GOING．</p>
+    <h1 id="page-title">創りたいを，<br><span>続けていく．</span></h1>
+    <p id="notice" role="status" aria-live="polite">ログイン状態を確認しています．</p>
+    <section id="storefront-hero" hidden aria-labelledby="storefront-hero-title">
+      <div class="store-hero-copy">
+        <p>Burn the midnight oil</p>
+        <h2 id="storefront-hero-title">夜更けのHackに，<br>Sickな一杯を．</h2>
+        <p>イエメン・モカマタリのドリップバッグ．カップに掛けて，お湯を注ぐだけ．</p>
+        <a class="store-action" href="/?category=coffee">珈琲を見る</a>
+      </div>
+      <img src="/images/burn-the-midnight-oil-brewing.jpg" width="1800" height="1201" alt="カップにドリップバッグを掛けて珈琲を淹れる様子" loading="lazy" decoding="async">
+    </section>
+    <section id="storefront-catalog" hidden aria-labelledby="storefront-title">
+      <div class="store-catalog-header"><h2 id="storefront-title">すべての商品</h2><p id="store-search-result" role="status"></p></div>
+      <nav id="store-categories" aria-label="商品カテゴリ"></nav>
+      <div id="storefront-products" class="cards"></div>
+    </section>
+    <section id="storefront-product" hidden aria-label="商品詳細"></section>
+    <section id="shop-preview" class="panel shop-preview" hidden aria-labelledby="shop-preview-title">
+      <a class="product-photo-link" href="/images/burn-the-midnight-oil-brewing.jpg" target="_blank" rel="noopener" aria-label="珈琲を淹れている様子の写真を拡大する"><img class="product-photo" src="/images/burn-the-midnight-oil-brewing.jpg" alt="カップに掛けたドリップバッグにお湯を注いで珈琲を淹れている様子" width="1800" height="1201" decoding="async"></a>
+      <div><p class="eyebrow">HACKSICK MEMBER SHOP</p><h2 id="shop-preview-title">夜更けのHackに，Sickな一杯を．</h2><p>Burn the midnight oil．イエメン・モカマタリのフィルター付きドリップバッグ，1袋10g．単品と5袋セットをご用意しています．</p><p id="public-member-offer"></p><a class="shop-preview-cta" href="#login">ログインして購入へ進む</a></div>
+    </section>
+    <section id="account" hidden aria-labelledby="account-title">
+      <div class="section-label"><h2 id="account-title">あなたのメンバーシップ</h2><span id="signed-in-email"></span></div>
+      <div id="membership" class="panel"></div>
+      <section id="member-pass" class="panel pass-panel" hidden aria-labelledby="member-pass-title">
+        <div><p class="eyebrow">EVENT CHECK-IN</p><h3 id="member-pass-title">受付用の会員QR</h3>
+          <p>LT会の受付で提示すると，会員資格を確認できます．参加費の免除は，HSAP・月額会員を通算して月1回です．</p>
+          <button id="member-pass-show" type="button">会員QRを表示</button>
+          <p id="member-pass-status" class="small" role="status"></p>
+        </div>
+        <div id="member-pass-display" class="pass-display" hidden>
+          <canvas id="member-pass-qr" role="img" aria-label="受付用の会員QRコード"></canvas>
+          <button id="member-pass-copy" type="button">受付用コードをコピー</button>
+        </div>
+      </section>
+      <div id="qualifications" class="cards"></div>
+      <p class="small">登録内容については <a href="mailto:shop@hacksick.com">shop@hacksick.com</a> へお問い合わせください．</p>
+    </section>
+    <section id="coffee" hidden aria-labelledby="coffee-title">
+      <h2 id="coffee-title">珈琲の定期便</h2>
+      <p id="coffee-status" role="status"></p>
+      <p>イエメン・モカマタリのドリップバッグを毎月お届けします．どなたでもメールアドレスでお申し込みいただけます．</p>
+      <!-- coffee-plan-comparison -->
+      <div id="coffee-guest">
+        <a id="coffee-login" class="shop-preview-cta" href="#login">メールアドレスで申込へ進む</a>
+      </div>
+      <div id="coffee-member" hidden>
+      <form id="coffee-form" class="panel shipping-form">
+        <h3>定期便に申し込む</h3>
+        <label>通常便のプラン<select id="coffee-plan" name="planId" required></select></label><div id="coffee-price" aria-live="polite"></div>
+        <div class="address-grid"><label>お届け先の氏名<input name="name" autocomplete="shipping name" maxlength="100" required></label><label>電話番号<input name="phone" type="tel" autocomplete="shipping tel" maxlength="25" required></label>
+        <label>郵便番号<input name="postalCode" autocomplete="shipping postal-code" pattern="[0-9]{3}-?[0-9]{4}" maxlength="8" required></label><label>都道府県<select id="coffee-prefectures" name="prefecture" required><option value="">選択してください</option></select></label>
+        <label>市区町村<input name="city" autocomplete="shipping address-level2" maxlength="100" required></label><label>町名・番地<input name="addressLine1" autocomplete="shipping address-line1" maxlength="200" required></label></div>
+        <label>建物名・部屋番号<input name="addressLine2" autocomplete="shipping address-line2" maxlength="200"></label>
+        <p class="small">通常便は翌月1日から毎月自動決済し，10日ごろに一斉発送します．日割りはありません．送料は商品代金と別に計算し，現行条件は500円，割引前・税込の商品代金5,000円以上で無料です．商品にかかる税の円未満は切り捨てます．</p>
+        <p class="small">会員資格を各回で確認し，資格が失効した回は通常料金になります．基本料金・送料条件が変わる場合は，自動請求を止めて再確認します．在庫や支払結果を確認できない場合も請求を見送ってご案内します．</p>
+        <p class="small">継続回数の縛りはありません．次回の請求処理開始までに，このサイトの管理欄から解約できます．支払済みの注文の取消はshop@hacksick.comへご相談ください．食品のため，お客様都合の返品・交換はお受けできません．不良品・誤配送はHackSick負担で対応します．</p>
+        <p class="small">カード番号はSquareの入力欄からSquareへ直接送信されます．HackSickにはカード番号を保存せず，Squareの顧客・カード参照IDと下4桁，申込・配送・請求記録を保存します．<a href="/privacy.html" target="_blank" rel="noopener">情報の取り扱い ↗</a></p>
+        <label class="check"><input id="coffee-terms" type="checkbox" required>今回と次回以降の料金・送料・出荷目安・会員資格失効時の料金・解約条件を確認しました</label>
+        <label class="check"><input id="coffee-storage" type="checkbox" required>Squareにカードを保存し，定期便の継続決済に利用することに同意します</label>
+        <button id="coffee-prepare" type="submit" disabled>申込内容を確認する</button>
+      </form>
+      <section id="coffee-payment" class="panel shipping-form" hidden><h3 id="coffee-payment-title">お支払い内容</h3><div id="coffee-payment-summary"></div><div id="coffee-card"></div>
+        <label class="check"><input id="coffee-pay-confirm" type="checkbox">表示された金額の支払いと，Squareへのカード保存・今後の定期便の決済利用に同意します</label><button id="coffee-pay" type="button" disabled>お支払い内容を確認してください</button>
+      </section>
+      <p id="coffee-message" role="status" aria-live="polite"></p>
+      <div class="section-label"><h3>定期便の管理</h3><button id="coffee-refresh" type="button">申込・支払状況を確認</button></div><div id="coffee-enrollments"></div>
+      </div>
+    </section>
+    <section id="login" class="panel login" hidden aria-labelledby="login-title">
+      <div><p id="login-eyebrow" class="eyebrow">MEMBER SIGN IN</p><h2 id="login-title">メンバーとしてログイン</h2><p id="login-description">HSAPの方はHackSickのGoogleアカウントを，月額会員の方は登録済みのメールアドレスをご利用ください．</p><button id="google" hidden>HackSickのGoogleアカウントで続ける</button></div>
+      <div><form id="email-form"><label id="email-label" for="email">登録済みメールアドレス</label><input id="email" type="email" autocomplete="email" required maxlength="254"><button type="submit">確認コードを送信</button></form><form id="otp-form" hidden><label for="otp">メールに届いた6桁のコード</label><input id="otp" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" maxlength="6" required><button type="submit">ログイン</button></form><p id="login-note" class="small">コードの有効期限は5分です．会員資格はログイン後に確認できます．</p></div>
+    </section>
+    <section id="shop" hidden aria-labelledby="shop-title">
+      <div id="shop-heading" class="section-label"><h2 id="shop-title">会員ショップ</h2><span>夜更けのHackに，Sickな一杯を．</span></div>
+      <p id="shop-status" role="status"></p>
+      <p id="shop-benefit-description">イエメン・モカマタリのフィルター付きドリップバッグ．有効なHSAP・月額会員は，単品・5袋セットとも単発購入の商品代金が10％引きになります．送料は割引対象外です．</p>
+      <p id="recurring-purchase-note" class="small" hidden><a href="#coffee">珈琲定期便（会員は基本料金5％引き）</a></p>
+      <p id="shop-shipping-policy" class="small">国内送料500円．割引前の商品代金合計（税込・送料を除く）5,000円以上で送料無料．決済完了後5日以内を目安に出荷します．</p>
+      <form id="checkout-form">
+        <div id="checkout-items"><label id="checkout-source-label" hidden>発送元<select id="checkout-source"><option value="hacksick">HackSick発送</option><option value="essen">ESSEN直送</option></select></label>
+        <p id="checkout-source-note" class="small" hidden>発送元ごとに送料を計算し，別々にお会計します．</p>
+        <div id="shop-products" class="cards"></div></div>
+        <aside id="checkout-summary">
+          <h2 id="checkout-summary-title" hidden>ご注文の内訳</h2>
+          <p id="guest-benefits" class="small" hidden><a href="#login">ログインして会員価格やクーポンを使う</a></p>
+          <label id="checkout-coupon-label">クーポンコード（任意）<input id="checkout-coupon" maxlength="64" autocomplete="off" autocapitalize="characters"></label>
+          <div id="shop-quote" class="panel" aria-live="polite"></div>
+          <a id="cart-checkout" class="store-action" href="/checkout" hidden>お会計へ進む</a>
+        </aside>
+        <div id="checkout-shipping" class="panel shipping-form"><h3>お届け先（日本国内）</h3>
+          <p class="small">配送先とログイン用メールは，発送・決済のためSquareへ送信します．カード情報はSquareが提供する入力欄から直接Squareへ送信され，HackSickでは保存しません．<a href="/privacy.html" target="_blank" rel="noopener">情報の取り扱い ↗</a></p>
+          <label id="checkout-email-label" hidden>注文連絡用メールアドレス<input id="checkout-email" name="contactEmail" type="email" autocomplete="email" maxlength="254"><span class="small">受付・発送の連絡をお送りします．この端末で購入状況を確認できます．</span></label>
+          <p id="shipping-address-note" class="small" hidden>前回の配送先を入力しました．今回のお届け先をご確認ください．</p>
+          <div class="address-grid"><label>お届け先の氏名<input name="name" autocomplete="shipping name" maxlength="100" required></label><label>電話番号<input name="phone" type="tel" autocomplete="shipping tel" maxlength="25" required></label>
+          <label>郵便番号<input name="postalCode" autocomplete="shipping postal-code" pattern="[0-9]{3}-?[0-9]{4}" maxlength="8" required></label><label>都道府県<select name="prefecture" id="prefectures" autocomplete="shipping address-level1" required><option value="">選択してください</option></select></label>
+          <label>市区町村<input name="city" autocomplete="shipping address-level2" maxlength="100" required></label><label>町名・番地<input name="addressLine1" autocomplete="shipping address-line1" maxlength="200" required></label></div>
+          <label>建物名・部屋番号<input name="addressLine2" autocomplete="shipping address-line2" maxlength="200"></label>
+          <p id="checkout-returns" class="small">食品のため，お客様都合の返品・交換はお受けできません．不良品・誤配送はHackSick負担で対応します．到着後7日以内を目安にshop@hacksick.comへご連絡ください．発送前のキャンセルはメールでご相談ください．</p>
+          <section id="card-section" hidden><h3>お支払い</h3><p id="card-preview-note" class="small" hidden>運営用の表示確認です．購入受付は停止中です．</p><p class="small">クレジットカード・デビットカードでお支払いいただけます．カード会社の本人認証画面が表示される場合があります．</p><div id="card-container"></div></section><label class="check"><input id="checkout-terms" name="terms" type="checkbox" required>商品・合計金額・送料・出荷目安・返品条件を確認しました</label>
+          <button id="checkout-submit" disabled>カードで支払いへ進む</button>
+          <div id="checkout-wallets" class="checkout-wallets" hidden><button id="checkout-apple" type="button" aria-label="Apple Payで支払う" hidden></button><div id="checkout-google"></div></div>
+          <p class="small"><a href="/commerce.html" target="_blank" rel="noopener">特定商取引法に基づく表記・返品条件 ↗</a></p><p id="checkout-message" role="status" class="small"></p>
+        </div>
+      </form>
+      <section id="shop-order-section" aria-label="購入状況">
+        <div class="section-label"><h3 id="shop-orders-title">購入状況</h3><button id="orders-refresh" type="button">支払状況を確認</button></div><div id="shop-orders"></div>
+      </section>
+    </section>
+    <section id="admin" hidden aria-labelledby="admin-title"></section>
+  </main>
+  <footer><span>HackSick</span><a href="https://hacksick.com/privacy/">プライバシーポリシー ↗</a><a href="mailto:shop@hacksick.com">お問い合わせ ↗</a><a href="/commerce.html">特定商取引法に基づく表記</a></footer>
+</body>
+</html>

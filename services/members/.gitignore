@@ -1,0 +1,16 @@
+.dev.vars
+.dev.vars.*
+!.dev.vars.example
+.wrangler/
+.worker-build/
+dist/
+node_modules/
+.credentials/
+.imports/
+.local-test/
+worker-configuration.d.ts
+wrangler.production.jsonc
+wrangler.sandbox-preview.jsonc
+ROLLOUT.md
+scripts/inspect-square.mjs
+scripts/audit-square-connections.mjs

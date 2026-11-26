@@ -1,0 +1,55 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "hacksick-members",
+  "main": "src/worker.ts",
+  "compatibility_date": "2026-11-03",
+  "compatibility_flags": [
+    "nodejs_compat"
+  ],
+  "workers_dev": false,
+  "preview_urls": false,
+  "routes": [
+    {
+      "pattern": "members.hacksick.com",
+      "custom_domain": true
+    },
+    {
+      "pattern": "shop.hacksick.com/*",
+      "zone_name": "hacksick.com"
+    }
+  ],
+  "assets": {
+    "directory": "./dist",
+    "binding": "ASSETS",
+    "run_worker_first": true
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "hacksick-members-production",
+      "database_id": "00000000-0000-0000-0000-000000000000",
+      "migrations_dir": "migrations"
+    }
+  ],
+  "triggers": {
+    "crons": [
+      "* * * * *"
+    ]
+  },
+  "vars": {
+    "AUTH_BASE_URL": "https://members.hacksick.com",
+    "SHOP_BASE_URL": "https://shop.hacksick.com",
+    "GOOGLE_WORKSPACE_DOMAIN": "hacksick.com",
+    "MAIL_FROM": "HackSick <noreply@notify.hacksick.com>",
+    "ORDER_NOTIFICATION_EMAIL": "shop@hacksick.com",
+    "CHECKOUT_ENABLED": "true",
+    "COFFEE_RECURRING_ENABLED": "true",
+    "SQUARE_ENVIRONMENT": "production",
+    "SQUARE_CLIENT_ID": "",
+    "SQUARE_LOCATION_ID": "",
+    "SQUARE_MONTHLY_PLAN_IDS": "",
+    "SQUARE_WEBHOOK_URL": "https://members.hacksick.com/api/square/webhook",
+    "STOREFRONT_CHECKOUT_ENABLED": "false",
+    "WALLET_ENABLED": "false"
+  }
+}
