@@ -137,7 +137,15 @@
         <aside id="checkout-summary">
           <h2 id="checkout-summary-title" hidden>ご注文の内訳</h2>
           <p id="guest-benefits" class="small" hidden><a href="#login">ログインして会員価格やクーポンを使う</a></p>
-          <label id="checkout-coupon-label">クーポンコード（任意）<input id="checkout-coupon" maxlength="64" autocomplete="off" autocapitalize="characters"></label>
+          <div id="checkout-coupon-entry" hidden>
+            <label for="checkout-coupon">クーポンコード（任意）</label>
+            <div class="coupon-entry-row">
+              <input id="checkout-coupon" maxlength="64" autocomplete="off" autocapitalize="characters" aria-describedby="checkout-coupon-status">
+              <button id="checkout-coupon-apply" class="store-secondary" type="button" disabled>適用</button>
+              <button id="checkout-coupon-remove" class="store-secondary" type="button" hidden>取り消す</button>
+            </div>
+            <p id="checkout-coupon-status" class="small" role="status"></p>
+          </div>
           <div id="shop-quote" class="panel" aria-live="polite"></div>
           <a id="cart-checkout" class="store-action" href="/checkout" hidden>お会計へ進む</a>
         </aside>

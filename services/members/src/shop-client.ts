@@ -3,16 +3,19 @@ import { readCart, writeCart } from "./storefront-cart-client.ts";
 const el = <T extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id) as T;
 const money = (n: number) => `${n.toLocaleString("ja-JP")}円`;
 const text = (tag: string, value: string, className = "") => { const node = document.createElement(tag); node.textContent = value; node.className = className; return node; };
+class ShopRequestError extends Error {
+  constructor(message: string, readonly status: number) { super(message); }
+}
 async function api<T>(path: string, body?: unknown): Promise<T> {
   const res = await fetch(path, body === undefined ? { cache: "no-store" } : { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
-  const data = await res.json() as T & { error?: string }; if (!res.ok) throw new Error(data.error ?? "処理を完了できませんでした．"); return data;
+  const data = await res.json() as T & { error?: string }; if (!res.ok) throw new ShopRequestError(data.error ?? "処理を完了できませんでした．", res.status); return data;
 }
 interface ProductImage { src: string; alt: string; width?: number; height?: number }
 export type ShippingAddress = Record<"name" | "phone" | "postalCode" | "prefecture" | "city" | "addressLine1" | "addressLine2", string>;
 type Source = "hacksick" | "essen";
 export interface Product { fulfillmentSource?: Source; sku: string; name: string; unitPriceJpy: number; bags: number; category: string; description: string; workUrl?: string; images?: ProductImage[] }
 export interface Shop { wallets?: boolean; essenLocationId?: string; products: (Product & { available: number })[]; policy: { discountPercent: number; recurringDiscountPercent: number; recurringCheckoutEnabled: boolean }; stock: { shared: boolean; available: boolean }; eligible: boolean; canPurchase: boolean; storefront: boolean; enabled: boolean; paymentFormPreview?:boolean; environment: string; applicationId: string; locationId: string; buyerEmail: string | null; shippingAddress?: ShippingAddress | null }
-interface Quote { discountLabel?: string; fulfillmentSource?: Source; subtotalJpy: number; discountPercent: number; discountJpy: number; shippingJpy: number; totalJpy: number; fulfillmentHint?:string; lines?: { name: string; quantity: number }[] }
+interface Quote { coupon?: { id: string }; discountLabel?: string; fulfillmentSource?: Source; subtotalJpy: number; discountPercent: number; discountJpy: number; shippingJpy: number; totalJpy: number; fulfillmentHint?:string; lines?: { name: string; quantity: number }[] }
 interface Shipment { label?: string; trackingNumbers: string[]; shippedAt: string; trackingUrl: string }
 interface Checkout { dispatch?: {plannedDate:string|null;held:boolean} | null; id: string; state: string; quote: Quote; expiresAt: string; shipment?: Shipment | null }
 interface AdminOrder {
@@ -52,6 +55,7 @@ let checkoutBusy = false;
 let initialized = false;
 let view: "cart" | "checkout" = "cart";
 let currentQuote: Quote | null = null;
+let submittedCoupon = "";
 let card: SquareCard | null = null;
 let payments: SquarePayments | null = null;
 let cardLocation = "";
@@ -62,10 +66,22 @@ let walletRevision = -1;
 let sdkLoading: Promise<void> | null = null;
 let importSnapshot: Record<string, unknown> | null = null;
 const source = () => el<HTMLSelectElement>("checkout-source").value as Source;
-const couponCode = () => el<HTMLInputElement>("checkout-coupon").value.trim();
+const couponInput = () => el<HTMLInputElement>("checkout-coupon");
+const couponStatus = (message: string, state = "") => {
+  const status = el("checkout-coupon-status");
+  status.textContent = message;
+  status.dataset.state = state;
+};
 const quantities = () => [...el("shop-products").querySelectorAll<HTMLInputElement>("input[data-sku]")].map(input => ({ sku: input.dataset.sku!, quantity: Number(input.value) })).filter(l => l.quantity !== 0);
 const message = (value: string) => { el("checkout-message").textContent = value; };
 function buttonState() {
+  couponInput().readOnly = Boolean(submittedCoupon);
+  const apply = el<HTMLButtonElement>("checkout-coupon-apply");
+  const remove = el<HTMLButtonElement>("checkout-coupon-remove");
+  apply.hidden = Boolean(submittedCoupon);
+  apply.disabled = checkoutBusy || !shop?.buyerEmail || !shop.canPurchase || !couponInput().value.trim() || !quantities().length;
+  remove.hidden = !submittedCoupon;
+  remove.disabled = checkoutBusy;
   el<HTMLButtonElement>("checkout-submit").disabled = !shop?.enabled || !shop.canPurchase || !currentQuote || !card || checkoutBusy;
   const walletsReady = Boolean(shop?.enabled && currentQuote && !checkoutBusy && walletRevision === revision);
   el("checkout-wallets").hidden = !walletsReady;
@@ -100,24 +116,59 @@ async function loadCardForSource() {
 async function quote() {
   const version = ++revision; currentQuote = null; buttonState();
   const lines = quantities();
+  const summary = el("shop-quote");
+  const candidate = shop.buyerEmail ? submittedCoupon : "";
   el("checkout-returns").textContent = lines.some(line => shop.products.find(p => p.sku === line.sku)?.category === "書籍")
     ? "書籍のお客様都合の返品は受取日から8日以内にご連絡ください．返送料はお客様負担です．食品はお客様都合の返品・交換をお受けできません．不良品・誤配送の返送料はHackSick負担です．"
     : "食品のお客様都合による返品・交換はお受けできません．不良品・誤配送はHackSick負担で対応します．到着後7日以内を目安にshop@hacksick.comへご連絡ください．";
-  if (!lines.length) { el("shop-quote").replaceChildren(text("p", "数量を選ぶと，送料を含む合計金額を確認できます．")); return; }
+  if (!lines.length) {
+    if (candidate) {
+      clearShopCoupon();
+      couponInput().value = "";
+      couponStatus("");
+      buttonState();
+    }
+    summary.replaceChildren(text("p", "数量を選ぶと，送料を含む合計金額を確認できます．"));
+    return;
+  }
   if (!shop.canPurchase) return;
-  const summary = el("shop-quote");
   if (lines.some(line => line.quantity > (shop.products.find(p => p.sku === line.sku)?.available ?? 0))) {
+    if (candidate) couponStatus("数量を調整すると，クーポンを再確認します．");
     summary.replaceChildren(text("p", "在庫数に合わせて数量を調整してください．"));
     return;
   }
+  if (candidate) couponStatus("クーポンを確認しています．");
   summary.replaceChildren(text("p", "商品代金と送料を確認しています．"));
   let data: Quote;
-  try { data = await api<Quote>("/api/shop/quote", { items: lines, couponCode: couponCode() }); }
-  catch (error) {
-    if (version === revision) summary.replaceChildren(text("p", (error as Error).message));
+  let rejected = false;
+  try {
+    try {
+      data = await api<Quote>("/api/shop/quote", { items: lines, couponCode: candidate });
+    } catch (error) {
+      if (version !== revision) return;
+      if (!candidate || !(error instanceof ShopRequestError) || error.status !== 400) throw error;
+      rejected = true;
+      data = await api<Quote>("/api/shop/quote", { items: lines });
+    }
+  } catch (error) {
+    if (version !== revision) return;
+    if (candidate) {
+      clearShopCoupon();
+      couponStatus("クーポンを確認できませんでした．もう一度お試しください．", "error");
+      buttonState();
+    }
+    summary.replaceChildren(text("p", (error as Error).message));
     return;
   }
   if (version !== revision) return;
+  if (candidate && data.coupon) {
+    rememberCoupon(candidate);
+    couponStatus(`クーポンを適用しました．${money(data.discountJpy)}引きです．`, "success");
+  } else if (candidate) {
+    clearShopCoupon();
+    if (rejected) couponStatus("この注文にはクーポンを適用できません．コードと対象商品をご確認ください．", "error");
+    else couponStatus("この注文では会員特典を適用します．クーポンの利用回数は減りません．");
+  }
   currentQuote = data;
   const contents = text("ul", "", "checkout-line-summary");
   if (view === "checkout") contents.append(...(data.lines ?? []).map(line => text("li", `${line.name} × ${line.quantity}`)));
@@ -313,9 +364,31 @@ function saveStorefrontCart(cart: Map<string, number>) {
   void quote();
 }
 
-const couponKey = "hacksick-shop-coupon";
-function rememberCoupon() {
-  try { sessionStorage.setItem(couponKey, couponCode()); } catch { /* 遷移後に入力し直せる． */ }
+const couponKey = "hacksick-shop-applied-coupon";
+function rememberCoupon(code: string) {
+  try {
+    if (code) sessionStorage.setItem(couponKey, code);
+    else sessionStorage.removeItem(couponKey);
+  } catch { /* 遷移後に入力し直せる． */ }
+}
+export function clearShopCoupon() {
+  submittedCoupon = "";
+  rememberCoupon("");
+}
+function applyCoupon() {
+  if (el<HTMLButtonElement>("checkout-coupon-apply").disabled) return;
+  submittedCoupon = couponInput().value.trim().toUpperCase();
+  couponInput().value = submittedCoupon;
+  resetAcceptance();
+  void quote();
+}
+function removeCoupon() {
+  clearShopCoupon();
+  couponInput().value = "";
+  couponStatus("クーポンを取り消しました．");
+  resetAcceptance();
+  void quote();
+  couponInput().focus();
 }
 
 export async function loadShop(page: typeof view) {
@@ -332,7 +405,7 @@ export async function loadShop(page: typeof view) {
   el("checkout-email-label").hidden = !guest;
   el("guest-benefits").hidden = !guest;
   if (guest) el("guest-benefits").querySelector("a")!.href = `/login?return=${encodeURIComponent(`/${view}${location.search}`)}`;
-  el("checkout-coupon-label").hidden = guest;
+  el("checkout-coupon-entry").hidden = guest;
   const selected = new URLSearchParams(location.search).get("from");
   el<HTMLSelectElement>("checkout-source").value = selected === "essen" ? "essen" : "hacksick";
   const hasItems = renderStorefrontCart();
@@ -340,9 +413,10 @@ export async function loadShop(page: typeof view) {
   el("checkout-summary-title").hidden = false;
   el("checkout-summary").hidden = view === "checkout" && !hasItems;
   el("checkout-items").hidden = view === "checkout" && hasItems;
-  if (!guest) {
-    try { el<HTMLInputElement>("checkout-coupon").value = sessionStorage.getItem(couponKey) ?? ""; }
-    catch { /* 入力欄はそのまま使用できる． */ }
+  if (shop.buyerEmail) {
+    try { submittedCoupon = sessionStorage.getItem(couponKey) ?? ""; }
+    catch { submittedCoupon = ""; }
+    couponInput().value = submittedCoupon;
   }
   if (!initialized) {
     initialized = true;
@@ -350,7 +424,7 @@ export async function loadShop(page: typeof view) {
     for (const p of prefectures) { const option = document.createElement("option"); option.value = p; option.textContent = p; el("prefectures").append(option); }
     el("checkout-form").addEventListener("submit", event => {
       event.preventDefault();
-      if (view === "cart") { rememberCoupon(); void quote(); return; }
+      if (view === "cart") return;
       if (card && cardLocation === (source() === "essen" ? shop.essenLocationId : shop.locationId)) void completePurchase(card, "card");
     });
     el("checkout-apple").addEventListener("click", () => { if (apple) void completePurchase(apple, "apple"); });
@@ -361,7 +435,17 @@ export async function loadShop(page: typeof view) {
       renderStorefrontCart();
       void quote();
     });
-    el("checkout-coupon").addEventListener("change", () => { rememberCoupon(); resetAcceptance(); void quote().catch(error => message(error.message)); });
+    el("checkout-coupon-apply").addEventListener("click", applyCoupon);
+    el("checkout-coupon-remove").addEventListener("click", removeCoupon);
+    couponInput().addEventListener("input", () => {
+      couponStatus(couponInput().value.trim() ? "「適用」を押すと合計金額を更新します．" : "");
+      buttonState();
+    });
+    couponInput().addEventListener("keydown", event => {
+      if (event.key !== "Enter" || event.isComposing) return;
+      event.preventDefault();
+      applyCoupon();
+    });
     for (const input of el("checkout-form").querySelectorAll<HTMLInputElement | HTMLSelectElement>(".shipping-form input:not([name=terms]),.shipping-form select")) {
       input.addEventListener("change", resetAcceptance);
     }
@@ -405,7 +489,7 @@ async function completePurchase(method: SquareCard | SquareWallet, kind: "card" 
   const form = el<HTMLFormElement>("checkout-form");
   if (checkoutBusy || !shop.enabled || !total || !form.reportValidity() || (kind !== "card" && walletRevision !== revision)) return;
   const fields = Object.fromEntries(new FormData(form).entries());
-  const items = quantities(), coupon = couponCode(), key = requestId;
+  const items = quantities(), coupon = currentQuote?.coupon ? submittedCoupon : "", key = requestId;
   const acceptedTerms = el<HTMLInputElement>("checkout-terms").checked;
   const contactEmail = shop.buyerEmail ?? String(fields.contactEmail).trim();
   const billingContact = { givenName: String(fields.name), email: contactEmail, phone: String(fields.phone),
@@ -439,8 +523,8 @@ async function completePurchase(method: SquareCard | SquareWallet, kind: "card" 
         else cart.delete(line.sku);
       }
       try { writeCart(cart); } catch { /* 注文は支払済みのため，先に購入状況を案内する． */ }
-      el<HTMLInputElement>("checkout-coupon").value = "";
-      rememberCoupon();
+      couponInput().value = "";
+      clearShopCoupon();
       location.assign(`/orders?receipt=${result.id}`);
       return;
     }
