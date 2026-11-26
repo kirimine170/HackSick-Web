@@ -1,13 +1,13 @@
 import type { Env } from "./types.ts";
 import { InputError, requiredText } from "./eligibility.ts";
-import { BOOK_PRODUCT, SHOP_PRODUCTS, STOREFRONT_PRODUCTS, CheckoutConflict, ensureBuyer, memberAccess, memberQuote, shippingRecipient } from "./checkout.ts";
+import { allocateDiscount, BOOK_PRODUCT, SHOP_PRODUCTS, STOREFRONT_PRODUCTS, CheckoutConflict, ensureBuyer, memberAccess, memberQuote, shippingRecipient } from "./checkout.ts";
 import { checkoutAvailable, SquareRequestError, type SquareGateway, type SquareOrder, type SquarePayment } from "./square.ts";
 import { refreshBillingForUser } from "./billing.ts";
 import { locationFor, quoteShopOrder, reserveCoupon, shopProducts, type AppliedCoupon, type FulfillmentSource, type ShopProduct } from "./shop-operations.ts";
 import { ensureGuestActor } from "./guest-checkout.ts";
 import { queueOrderNotifications } from "./order-notifications.ts";
 
-export type OrderQuote = ReturnType<typeof memberQuote> & { coupon?: AppliedCoupon; fulfillmentSource?: FulfillmentSource; discountLabel?: string; fulfillmentHint?: string; planBaseExTaxJpy?: number; memberDiscountExTaxJpy?: number; taxJpy?: number; taxPercent?: number; goodsTotalJpy?: number };
+export type OrderQuote = ReturnType<typeof memberQuote> & { coupon?: AppliedCoupon; fulfillmentSource?: FulfillmentSource; discountLabel?: string; memberDiscountJpy?: number; fulfillmentHint?: string; planBaseExTaxJpy?: number; memberDiscountExTaxJpy?: number; taxJpy?: number; taxPercent?: number; goodsTotalJpy?: number };
 type Quote = OrderQuote;
 type Recipient = ReturnType<typeof shippingRecipient>;
 export interface SharedOrder {
@@ -196,19 +196,25 @@ const includesBook = (quote: Quote) => quote.lines.some(line => line.sku === BOO
 
 export function sharedOrderPayload(env: Env, row: SharedOrder) {
   const quote = JSON.parse(row.quote_json) as Quote; const products = JSON.parse(row.catalog_json) as SharedProduct[];
-  const discountable = quote.lines.flatMap((line, index) => (quote.coupon ? quote.coupon.skus.includes(line.sku) : line.bags > 0) ? [index] : []);
-  const eligibleSubtotal = discountable.reduce((sum, index) => sum + quote.lines[index].subtotalJpy, 0);
-  if (quote.discountJpy && (!eligibleSubtotal || quote.discountJpy > eligibleSubtotal)) throw new InputError("割引条件を確認してください．");
-  const allocations = quote.lines.map((line, index) => quote.discountJpy && discountable.includes(index) ? Math.floor(quote.discountJpy * line.subtotalJpy / eligibleSubtotal) : 0);
-  let remainder = quote.discountJpy - allocations.reduce((a, b) => a + b, 0);
-  for (let i = 0; remainder > 0; i++, remainder--) allocations[discountable[i % discountable.length]]++;
+  const memberDiscount = quote.memberDiscountJpy ?? 0;
+  const memberAllocations = allocateDiscount(memberDiscount, quote.lines.map(line => line.bags > 0 ? line.subtotalJpy : 0));
+  const allocations = allocateDiscount(quote.discountJpy - memberDiscount, quote.lines.map((line, i) => {
+    const eligible = quote.coupon ? quote.coupon.skus.includes(line.sku) : line.bags > 0;
+    return eligible ? line.subtotalJpy - memberAllocations[i] : 0;
+  }));
+  const discountsByLine = quote.lines.map((_, i) => [
+    { uid: `stack-member-${i}`, name: "会員特典10％", amount: memberAllocations[i] },
+    { uid: `member-${i}`, name: quote.discountLabel ?? "会員特典10％", amount: allocations[i] },
+  ].filter(entry => entry.amount));
   const money = (amount: number) => ({ amount, currency: "JPY" });
   return { idempotency_key: row.id, order: {
     location_id: orderLocation(env, row), reference_id: row.id,
     ...(row.square_customer_id ? { customer_id: row.square_customer_id } : {}),
     line_items: quote.lines.map((line, i) => ({ uid: `line-${i}`, catalog_object_id: products.find(p => p.sku === line.sku)!.variationId,
-      quantity: String(line.quantity), base_price_money: money(line.unitPriceJpy), ...(allocations[i] ? { applied_discounts: [{ discount_uid: `member-${i}` }] } : {}), ...(quote.taxPercent !== undefined ? { applied_taxes: [{ tax_uid: "food-tax" }] } : {}) })),
-    discounts: allocations.flatMap((amount, i) => amount ? [{ uid: `member-${i}`, name: quote.discountLabel ?? "会員特典10％", type: "FIXED_AMOUNT", scope: "LINE_ITEM", amount_money: money(amount) }] : []),
+      quantity: String(line.quantity), base_price_money: money(line.unitPriceJpy), ...(discountsByLine[i].length ? { applied_discounts: discountsByLine[i].map(({ uid }) => ({ discount_uid: uid })) } : {}), ...(quote.taxPercent !== undefined ? { applied_taxes: [{ tax_uid: "food-tax" }] } : {}) })),
+    discounts: discountsByLine.flat().map(({ uid, name, amount }) => ({
+      uid, name, type: "FIXED_AMOUNT", scope: "LINE_ITEM", amount_money: money(amount),
+    })),
     ...(quote.taxPercent !== undefined ? { taxes: [{ uid: "food-tax", name: "食品・軽減税率", percentage: String(quote.taxPercent), type: "INCLUSIVE", scope: "LINE_ITEM" }] } : {}),
     ...(quote.shippingJpy ? { service_charges: [{ uid: "shipping", name: "国内送料", calculation_phase: "TOTAL_PHASE", taxable: false, amount_money: money(quote.shippingJpy) }] } : {}),
     pricing_options: { auto_apply_discounts: false, auto_apply_taxes: false },
@@ -269,7 +275,7 @@ export async function paySharedOrder(env: Env, userId: string, orderId: string, 
     try {
       const checked = await quoteShopOrder(env, guest ? null : userId, quote.lines, storefront, quote.coupon ? { id: quote.coupon.id } : undefined, row!.id);
       return checked.totalJpy === quote.totalJpy && checked.discountJpy === quote.discountJpy &&
-        checked.coupon?.id === quote.coupon?.id && checked.fulfillmentSource === (row!.fulfillment_source ?? "hacksick") &&
+        checked.memberDiscountJpy === quote.memberDiscountJpy && checked.coupon?.id === quote.coupon?.id && checked.fulfillmentSource === (row!.fulfillment_source ?? "hacksick") &&
         checked.lines.every((line, i) => line.sku === quote.lines[i].sku && line.unitPriceJpy === quote.lines[i].unitPriceJpy);
     } catch (error) { if (error instanceof InputError) return false; throw error; }
   };
@@ -299,7 +305,7 @@ export async function paySharedOrder(env: Env, userId: string, orderId: string, 
     const beforePay = await orderInventory(env, gateway, quote, row, row.id);
     sufficient(quote, beforePay);
     if (!await authorized()) return json(visibleSharedOrder(await update(env, row, "canceled")));
-    if (quote.coupon && !await reserveCoupon(env.DB, row.id, userId, quote.coupon, quote.discountJpy)) {
+    if (quote.coupon && !await reserveCoupon(env.DB, row.id, userId, quote.coupon, quote.discountJpy - (quote.memberDiscountJpy ?? 0))) {
       return json(visibleSharedOrder(await update(env, row, "canceled")));
     }
     paymentSent = true;

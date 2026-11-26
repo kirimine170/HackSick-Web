@@ -36,6 +36,21 @@ export function memberQuote(items: unknown, options: { eligible: boolean; storef
   return { policyVersion: CHECKOUT_POLICY.version as string, lines, subtotalJpy, discountPercent, discountJpy, shippingJpy, totalJpy: subtotalJpy - discountJpy + shippingJpy, bags: lines.reduce((n, l) => n + l.bags * l.quantity, 0) };
 }
 
+export function allocateDiscount(discountJpy: number, subtotals: number[]) {
+  const subtotal = subtotals.reduce((sum, amount) => sum + amount, 0);
+  if (!Number.isSafeInteger(discountJpy) || discountJpy < 0 || discountJpy > subtotal) throw new InputError("割引条件を確認してください．");
+  if (!discountJpy) return subtotals.map(() => 0);
+  const allocations = subtotals.map(amount => Math.floor(discountJpy * amount / subtotal));
+  let remaining = discountJpy - allocations.reduce((sum, amount) => sum + amount, 0);
+  for (let i = 0; remaining > 0; i++) {
+    if (subtotals[i] > 0) {
+      allocations[i]++;
+      remaining--;
+    }
+  }
+  return allocations;
+}
+
 export async function ensureBuyer(db: D1Database, user: { id: string; email: string; name?: string }) {
   const email = normalizeEmail(user.email);
   const now = new Date().toISOString();

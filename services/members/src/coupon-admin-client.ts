@@ -51,6 +51,7 @@ export function initializeCouponForm(
       : Number(field("accountLimit").value) || (template === "custom" ? 1 : 0);
     el("coupon-preview").textContent = [
       audience, fraction ? `${fraction}％引き` : "割引率を入力してください", `対象 ${selected.size}商品`,
+      field("memberDiscountMode").value === "stack" ? "会員割引と併用" : "割引額が大きい方を適用",
       expires ? `${expires}（日本時間）まで` : "発行から30日間",
       perAccount ? `1人${perAccount.toLocaleString("ja-JP")}回まで` : "",
       field("useLimit").value ? `全体で${field("useLimit").value}回まで` : "",
@@ -169,8 +170,8 @@ export function initializeCouponForm(
     event.preventDefault();
     if (submit.disabled) return;
     const values = Object.fromEntries(new FormData(form));
-    const { template, label, code, email, expiresAt, costConfirmed } = values;
-    const body: Record<string, unknown> = { template, label, code, email, costConfirmed: costConfirmed === "on", skus: [...selected] };
+    const { template, label, code, email, expiresAt, costConfirmed, memberDiscountMode } = values;
+    const body: Record<string, unknown> = { template, label, code, email, memberDiscountMode, costConfirmed: costConfirmed === "on", skus: [...selected] };
     if (expiresAt) {
       const expiry = new Date(`${expiresAt}+09:00`);
       if (!Number.isFinite(expiry.getTime()) || expiry.getTime() <= Date.now()) {
