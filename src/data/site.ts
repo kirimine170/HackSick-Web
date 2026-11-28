@@ -7,23 +7,25 @@ export const site = {
   locale: "ja_JP",
 } as const;
 
-export const navigation = [
-  { label: "About", href: "/about/" },
-  { label: "News", href: "/news/" },
-  { label: "Projects", href: "/projects/" },
-  { label: "Works", href: "/works/" },
-  { label: "Events", href: "/events/" },
-  { label: "Creators", href: "/creators/" },
-  { label: "Join", href: "/join/" },
-] as const;
-
 export const links = {
+  shop: "https://shop.hacksick.com/",
   connpass: "https://hacksick.connpass.com/",
   note: "https://note.com/hacksick",
   noteAbout: "https://note.com/hacksick/n/nfe71d58d2512",
   x: "https://x.com/HackSick_8949",
   github: "https://github.com/kirimine170/HackSick-Web",
 } as const;
+
+export const navigation = [
+  { label: "About", href: "/about/" },
+  { label: "News", href: "/news/" },
+  { label: "Projects", href: "/projects/" },
+  { label: "Works", href: "/works/" },
+  { label: "Shop", href: links.shop },
+  { label: "Events", href: "/events/" },
+  { label: "Creators", href: "/creators/" },
+  { label: "Join", href: "/join/" },
+] as const;
 
 export const getXHandle = (url?: string) => {
   if (!url) return undefined;
